@@ -16,10 +16,10 @@ bmp_96x2_2_height = 50
 
   ;*** The color of each line in the bitmap, in reverse order...
 bmp_96x2_2_colors 
-	BYTE _D2
-	BYTE _D2
-	BYTE _D2
-	BYTE _D2
+	BYTE _D4
+	BYTE _D4
+	BYTE _D4
+	BYTE _D4
 	BYTE _D6
 	BYTE _D6
 	BYTE _D6

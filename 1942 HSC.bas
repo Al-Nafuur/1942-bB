@@ -1,5 +1,6 @@
-; orignial code by AtariAge user homerhomer (https://atariage.com/forums/profile/28656-homerhomer/)
+; Orignial code by AtariAge user homerhomer (https://atariage.com/forums/profile/28656-homerhomer/)
 ; AA topic: https://atariage.com/forums/topic/176639-1942-wip/
+; Titlescreen Music contributed by AtariAge user Pat Brady (https://atariage.com/forums/profile/24906-pat-brady/) 
 
    rem furture work ....
    rem need to add plane flip and counter. I was thinking that if the plane is maxed out on y axis up or down then holding joystick up or down with a fire button will cause flip
@@ -36,6 +37,18 @@
    const carrier_end       = 41
    const attackzone_start  = carrier_end + 5
    const map_end           = map_length - screen_v_res - 1
+
+   const _Small_Plane_down_high  = >Small_Plane_down
+   const _Small_Plane_down_low   = <Small_Plane_down
+
+   const _Middle_Plane_down_high = >_Middle_Plane_down
+   const _Middle_Plane_down_low  = <_Middle_Plane_down
+
+   const _Big_Plane_up_high      = >_Big_Plane_up
+   const _Big_Plane_up_low       = <_Big_Plane_up
+
+   const _Small_Plane_lr_high    = >_Small_Plane_lr
+   const _Small_Plane_lr_low     = <_Small_Plane_lr
 
 ;#region "NTSC Constants and Colors"
    ; requests 
@@ -327,17 +340,41 @@
 
 ;#region "Zeropage Variables"
 
+   dim playerpointerlo  = player1pointerlo
+   dim playerpointerhi  = player1pointerhi
+
    dim _Ch0_Counter     = a
    dim _Ch0_Duration    = b
    dim _Ch1_Counter     = c
    dim _Ch1_Duration    = d
+
    dim framecounter     = e
    dim bmp_96x2_2_index = f
    dim attack_position  = g
    dim stage            = h
    dim level            = i
+   dim plane_type       = j
+   dim plane_type2      = k
+   dim plane_type3      = l
+   dim plane_type4      = m
+   dim plane_type5      = n
+   dim _NUSIZ0          = o
 
-   dim statusbarcolor   = t
+   ; Slocum Player RAM variables (reuses game loop variables!)
+   dim temp             = temp1
+   dim temp16L          = temp2   ; 16 bit temp
+   dim temp16H          = temp3
+   dim note1            = j
+   dim note2            = k
+   dim vol1             = l
+   dim vol2             = m
+   dim sound1           = n
+   dim sound2           = o
+   dim beat             = p       ; Metrenome stuff
+   dim tempoCount       = q
+   dim measure          = r       ; Special attenuation
+   dim atten            = s
+
 ;#endregion
 
 
@@ -353,8 +390,8 @@
 start
 
    rem initial variables setup
-   missile0y = 0 : level = 0 : stage = 0 : framecounter = 0
-   player0x = 76 : player0y = 8 : attack_position = 8
+   missile0y = 0 : level = 0 : stage = 0 : framecounter = 0 : attack_position = 0
+   player0x = 76 : player0y = 8
    lives = 64
    gosub build_attack_position
 
@@ -625,11 +662,15 @@ end
    PF2pointer = takeoff_point
 
    
+   _NUSIZ0 = %00000000
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Mainloop"
 main
    if switchreset then goto titlescreen_start bank2
+
+   NUSIZ0 = _NUSIZ0
+
 
    framecounter = framecounter + 1
    COLUBK = _96
@@ -645,145 +686,7 @@ main
    %11111111
    %00100100
 end
-   
-   on attack_position goto _def_ap0_p1 _def_ap1_p1 _def_ap2_p1 _def_ap3_p1 _def_ap4_p1 _def_ap5_p1
-
-_def_ap0_p1
-   player1:
-   %00011000
-   %01111110
-   %01111110
-   %00011000
-   %00111100
-end
-   goto _player1_end_def
-
-_def_ap3_p1
-_def_ap4_p1
-_def_ap5_p1
-_def_ap1_p1
-   player1:
-   %00000000
-   %00011000
-   %11111111
-   %11111111
-   %00111100
-   %00011000
-   %00011000
-   %00111100
-end
-   goto _player1_end_def
-
-_def_ap2_p1
-   player1:
-   %0011000
-   %0011010
-   %0111110
-   %0111110
-   %0011010
-   %0011000
-end
-
-_player1_end_def
-
-   on attack_position goto _def_ap0_p2 _def_ap1_p2 _def_ap2_p2 _def_ap3_p2 _def_ap4_p2 _def_ap5_p2
-
-_def_ap0_p2
-_def_ap1_p2
-_def_ap3_p2
-_def_ap4_p2
-_def_ap5_p2
-   player2:
-   %00011000
-   %01111110
-   %01111110
-   %00011000
-   %00111100
-end
-   goto _player2_end_def
-
-_def_ap2_p2
-   player2:
-   %0011000
-   %0011010
-   %0111110
-   %0111110
-   %0011010
-   %0011000
-end
-
-_player2_end_def
-
-   on attack_position goto _def_ap0_p3 _def_ap1_p3 _def_ap2_p3 _def_ap3_p3 _def_ap4_p3 _def_ap5_p3
-
-_def_ap0_p3
-_def_ap1_p3
-_def_ap3_p3
-_def_ap4_p3
-_def_ap5_p3
-   player3:
-   %00011000
-   %01111110
-   %01111110
-   %00011000
-   %00111100
-end
-   goto _player3_end_def
-
-_def_ap2_p3
-   player3:
-   %0011000
-   %0011010
-   %0111110
-   %0111110
-   %0011010
-   %0011000
-end
-
-_player3_end_def
-
-   on attack_position goto _def_ap0_p4 _def_ap1_p4 _def_ap2_p4 _def_ap3_p4 _def_ap4_p4 _def_ap5_p4
-
-_def_ap0_p4
-_def_ap1_p4
-_def_ap3_p4
-_def_ap4_p4
-_def_ap5_p4
-   player4:
-   %00011000
-   %01111110
-   %01111110
-   %00011000
-   %00111100
-end
-   goto _player4_end_def
-
-_def_ap2_p4
-   player4:
-   %0011000
-   %0011010
-   %0111110
-   %0111110
-   %0011010
-   %0011000
-end
-
-_player4_end_def
-
-; on plane_tpye5 goto xxxx, yyy
-   
-   player5:
-   %00111100
-   %00111100
-   %00011000
-   %00011000
-   %11111111
-   %11111111
-   %11111111
-   %01011010
-end
-
-
+ 
    lives:
    %00111100
    %00011000
@@ -792,18 +695,41 @@ end
    %00011000
 end
 
+   for temp1 = 0 to 4
+      temp2 = plane_type[temp1] / 4
+
+      on temp2 goto _small_plane_down _middle_plane_down _small_plane_lr _big_plane_up
+
+_small_plane_down
+      playerpointerlo[temp1] = _Small_Plane_down_low
+      playerpointerhi[temp1] = _Small_Plane_down_high
+      spriteheight[temp1]    = 6
+      goto _next_plane_type
+
+_middle_plane_down
+      playerpointerlo[temp1] = _Middle_Plane_down_low
+      playerpointerhi[temp1] = _Middle_Plane_down_high
+      spriteheight[temp1]    = 9
+      goto _next_plane_type
+
+_small_plane_lr
+      playerpointerlo[temp1] = _Small_Plane_lr_low
+      playerpointerhi[temp1] = _Small_Plane_lr_high
+      spriteheight[temp1]    = 7
+      goto _next_plane_type
+
+_big_plane_up
+      playerpointerlo[temp1] = _Big_Plane_up_low
+      playerpointerhi[temp1] = _Big_Plane_up_high
+      spriteheight[temp1]    = 9
+
+_next_plane_type
+   next
+
    if !collision(player1, missile0) then goto _skip_collision
    
    score = score + 50
 
-   on attack_position goto _collision_ap0 _collision_ap1 _collision_ap2 _collision_ap3 _collision_ap4 _collision_ap5
-
-_collision_ap0
-_collision_ap1
-_collision_ap2
-_collision_ap3
-_collision_ap4
-_collision_ap5
    temp1 = player1y + 5 : temp2 = player1y - 5
    if missile0y > temp2 && missile0y < temp1 then player1y = 200 : goto _end_collision
 
@@ -831,6 +757,7 @@ _skip_collision
    if joy0down && player0y > 8 then player0y = player0y - 1 : goto jump
    if joy0left && player0x > 0 then player0x = player0x - 1 : goto jump
    if joy0right && player0x < 152 then player0x = player0x + 1
+   
 jump
 
 
@@ -856,135 +783,57 @@ _plane_loop
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Plane attack movement"
-   on attack_position goto _movement_ap_0 _movement_ap_1 _movement_ap_2 _movement_ap_3 _movement_ap_4 _movement_ap_5
-   
-_movement_ap_0
-_movement_ap_1
-; attack formation 0 and 1, plane 1
-   if player1y < 1 then player1y = 200
-   if player1y = 200 then _skip_movement_ap0_p1
-   player1y = player1y - planey_speed 
-   if player1y < 71 then _skip_movement_ap0_p1
-   if player1x > player0x then player1x = player1x - planex_speed_1 : goto _skip_movement_ap0_p1
-   if player1x < player0x then player1x = player1x + planex_speed_1
-_skip_movement_ap0_p1
-   
-; attack formation 0, plane 2
-   if player2y < 1 then player2y = 200
-   if player2y = 200 then _skip_movement_ap0_p2
-   player2y = player2y - planey_speed 
-   if player2y < 71 then _skip_movement_ap0_p2
-   if player2x > player0x then player2x = player2x - planex_speed_1 : goto _skip_movement_ap0_p2
-   if player2x < player0x then player2x = player2x + planex_speed_1
-_skip_movement_ap0_p2
 
-; attack formation 0, plane 3
-   if player3y < 1 then player3y = 200
-   if player3y = 200 then _skip_movement_ap0_p3
-   player3y = player3y - planey_speed
-   if player3y < 71 then _skip_movement_ap0_p3
-   if player3x > player0x then player3x = player3x - planex_speed_1 : goto _skip_movement_ap0_p3
-   if player3x < player0x then player3x = player3x + planex_speed_1
-_skip_movement_ap0_p3
+   if framecounter{1} then temp2 = 1 else temp2 = 0
 
-; attack formation 0, plane 4
-   if player4y < 1 then player4y = 200
-   if player4y = 200 then _skip_movement_ap0_p4
-   player4y = player4y - planey_speed
-   if player4y < 71 then _skip_movement_ap0_p4
-   if player4x > player0x then player4x = player4x - planex_speed_1 : goto _skip_movement_ap0_p4
-   if player4x < player0x then player4x = player4x + planex_speed_1
-_skip_movement_ap0_p4
+   temp1 = 0
 
-; attack formation 0, plane 5
-   if player5y < 1 then player5y = 100
-   if player5y = 100 then _skip_movement_ap0_p5
-   player5y = player5y + planey_speed 
-_skip_movement_ap0_p5
-   goto _skip_movement_ap
+_plane_movement_loop_start
+   temp3 = plane_type[temp1] & %00000011
+
+   on temp3 goto _plane_moves_left _plane_moves_right _plane_moves_down _plane_moves_up
+
+_plane_moves_right
+   if NewSpriteX[temp1] > 153 then NewSpriteY[temp1] = 200
+   if NewSpriteY[temp1] = 200 then goto _check_next_plane
+   NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_2 : NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
+
+   if NewSpriteX[temp1] < 121 then goto _check_next_plane
+   if NewNUSIZ[temp1] = %00001011 && NewSpriteX[temp1] > 120 then NewNUSIZ[temp1] = %00001001
+   if NewNUSIZ[temp1] = %00001001 && NewSpriteX[temp1] > 136 then NewNUSIZ[temp1] = %00001000
+   goto _check_next_plane
+
+_plane_moves_left
+   if !NewNUSIZ[temp1] && NewSpriteX[temp1] < 2 then NewSpriteY[temp1] = 200
+   if NewSpriteY[temp1] = 200 then goto _check_next_plane
+   NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_2 : NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
+
+   if NewSpriteX[temp1] < 254 then goto _check_next_plane
+   if NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = NewSpriteX[temp1] + 16
+
+   goto _check_next_plane
+
+_plane_moves_down
+   if NewSpriteY[temp1] < 1 then NewSpriteY[temp1] = 200
+   if NewSpriteY[temp1] = 200 then _check_next_plane
+   NewSpriteY[temp1] = NewSpriteY[temp1] - planey_speed 
+   if NewSpriteY[temp1] < 71 then _check_next_plane
+   if NewSpriteX[temp1] > player0x then NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1 : goto _check_next_plane
+   if NewSpriteX[temp1] < player0x then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1
+
+   goto _check_next_plane
 
 
-_movement_ap_2
-   if framecounter{1} then temp1 = 1 else temp1 = 0
-
-; attack formation 2, plane 1
-   if player1x > 160 then player1y = 200
-   if player1y = 200 then _skip_movement_ap2_p1
-   player1x = player1x + planex_speed_2 : player1y = player1y - temp1
-_skip_movement_ap2_p1
-   
-; attack formation 2, plane 2
-   if player2x > 160 then player2y = 200
-   if player2y = 200 then _skip_movement_ap2_p2
-   player2x = player2x + planex_speed_2 : player2y = player2y - temp1
-_skip_movement_ap2_p2
-
-; attack formation 2, plane 3
-   if player3x < 2 then player3y = 200
-   if player3y = 200 then _skip_movement_ap2_p3
-   player3x = player3x - planex_speed_2 : player3y = player3y - temp1
-_skip_movement_ap2_p3
-
-; attack formation 2, plane 4
-   if player4x < 2 then player4y = 200
-   if player4y = 200 then _skip_movement_ap2_p4
-   player4x = player4x - planex_speed_2 : player4y = player4y - temp1
-_skip_movement_ap2_p4
-
-; attack formation 2, plane 5
-   if player5y < 1 then player5y = 100
-   if player5y = 100 then _skip_movement_ap2_p5
-   player5y = player5y + planey_speed 
-_skip_movement_ap2_p5
-   goto _skip_movement_ap
-
-_movement_ap_3
-_movement_ap_4
-_movement_ap_5
-; attack formation 0 and 1, plane 1
-   if player1y < 1 then player1y = 200
-   if player1y = 200 then _skip_movement_ap5_p1
-   player1y = player1y - planey_speed 
-   if player1y < 71 then _skip_movement_ap5_p1
-   if player1x > player0x then player1x = player1x - planex_speed_1 : goto _skip_movement_ap5_p1
-   if player1x < player0x then player1x = player1x + planex_speed_1
-_skip_movement_ap5_p1
-   
-; attack formation 0, plane 2
-   if player2y < 1 then player2y = 200
-   if player2y = 200 then _skip_movement_ap5_p2
-   player2y = player2y - planey_speed 
-   if player2y < 71 then _skip_movement_ap5_p2
-   if player2x > player0x then player2x = player2x - planex_speed_1 : goto _skip_movement_ap5_p2
-   if player2x < player0x then player2x = player2x + planex_speed_1
-_skip_movement_ap5_p2
-
-; attack formation 0, plane 3
-   if player3y < 1 then player3y = 200
-   if player3y = 200 then _skip_movement_ap5_p3
-   player3y = player3y - planey_speed
-   if player3y < 71 then _skip_movement_ap5_p3
-   if player3x > player0x then player3x = player3x - planex_speed_1 : goto _skip_movement_ap5_p3
-   if player3x < player0x then player3x = player3x + planex_speed_1
-_skip_movement_ap5_p3
-
-; attack formation 0, plane 4
-   if player4y < 1 then player4y = 200
-   if player4y = 200 then _skip_movement_ap5_p4
-   player4y = player4y - planey_speed
-   if player4y < 71 then _skip_movement_ap5_p4
-   if player4x > player0x then player4x = player4x - planex_speed_1 : goto _skip_movement_ap5_p4
-   if player4x < player0x then player4x = player4x + planex_speed_1
-_skip_movement_ap5_p4
-
-; attack formation 0, plane 5
-   if player5y < 1 then player5y = 100
-   if player5y = 100 then _skip_movement_ap5_p5
-   player5y = player5y + planey_speed 
-_skip_movement_ap5_p5
+_plane_moves_up
+   if NewSpriteY[temp1] < 1 then NewSpriteY[temp1] = 100
+   if NewSpriteY[temp1] = 100 then _check_next_plane
+   NewSpriteY[temp1] = NewSpriteY[temp1] + planey_speed 
 
 
-_skip_movement_ap
+_check_next_plane
+   temp1 = temp1 + 1
+   if temp1 < 5 then goto _plane_movement_loop_start
+
 
    ; todo start new attack based on PF1pointer! All previous attacks should have been ended by then!
    if player1y = 200 && player2y = 200 && player3y = 200 && player4y = 200 && player5y = 100 then gosub build_attack_position
@@ -998,7 +847,7 @@ _skip_plane_movement
    if PF1pointer > carrier_end && framecounter < 25 then _skip_scrolling
    PF1pointer = PF1pointer + 1
    PF2pointer = PF2pointer + 1
-   if PF1pointer = map_end then PF1pointer = 0 : PF2pointer = 0 : stage = 0 : level = level + 1: gosub build_attack_position ; : player1y = 0 : player2y = 0 : player3y = 0 : player4y = 0 : player5y = 0
+   if PF1pointer = map_end then PF1pointer = 0 : PF2pointer = 0 : stage = 0 : level = level + 1 : CTRLPF = %00000001 : gosub build_attack_position ; : player1y = 0 : player2y = 0 : player3y = 0 : player4y = 0 : player5y = 0
    framecounter = 0
 
 _skip_scrolling
@@ -1016,73 +865,38 @@ _skip_scrolling
 ;#region "Subroutines and Functions"
 
 build_attack_position
-   attack_position = attack_position + 1
-   if attack_position > 5 then attack_position = 0 : stage = stage + 1
+   temp1 = _attack_position_data[attack_position]
+   if temp1 = 255 then attack_position = 0 : stage = stage + 1
 
-   on attack_position goto _position_0 _position_1 _position_2 _position_3 _position_4 _position_5
-
-_position_0
-   player1x = 40 : player4x = 20 : player3x = 110 : player2x = 110 : player5x = 50
-   player1y = 88
-   player2y = 98
-   player3y = 108
-   player4y = 118
-   player5y = 100 ; big plane deactivated
-
-   _COLUP1 = _D6
-   COLUP2 = _D6
-   COLUP3 = _D6
-   COLUP4 = _D6
-   return
-
-_position_1
-   player1x = 40 : player2x = 30 : player3x = 110 : player4x = 20 : player5x = 50
-   player1y = 88
-   player2y = 98
-   player3y = 108
-   player4y = 118
-   player5y = 100
-   _COLUP1 = _D4
-   COLUP2 = _D6
-   COLUP3 = _D6
-   COLUP4 = _D6
-   return
-
-_position_2
-   player1x = 0 : player2x = 0 : player3x = 160 : player4x = 160 : player5x = 50
-   player1y = 75
-   player2y = 65
-   player3y = 55
-   player4y = 45
-   player5y = 100
-   _COLUP1 = _D6
-   COLUP2 = _D6
-   COLUP3 = _D6
-   COLUP4 = _D6
-   if stage > 2 then _NUSIZ1 = %00001011 : NUSIZ2 = %00001011 : NUSIZ3 = %00000011 : NUSIZ4 = %00000011 else _NUSIZ1 = %00001000 : NUSIZ2 = %00001000
-
-   return
-
-_position_3
-_position_4
-_position_5
-   player1x = 110 : player2x = 110 : player3x = 110 : player4x = 110 : player5x = 50
-   player1y = 88
-   player2y = 98
-   player3y = 108
-   player4y = 118
-   player5y = 1
-   _COLUP1 = _D4
-   COLUP5 = _D4
-   _NUSIZ1 = %00000000
-   NUSIZ2  = %00000000
-   NUSIZ3  = %00000000
-   NUSIZ4  = %00000000
-   NUSIZ5 = %00000111
+   for temp1 = 0 to 4
+      plane_type[temp1] = _attack_position_data[attack_position]
+      attack_position = attack_position + 1
+   next
+   for temp1 = 0 to 4
+      NewSpriteX[temp1] = _attack_position_data[attack_position]
+      attack_position = attack_position + 1
+   next
+   for temp1 = 0 to 14  ; fill NewSpriteY, NewNUSIZ and  NewCOLUP1
+      NewSpriteY[temp1] = _attack_position_data[attack_position]
+      attack_position = attack_position + 1
+   next
 
    return
 
 ;#endregion
+
+ rem plane_type                                          NewSpriteX          NewSpriteY          NewNUSIZ       NewCOLUP
+   data _attack_position_data
+   %00000010, %00000010, %00000010, %00000010, %00001111, 40,110,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D6,_D6,_D6,_D6,_D2
+   %00000110, %00000010, %00000010, %00000010, %00001111, 40, 30,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D4,_D6,_D6,_D6,_D2
+   %00001001, %00001001, %00001000, %00001000, %00001111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 8, 8, 0, 0, 0,_D6,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00001111,110,110,110,110, 50, 88, 98,108,118,  1, 0, 0, 0, 0, 7,_D6,_D6,_D6,_D6,_D4
+   %00001001, %00001001, %00001000, %00001000, %00001111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00001111, 20,110, 20,110, 50, 88, 98,108,118,  1, 1, 1, 1, 0, 7,_D4,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00001111, 75, 20,110, 90, 50, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
+
+   255
+end
 
 ;#endregion
 
@@ -1115,2021 +929,14 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Bank 3 Titlescreen Music"
 
+   inline song.h
+   inline songplay.h
+
 _Play_Titlescreen_Music
-
-
-   _Ch0_Duration = _Ch0_Duration - 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips all channel 0 sounds if duration counter is greater
-   ;  than zero
-   ;
-   if _Ch0_Duration then _Skip_Ch0_Sound
-
-   temp4 = _Titlescreen_Music_Ch0[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto _Restart_Titlescreen_Music
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-   temp5 = _Titlescreen_Music_Ch0[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   temp6 = _Titlescreen_Music_Ch0[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = temp5
-   AUDF0 = temp6
-
-   _Ch0_Duration = _Titlescreen_Music_Ch0[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-_Skip_Ch0_Sound
-
-
-   _Ch1_Duration = _Ch1_Duration - 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips all channel 0 sounds if duration counter is greater
-   ;  than zero
-   ;
-   if _Ch1_Duration then return
-
-   temp4 = _Titlescreen_Music_Ch1[_Ch1_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then _Restart_Titlescreen_Music
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 1 data.
-   ;
-   _Ch1_Counter = _Ch1_Counter + 1
-   temp5 = _Titlescreen_Music_Ch1[_Ch1_Counter] : _Ch1_Counter = _Ch1_Counter + 1
-   temp6 = _Titlescreen_Music_Ch1[_Ch1_Counter] : _Ch1_Counter = _Ch1_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 1.
-   ;
-   AUDV1 = temp4
-   AUDC1 = temp5
-   AUDF1 = temp6
-
-   _Ch1_Duration = _Titlescreen_Music_Ch1[_Ch1_Counter] : _Ch1_Counter = _Ch1_Counter + 1
-
-   return
-
-_Restart_Titlescreen_Music
-   _Ch0_Counter = 0 : AUDV0 = 0 : _Ch1_Counter = 0 : AUDV1 = 0 : _Ch0_Duration = 160 : _Ch1_Duration = 160
-   return
-
-;#region "Titlescreen Musik Data"
-
-   data _Titlescreen_Music_Ch1
-   0, 0, 0
-   7
-   7, 1, 25
-   26
-   7, 6, 16
-   24
-   7, 1, 25
-   14
-   2, 1, 25
-   2
-   7, 1, 25
-   16
-   7, 6, 16
-   16
-   7, 1, 25
-   24
-   7, 6, 16
-   24
-   7, 1, 25
-   14
-   2, 1, 25
-   2
-   7, 1, 25
-   16
-   7, 6, 16
-   16
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 25
-   16
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   8
-   7, 6, 25
-   16
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   8
-   7, 6, 25
-   16
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   8
-   7, 6, 25
-   16
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   6
-   2, 1, 26
-   2
-   7, 1, 26
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 24
-   16
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   6
-   2, 1, 25
-   2
-   7, 1, 25
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 28
-   16
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   6
-   2, 1, 29
-   2
-   7, 1, 29
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   6
-   2, 1, 22
-   2
-   7, 1, 22
-   8
-   7, 6, 21
-   16
-   7, 1, 22
-   6
-   255
+   asm
+   jsr songPlayer
 end
-
-   data _Titlescreen_Music_Ch0
-   0, 0, 0
-   7
-   13, 4, 23
-   8
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   14
-   2, 4, 23
-   2
-   13, 4, 23
-   14
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   14
-   2, 4, 23
-   2
-   13, 4, 23
-   14
-   2, 4, 23
-   2
-   13, 4, 23
-   6
-   2, 4, 23
-   2
-   13, 4, 23
-   8
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 4, 31
-   128
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   144
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 4, 27
-   192
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 4, 27
-   128
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   144
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 10
-   8
-   13, 4, 27
-   8
-   13, 4, 24
-   192
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 4, 31
-   128
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   144
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 4, 27
-   192
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 4, 27
-   128
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   144
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 10
-   8
-   13, 4, 27
-   8
-   13, 4, 24
-   192
-   13, 12, 10
-   24
-   13, 4, 24
-   24
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   24
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   16
-   13, 4, 24
-   8
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   16
-   13, 4, 24
-   8
-   13, 12, 10
-   24
-   13, 4, 24
-   24
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   16
-   13, 4, 24
-   8
-   13, 4, 19
-   96
-   13, 12, 17
-   24
-   13, 12, 12
-   24
-   13, 12, 11
-   8
-   13, 4, 29
-   8
-   13, 12, 11
-   8
-   13, 4, 31
-   24
-   13, 12, 11
-   8
-   13, 4, 29
-   8
-   13, 12, 11
-   8
-   13, 4, 31
-   16
-   13, 12, 12
-   8
-   13, 12, 11
-   8
-   13, 4, 29
-   8
-   13, 12, 11
-   8
-   13, 4, 31
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   24
-   13, 12, 13
-   24
-   13, 12, 12
-   24
-   13, 12, 10
-   8
-   13, 4, 31
-   8
-   13, 4, 27
-   8
-   13, 4, 31
-   158
-   2, 4, 31
-   2
-   13, 4, 31
-   14
-   2, 4, 31
-   2
-   13, 4, 31
-   6
-   2, 4, 31
-   2
-   13, 4, 31
-   8
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 4, 31
-   128
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   144
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 4, 27
-   192
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 4, 27
-   128
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   144
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 10
-   8
-   13, 4, 27
-   8
-   13, 4, 24
-   192
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 4, 31
-   128
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   144
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 12, 15
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 4, 27
-   192
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 4, 27
-   128
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   144
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   6
-   2, 12, 18
-   2
-   13, 12, 18
-   8
-   13, 12, 13
-   8
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   8
-   13, 12, 10
-   16
-   13, 12, 13
-   16
-   13, 12, 10
-   8
-   13, 4, 27
-   8
-   13, 4, 24
-   192
-   13, 12, 10
-   24
-   13, 4, 24
-   24
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   24
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   16
-   13, 4, 24
-   8
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   16
-   13, 4, 24
-   8
-   13, 12, 10
-   24
-   13, 4, 24
-   24
-   13, 4, 21
-   8
-   13, 4, 18
-   8
-   13, 4, 21
-   8
-   13, 4, 19
-   16
-   13, 4, 24
-   8
-   13, 4, 19
-   96
-   13, 12, 17
-   24
-   13, 12, 12
-   24
-   13, 12, 11
-   8
-   13, 4, 29
-   8
-   13, 12, 11
-   8
-   13, 4, 31
-   24
-   13, 12, 11
-   8
-   13, 4, 29
-   8
-   13, 12, 11
-   8
-   13, 4, 31
-   16
-   13, 12, 12
-   8
-   13, 12, 11
-   8
-   13, 4, 29
-   8
-   13, 12, 11
-   8
-   13, 4, 31
-   16
-   13, 12, 12
-   8
-   13, 4, 31
-   24
-   13, 12, 13
-   24
-   13, 12, 12
-   24
-   13, 12, 10
-   8
-   13, 4, 31
-   8
-   13, 4, 27
-   8
-   13, 4, 31
-   158
-   2, 4, 31
-   2
-   13, 4, 31
-   14
-   2, 4, 31
-   2
-   13, 4, 31
-   6
-   2, 4, 31
-   2
-   13, 4, 31
-   8
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   16
-   13, 4, 31
-   128
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   6
-   2, 12, 20
-   2
-   13, 12, 20
-   8
-   13, 12, 15
-   8
-   13, 12, 13
-   8
-   13, 12, 11
-   8
-   13, 12, 12
-   144
-   13, 12, 20
-   6
-   255
-end
-
-;#endregion
+   return
 
 ;#endregion
 
@@ -3138,4 +945,49 @@ end
 ;#region "Bank 4 bB Drawscreen"
 
    inline 6lives.asm
+
+   asm
+;   align 256
+end
+
+  data Small_Plane_down
+   %00011000
+   %01111110
+   %01111110
+   %00011000
+   %00111100
+end
+
+  data _Middle_Plane_down
+   %00000000
+   %00011000
+   %11111111
+   %11111111
+   %00111100
+   %00011000
+   %00011000
+   %00111100
+end
+
+  data _Big_Plane_up
+   %00111100
+   %00111100
+   %00011000
+   %00011000
+   %11111111
+   %11111111
+   %11111111
+   %01011010
+end
+
+  data _Small_Plane_lr
+   %0011000
+   %0011010
+   %0111110
+   %0111110
+   %0011010
+   %0011000
+end
+
+
 ;#endregion
