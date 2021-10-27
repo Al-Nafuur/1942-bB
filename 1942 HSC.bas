@@ -46,6 +46,13 @@
    const island_sand_color   = _EE
    const island_jungle_color = _C6
 
+   const plane_1_parking_point = 200
+   const plane_2_parking_point = 200
+   const plane_3_parking_point = 200
+   const plane_4_parking_point = 200
+   const plane_5_parking_point = 150
+
+
    ; sprite pointer
    const _Small_Plane_down_high  = >Small_Plane_down
    const _Small_Plane_down_low   = <Small_Plane_down
@@ -76,7 +83,11 @@
 
    const _Carrier_Runway_high    = >_Carrier_Runway
    const _Carrier_Runway_low     = <_Carrier_Runway
-/*
+
+   const _Carrier_Tower_high    = >_Carrier_Tower
+   const _Carrier_Tower_low     = <_Carrier_Tower
+   
+
 ;#region "NTSC Constants and Colors"
    ; requests 
    const req_load        = 0
@@ -219,7 +230,7 @@
    const _FC = $FC
    const _FE = $FE
 ;#endregion
-*/
+/*
 ;#region "PAL Constants and Colors"
    ; requests 
    const req_load        = 128 ; PAL x+128
@@ -362,7 +373,7 @@
    const _FC = $2C
    const _FE = $2E
 ;#endregion
-
+*/
 ;#endregion
 
 ;#region "Zeropage Variables"
@@ -421,8 +432,8 @@ start
 
    rem initial variables setup
    missile0y = 0 : level = 0 : stage = 0 : framecounter = 0 : attack_position = 0
-   player0x = 76 : player0y = 8
-   lives = 64
+   player0x = 76 : player0y = 10
+   lives = 64 : score = 0
    game_flags = 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -729,32 +740,40 @@ end
    %00011000
 end
 
-   if !collision(player1, missile0) then goto _skip_collision
+   if PF1pointer < carrier_end then goto _skip_player0_collision
+
+   if !collision(player1, missile0) then goto _skip_missile0_collision
    
    score = score + 50
 
    temp1 = player1y + 5 : temp2 = player1y - 5
-   if missile0y > temp2 && missile0y < temp1 then player1y = 200 : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player1y = plane_1_parking_point : goto _end_collision
 
    temp1 = player2y + 5 : temp2 = player2y - 5
-   if missile0y > temp2 && missile0y < temp1 then player2y = 200 : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player2y = plane_2_parking_point : goto _end_collision
 
    temp1 = player3y + 5 : temp2 = player3y - 5
-   if missile0y > temp2 && missile0y < temp1 then player3y = 200 : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player3y = plane_3_parking_point : goto _end_collision
 
    temp1 = player4y + 5 : temp2 = player4y - 5
-   if missile0y > temp2 && missile0y < temp1 then player4y = 200 : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player4y = plane_4_parking_point : goto _end_collision
 
    temp1 = player5y + 5 : temp2 = player5y - 5 ; Why check player 5? we had a collision and the others have not been hit!
-   if missile0y > temp2 && missile0y < temp1 then player5y = 200
+   if missile0y > temp2 && missile0y < temp1 then player5y = plane_5_parking_point
 
 _end_collision
 
    missile0y = 0
 
-_skip_collision
+_skip_missile0_collision
 
- 
+   if !collision(player0, player1) then goto _skip_player0_collision
+   ; set game state to player0 explosion, skip game loop and switch back to titlescreen when lives are empty
+   if lives < 32 then goto titlescreen_start bank2 else lives = lives - 32 : player0x = 76 : player0y = 10 : gosub build_attack_position
+
+_skip_player0_collision
+
+
    if PF1pointer > carrier_end then _select_planes
    
    if PF1pointer <> takeoff_point then _skip_carrier_superstructures
@@ -767,12 +786,12 @@ _skip_collision
     player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height  = 15  : NUSIZ2 = 5 : player2x = 78 : player2y = 135
     player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height  = 15  : NUSIZ3 = 5 : player3x = 78 : player3y = 100
     player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height  = 15  : NUSIZ4 = 5 : player4x = 78 : player4y =  70
-;    player5pointerlo = _Carrier_Runway_low : player5pointerhi = _Carrier_Runway_high : player5height  = 12  : NUSIZ5 = 5 : player5x = 78 : player5y = 
+    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height  = 29  : NUSIZ5 = 5 : player5x = 105 : player5y = 110
     
     goto _skip_select_planes
 
 _skip_carrier_superstructures
-   if PF1pointer = carrier_end then player1y = 200 : player2y = 200 : player3y = 200 : player4y = 200 : player5y = 200
+   if PF1pointer = carrier_end then player1y = plane_1_parking_point : player2y = plane_2_parking_point : player3y = plane_3_parking_point : player4y = plane_4_parking_point : player5y = plane_5_parking_point
 
    goto _skip_select_planes
 
@@ -837,7 +856,7 @@ _skip_select_planes
 
    rem ################### movement 
    if joy0up && player0y < 40 then player0y = player0y + 1 : goto jump
-   if joy0down && player0y > 8 then player0y = player0y - 1 : goto jump
+   if joy0down && player0y > 10 then player0y = player0y - 1 : goto jump
    if joy0left && player0x > 0 then player0x = player0x - 1 : goto jump
    if joy0right && player0x < 152 then player0x = player0x + 1
    
@@ -867,18 +886,22 @@ _plane_loop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Plane attack movement"
 
+   ; todo start new attack based on PF1pointer and framecounter! All previous attacks should have been ended by then!
+   if player1y = plane_1_parking_point && player2y = plane_2_parking_point && player3y = plane_3_parking_point && player4y = plane_4_parking_point && player5y = plane_5_parking_point then gosub build_attack_position : goto _skip_plane_movement
+
    if framecounter{1} then temp2 = 1 else temp2 = 0
 
    temp1 = 0
-
+   
 _plane_movement_loop_start
    temp3 = plane_type[temp1] & %00000011
+   temp4 = plane_parking_point[temp1]
 
    on temp3 goto _plane_moves_left _plane_moves_right _plane_moves_down _plane_moves_up
 
 _plane_moves_right
-   if NewSpriteX[temp1] > 153 then NewSpriteY[temp1] = 200
-   if NewSpriteY[temp1] = 200 then goto _check_next_plane
+   if NewSpriteX[temp1] > 153 then NewSpriteY[temp1] = temp4
+   if NewSpriteY[temp1] = temp4 then goto _check_next_plane
    NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_2 : NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
 
    if NewSpriteX[temp1] < 121 then goto _check_next_plane
@@ -887,8 +910,8 @@ _plane_moves_right
    goto _check_next_plane
 
 _plane_moves_left
-   if !NewNUSIZ[temp1] && NewSpriteX[temp1] < 2 then NewSpriteY[temp1] = 200
-   if NewSpriteY[temp1] = 200 then goto _check_next_plane
+   if !NewNUSIZ[temp1] && NewSpriteX[temp1] < 2 then NewSpriteY[temp1] = temp4
+   if NewSpriteY[temp1] = temp4 then goto _check_next_plane
    NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_2 : NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
 
    if NewSpriteX[temp1] < 254 then goto _check_next_plane
@@ -897,16 +920,16 @@ _plane_moves_left
    goto _check_next_plane
 
 _plane_moves_down
-   temp3 = NewSpriteY[temp1] : temp4 = rand
-   if temp3 = 200 then _check_next_plane
-   if temp3 < 1 then NewSpriteY[temp1] = 200 : goto _check_next_plane
-   if temp3 = 40 && temp4 < 128 then plane_type[temp1] = plane_type[temp1] + 5 : goto _check_next_plane
+   temp3 = NewSpriteY[temp1] : temp5 = rand
+   if temp3 = temp4 then _check_next_plane
+   if temp3 < 2 then NewSpriteY[temp1] = temp4 : goto _check_next_plane
+   if temp3 = 40 && temp5 < 128 then plane_type[temp1] = plane_type[temp1] + 5 : goto _check_next_plane
    NewSpriteY[temp1] = temp3 - planey_speed 
    if temp3 < 71 then _check_for_escape_move
    if NewSpriteX[temp1] > player0x then NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1 : goto _check_next_plane
    if NewSpriteX[temp1] < player0x then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1 : goto _check_next_plane
 _check_for_escape_move
-   if temp3 > 39 || temp4 < 128 then _check_next_plane
+   if temp3 > 39 || temp5 < 128 then _check_next_plane
    if NewSpriteX[temp1] > player0x && NewSpriteX[temp1] < 153 then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1 else NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1
 
    goto _check_next_plane
@@ -914,8 +937,8 @@ _check_for_escape_move
 
 
 _plane_moves_up
-   if NewSpriteY[temp1] > 100 then NewSpriteY[temp1] = 200
-   if NewSpriteY[temp1] = 200 then _check_next_plane
+   if NewSpriteY[temp1] > 100 then NewSpriteY[temp1] = temp4
+   if NewSpriteY[temp1] = temp4 then _check_next_plane
    NewSpriteY[temp1] = NewSpriteY[temp1] + planey_speed 
 
 
@@ -924,8 +947,6 @@ _check_next_plane
    if temp1 < 5 then goto _plane_movement_loop_start
 
 
-   ; todo start new attack based on PF1pointer and framecounter! All previous attacks should have been ended by then!
-   if player1y = 200 && player2y = 200 && player3y = 200 && player4y = 200 && player5y = 200 then gosub build_attack_position
 
 _skip_plane_movement
 ;#endregion
@@ -934,14 +955,22 @@ _skip_plane_movement
 
    if framecounter < 10 then _skip_scrolling
    if PF1pointer > carrier_end && framecounter < 25 then _skip_scrolling
-   if PF1pointer < carrier_end then player1y = player1y - 8 : player2y = player2y - 8 : player3y = player3y - 8 : player4y = player4y - 8 
+   if PF1pointer > carrier_end then _skip_carrier_superstructures_scrolling
+   for temp1 = 0 to 4
+   temp4 = plane_parking_point[temp1]
+   if NewSpriteY[temp1] < temp4 then NewSpriteY[temp1] = NewSpriteY[temp1] - 8
+   if player1height[temp1] > 8 && player1height[temp1] > NewSpriteY[temp1] then  NewSpriteY[temp1] = NewSpriteY[temp1] + 8 : player1height[temp1] = player1height[temp1] - 8 : playerpointerlo[temp1] = playerpointerlo[temp1] + 8
+   if NewSpriteY[temp1] < 2 || NewSpriteY[temp1] > temp4 then NewSpriteY[temp1] = temp4
+   next
+
+_skip_carrier_superstructures_scrolling
    PF1pointer = PF1pointer + 1
    PF2pointer = PF2pointer + 1
    if PF1pointer <> map_end then _skip_playfield_end
    if level && _Bit0_mirror_pf{0} then CTRLPF = %00000000 : game_flags = game_flags ^ 1 : PF1pointer = attackzone_start : PF2pointer = attackzone_start : COLUPF = island_sand_color : goto _skip_playfield_end
    PF1pointer = 0 : PF2pointer = 0 : stage = 0 : level = level + 1 : game_flags = game_flags ^ 1 : CTRLPF = %00000001 : COLUPF = carrier_color
    
-   player1y = 200 : player2y = 200 : player3y = 200 : player4y = 200 : player5y = 200
+   player1y = plane_1_parking_point : player2y = plane_2_parking_point : player3y = plane_3_parking_point : player4y = plane_4_parking_point : player5y = plane_5_parking_point
 
 _skip_playfield_end
    framecounter = 0
@@ -992,6 +1021,14 @@ build_attack_position
    %00000010, %00000010, %00000010, %00000010, %00011111, 75, 20,110, 90, 50, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
 
    255
+end
+
+   data plane_parking_point
+   plane_1_parking_point
+   plane_2_parking_point
+   plane_3_parking_point
+   plane_4_parking_point
+   plane_5_parking_point
 end
 
 ;#endregion
@@ -1282,5 +1319,37 @@ end
    %00001000
    %00001000
 end
+
+  data _Carrier_Tower
+   %01111110
+   %10001001
+   %11111001
+   %10001001
+   %10001001
+   %11111001
+   %10001001
+   %11111111
+   %11111111
+   %11111111
+   %11111111
+   %11111111
+   %11111111
+   %11100111
+   %11100111
+   %11111111
+   %11111111
+   %11111111
+   %11111111
+   %11111111
+   %11111111
+   %10100101
+   %10100101
+   %10100101
+   %10100101
+   %10100101
+   %10100101
+   %01111110
+end
+
 
 ;#endregion
