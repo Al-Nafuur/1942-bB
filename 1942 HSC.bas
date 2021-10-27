@@ -19,6 +19,9 @@
 ;    
 ;
    includesfile multisprite_bankswitch.inc
+   set smartbranching on
+   set optimization inlinerand
+   set optimization noinlinedata
    set kernel multisprite
    set romsize 16k
 
@@ -38,18 +41,42 @@
    const attackzone_start  = carrier_end + 5
    const map_end           = map_length - screen_v_res - 1
 
+   const carrier_color       = _04
+   const island_gras_color   = _C8
+   const island_sand_color   = _EE
+   const island_jungle_color = _C6
+
+   ; sprite pointer
    const _Small_Plane_down_high  = >Small_Plane_down
    const _Small_Plane_down_low   = <Small_Plane_down
 
-   const _Middle_Plane_down_high = >_Middle_Plane_down
-   const _Middle_Plane_down_low  = <_Middle_Plane_down
-
-   const _Big_Plane_up_high      = >_Big_Plane_up
-   const _Big_Plane_up_low       = <_Big_Plane_up
+   const _Small_Plane_up_high    = >Small_Plane_up
+   const _Small_Plane_up_low     = <Small_Plane_up
 
    const _Small_Plane_lr_high    = >_Small_Plane_lr
    const _Small_Plane_lr_low     = <_Small_Plane_lr
 
+   const _Middle_Plane_down_high = >_Middle_Plane_down
+   const _Middle_Plane_down_low  = <_Middle_Plane_down
+
+   const _Middle_Plane_up_high   = >_Middle_Plane_up
+   const _Middle_Plane_up_low    = <_Middle_Plane_up
+
+   const _Middle_Plane_lr_high   = >_Middle_Plane_lr
+   const _Middle_Plane_lr_low    = <_Middle_Plane_lr
+
+   const _Big_Plane_down_high    = >_Big_Plane_down
+   const _Big_Plane_down_low     = <_Big_Plane_down
+
+   const _Big_Plane_up_high      = >_Big_Plane_up
+   const _Big_Plane_up_low       = <_Big_Plane_up
+
+   const _Carrier_88_high        = >_Carrier_88
+   const _Carrier_88_low         = <_Carrier_88
+
+   const _Carrier_Runway_high    = >_Carrier_Runway
+   const _Carrier_Runway_low     = <_Carrier_Runway
+/*
 ;#region "NTSC Constants and Colors"
    ; requests 
    const req_load        = 0
@@ -192,7 +219,7 @@
    const _FC = $FC
    const _FE = $FE
 ;#endregion
-/*
+*/
 ;#region "PAL Constants and Colors"
    ; requests 
    const req_load        = 128 ; PAL x+128
@@ -335,7 +362,7 @@
    const _FC = $2C
    const _FE = $2E
 ;#endregion
-*/
+
 ;#endregion
 
 ;#region "Zeropage Variables"
@@ -359,6 +386,9 @@
    dim plane_type4      = m
    dim plane_type5      = n
    dim _NUSIZ0          = o
+
+   dim game_flags       = z
+   dim _Bit0_mirror_pf  = z
 
    ; Slocum Player RAM variables (reuses game loop variables!)
    dim temp             = temp1
@@ -393,7 +423,7 @@ start
    missile0y = 0 : level = 0 : stage = 0 : framecounter = 0 : attack_position = 0
    player0x = 76 : player0y = 8
    lives = 64
-   gosub build_attack_position
+   game_flags = 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Playfield Pacific"
@@ -615,31 +645,31 @@ start
    ................
    ................
    ................
-   ..............XX
+   .............XXX
    ..........XXXXXX
    ..........XXXXXX
    ........XXXXXXXX
-   ........XXXXXXX.
-   ........XXXXXXX.
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXX.
-   .......XXXXXXXX.
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXX.
-   .......XXXXXXXX.
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXX.
-   .......XXXXXXXX.
    ........XXXXXXXX
    ........XXXXXXXX
-   ........XXXXXXX.
-   ..........XXXXX.
-   ..........XXXXXX
-   ...........XXXXX
-   ..............XX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   ........XXXXXXXX
+   ........XXXXXXXX
+   ........XXXXXXXX
    ................
    ................
    ................
@@ -661,8 +691,12 @@ end
    PF1pointer = takeoff_point
    PF2pointer = takeoff_point
 
-   
+   COLUPF = carrier_color
+
    _NUSIZ0 = %00000000
+
+
+   goto  __BG_Music_Setup_01 bank3
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Mainloop"
@@ -695,37 +729,6 @@ end
    %00011000
 end
 
-   for temp1 = 0 to 4
-      temp2 = plane_type[temp1] / 4
-
-      on temp2 goto _small_plane_down _middle_plane_down _small_plane_lr _big_plane_up
-
-_small_plane_down
-      playerpointerlo[temp1] = _Small_Plane_down_low
-      playerpointerhi[temp1] = _Small_Plane_down_high
-      spriteheight[temp1]    = 6
-      goto _next_plane_type
-
-_middle_plane_down
-      playerpointerlo[temp1] = _Middle_Plane_down_low
-      playerpointerhi[temp1] = _Middle_Plane_down_high
-      spriteheight[temp1]    = 9
-      goto _next_plane_type
-
-_small_plane_lr
-      playerpointerlo[temp1] = _Small_Plane_lr_low
-      playerpointerhi[temp1] = _Small_Plane_lr_high
-      spriteheight[temp1]    = 7
-      goto _next_plane_type
-
-_big_plane_up
-      playerpointerlo[temp1] = _Big_Plane_up_low
-      playerpointerhi[temp1] = _Big_Plane_up_high
-      spriteheight[temp1]    = 9
-
-_next_plane_type
-   next
-
    if !collision(player1, missile0) then goto _skip_collision
    
    score = score + 50
@@ -743,7 +746,7 @@ _next_plane_type
    if missile0y > temp2 && missile0y < temp1 then player4y = 200 : goto _end_collision
 
    temp1 = player5y + 5 : temp2 = player5y - 5 ; Why check player 5? we had a collision and the others have not been hit!
-   if missile0y > temp2 && missile0y < temp1 then player5y = 100
+   if missile0y > temp2 && missile0y < temp1 then player5y = 200
 
 _end_collision
 
@@ -751,6 +754,86 @@ _end_collision
 
 _skip_collision
 
+ 
+   if PF1pointer > carrier_end then _select_planes
+   
+   if PF1pointer <> takeoff_point then _skip_carrier_superstructures
+
+   if framecounter > 1 then goto _skip_select_planes
+   
+    _COLUP1 = _0E : COLUP2 = _0E : COLUP3 = _0E : COLUP4 = _0E : COLUP5 = _02
+    
+    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height  = 12 : _NUSIZ1 = 7 : player1x = 69 : player1y = 165
+    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height  = 15  : NUSIZ2 = 5 : player2x = 78 : player2y = 135
+    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height  = 15  : NUSIZ3 = 5 : player3x = 78 : player3y = 100
+    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height  = 15  : NUSIZ4 = 5 : player4x = 78 : player4y =  70
+;    player5pointerlo = _Carrier_Runway_low : player5pointerhi = _Carrier_Runway_high : player5height  = 12  : NUSIZ5 = 5 : player5x = 78 : player5y = 
+    
+    goto _skip_select_planes
+
+_skip_carrier_superstructures
+   if PF1pointer = carrier_end then player1y = 200 : player2y = 200 : player3y = 200 : player4y = 200 : player5y = 200
+
+   goto _skip_select_planes
+
+_select_planes
+   for temp1 = 0 to 4
+      temp2 = plane_type[temp1] / 4
+
+      on temp2 goto _small_plane_down _small_plane_up _small_plane_lr _middle_plane_down  _middle_plane_up _middle_plane_lr _big_plane_down _big_plane_up
+
+_small_plane_down
+      playerpointerlo[temp1] = _Small_Plane_down_low
+      playerpointerhi[temp1] = _Small_Plane_down_high
+      spriteheight[temp1]    = 6
+      goto _next_plane_type
+
+_small_plane_up
+      playerpointerlo[temp1] = _Small_Plane_up_low
+      playerpointerhi[temp1] = _Small_Plane_up_high
+      spriteheight[temp1]    = 6
+      goto _next_plane_type
+
+_small_plane_lr
+      playerpointerlo[temp1] = _Small_Plane_lr_low
+      playerpointerhi[temp1] = _Small_Plane_lr_high
+      spriteheight[temp1]    = 7
+      goto _next_plane_type
+
+_middle_plane_down
+      playerpointerlo[temp1] = _Middle_Plane_down_low
+      playerpointerhi[temp1] = _Middle_Plane_down_high
+      spriteheight[temp1]    = 8
+      goto _next_plane_type
+
+_middle_plane_up
+      playerpointerlo[temp1] = _Middle_Plane_down_low
+      playerpointerhi[temp1] = _Middle_Plane_down_high
+      spriteheight[temp1]    = 8
+      goto _next_plane_type
+
+_middle_plane_lr
+      playerpointerlo[temp1] = _Middle_Plane_lr_low
+      playerpointerhi[temp1] = _Middle_Plane_lr_high
+      spriteheight[temp1]    = 9
+      goto _next_plane_type
+
+_big_plane_down
+      playerpointerlo[temp1] = _Big_Plane_down_low
+      playerpointerhi[temp1] = _Big_Plane_down_high
+      spriteheight[temp1]    = 9
+      goto _next_plane_type
+
+_big_plane_up
+      playerpointerlo[temp1] = _Big_Plane_up_low
+      playerpointerhi[temp1] = _Big_Plane_up_high
+      spriteheight[temp1]    = 9
+
+
+_next_plane_type
+   next
+
+_skip_select_planes
 
    rem ################### movement 
    if joy0up && player0y < 40 then player0y = player0y + 1 : goto jump
@@ -814,19 +897,25 @@ _plane_moves_left
    goto _check_next_plane
 
 _plane_moves_down
-   if NewSpriteY[temp1] < 1 then NewSpriteY[temp1] = 200
-   if NewSpriteY[temp1] = 200 then _check_next_plane
-   NewSpriteY[temp1] = NewSpriteY[temp1] - planey_speed 
-   if NewSpriteY[temp1] < 71 then _check_next_plane
+   temp3 = NewSpriteY[temp1] : temp4 = rand
+   if temp3 = 200 then _check_next_plane
+   if temp3 < 1 then NewSpriteY[temp1] = 200 : goto _check_next_plane
+   if temp3 = 40 && temp4 < 128 then plane_type[temp1] = plane_type[temp1] + 5 : goto _check_next_plane
+   NewSpriteY[temp1] = temp3 - planey_speed 
+   if temp3 < 71 then _check_for_escape_move
    if NewSpriteX[temp1] > player0x then NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1 : goto _check_next_plane
-   if NewSpriteX[temp1] < player0x then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1
+   if NewSpriteX[temp1] < player0x then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1 : goto _check_next_plane
+_check_for_escape_move
+   if temp3 > 39 || temp4 < 128 then _check_next_plane
+   if NewSpriteX[temp1] > player0x && NewSpriteX[temp1] < 153 then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1 else NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1
 
    goto _check_next_plane
 
 
+
 _plane_moves_up
-   if NewSpriteY[temp1] < 1 then NewSpriteY[temp1] = 100
-   if NewSpriteY[temp1] = 100 then _check_next_plane
+   if NewSpriteY[temp1] > 100 then NewSpriteY[temp1] = 200
+   if NewSpriteY[temp1] = 200 then _check_next_plane
    NewSpriteY[temp1] = NewSpriteY[temp1] + planey_speed 
 
 
@@ -835,8 +924,8 @@ _check_next_plane
    if temp1 < 5 then goto _plane_movement_loop_start
 
 
-   ; todo start new attack based on PF1pointer! All previous attacks should have been ended by then!
-   if player1y = 200 && player2y = 200 && player3y = 200 && player4y = 200 && player5y = 100 then gosub build_attack_position
+   ; todo start new attack based on PF1pointer and framecounter! All previous attacks should have been ended by then!
+   if player1y = 200 && player2y = 200 && player3y = 200 && player4y = 200 && player5y = 200 then gosub build_attack_position
 
 _skip_plane_movement
 ;#endregion
@@ -845,19 +934,26 @@ _skip_plane_movement
 
    if framecounter < 10 then _skip_scrolling
    if PF1pointer > carrier_end && framecounter < 25 then _skip_scrolling
+   if PF1pointer < carrier_end then player1y = player1y - 8 : player2y = player2y - 8 : player3y = player3y - 8 : player4y = player4y - 8 
    PF1pointer = PF1pointer + 1
    PF2pointer = PF2pointer + 1
-   if PF1pointer = map_end then PF1pointer = 0 : PF2pointer = 0 : stage = 0 : level = level + 1 : CTRLPF = %00000001 : gosub build_attack_position ; : player1y = 0 : player2y = 0 : player3y = 0 : player4y = 0 : player5y = 0
+   if PF1pointer <> map_end then _skip_playfield_end
+   if level && _Bit0_mirror_pf{0} then CTRLPF = %00000000 : game_flags = game_flags ^ 1 : PF1pointer = attackzone_start : PF2pointer = attackzone_start : COLUPF = island_sand_color : goto _skip_playfield_end
+   PF1pointer = 0 : PF2pointer = 0 : stage = 0 : level = level + 1 : game_flags = game_flags ^ 1 : CTRLPF = %00000001 : COLUPF = carrier_color
+   
+   player1y = 200 : player2y = 200 : player3y = 200 : player4y = 200 : player5y = 200
+
+_skip_playfield_end
    framecounter = 0
+   if PF1pointer = carrier_end then COLUPF = island_gras_color
+
 
 _skip_scrolling
 
-   if PF1pointer < carrier_end then COLUPF = _04 else COLUPF =  _C8
 ; CTRLPF = 0
 ; PF0 = %11110000
+   goto _Play_In_Game_Music bank3
 
-   drawscreen
-   goto main
 ;#endregion
 
 
@@ -887,13 +983,13 @@ build_attack_position
 
  rem plane_type                                          NewSpriteX          NewSpriteY          NewNUSIZ       NewCOLUP
    data _attack_position_data
-   %00000010, %00000010, %00000010, %00000010, %00001111, 40,110,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D6,_D6,_D6,_D6,_D2
-   %00000110, %00000010, %00000010, %00000010, %00001111, 40, 30,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D4,_D6,_D6,_D6,_D2
-   %00001001, %00001001, %00001000, %00001000, %00001111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 8, 8, 0, 0, 0,_D6,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00001111,110,110,110,110, 50, 88, 98,108,118,  1, 0, 0, 0, 0, 7,_D6,_D6,_D6,_D6,_D4
-   %00001001, %00001001, %00001000, %00001000, %00001111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00001111, 20,110, 20,110, 50, 88, 98,108,118,  1, 1, 1, 1, 0, 7,_D4,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00001111, 75, 20,110, 90, 50, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111, 40,110,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D6,_D6,_D6,_D6,_D2
+   %00001110, %00000010, %00000010, %00000010, %00011111, 40, 30,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D4,_D6,_D6,_D6,_D2
+   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 8, 8, 0, 0, 0,_D6,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111,110,110,110,110, 50, 88, 98,108,118,  1, 0, 0, 0, 0, 7,_D6,_D6,_D6,_D6,_D4
+   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111, 20,110, 20,110, 50, 88, 98,108,118,  1, 1, 1, 1, 0, 7,_D4,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111, 75, 20,110, 90, 50, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
 
    255
 end
@@ -927,7 +1023,7 @@ end
 
    bank 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Bank 3 Titlescreen Music"
+;#region "Bank 3 Music and Sound effects"
 
    inline song.h
    inline songplay.h
@@ -938,11 +1034,139 @@ _Play_Titlescreen_Music
 end
    return
 
+_Play_In_Game_Music
+   ;***************************************************************
+   ;
+   ;  Channel 1 background music check.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips music if left difficulty switch is set to A.
+   ;
+   if !switchleftb then AUDV1 = 0 : goto __Skip_Ch_1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Decreases the channel 1 duration counter.
+   ;
+   _Ch1_Duration = _Ch1_Duration - 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips channel 1 if duration counter is greater than zero.
+   ;
+   if _Ch1_Duration then goto __Skip_Ch_1
+
+
+
+   ;***************************************************************
+   ;
+   ;  Channel 1 background music.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 1 data.
+   ;
+   temp4 = sread(_SD_Music01)
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __BG_Music_Setup_01
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 1 data.
+   ;
+   temp5 = sread(_SD_Music01)
+   temp6 = sread(_SD_Music01)
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 1.
+   ;
+   AUDV1 = temp4
+   AUDC1 = temp5
+   AUDF1 = temp6
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets duration.
+   ;
+   _Ch1_Duration = sread(_SD_Music01)
+
+
+
+   ;***************************************************************
+   ;
+   ;  End of channel 1 area.
+   ;
+__Skip_Ch_1
+
+   drawscreen
+   goto main bank1
+
+__BG_Music_Setup_01
+
+  sdata _SD_Music01 = u
+  9,3,0,4,  0,0,0,16
+  9,3,0,4,  0,0,0,16
+  9,3,0,4,  0,0,0,6,  7,3,0,4,  0,0,0,16
+                      7,3,0,4,  0,0,0,6,
+  9,3,0,4,  0,0,0,6,  7,3,0,4,  0,0,0,6
+  9,3,0,4,  0,0,0,6,  7,3,0,4,  0,0,0,6
+  9,3,0,4,  0,0,0,36
+
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,26
+                      6,8,4,2,  0,0,0,8
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  7,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5 ; 1 frame slow
+  7,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5 ; 1 frame slow
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5 ; 1 frame slow
+  7,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5,  6,8,4,2,  0,0,0,5 ; 1 frame slow
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,6,  6,8,4,2,  0,0,0,8
+  7,8,4,2,  0,0,0,8,  9,3, 0,4, 0,0,0,6
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  6,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,8
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3,  6,8,4,2,  0,0,0,3
+  7,8,4,2,  0,0,0,8,  7,8,4,2,  0,0,0,8
+  9,3,0,4,  0,0,0,16
+  7,8,4,2,  0,0,0,18
+  7,8,4,2,  0,0,0,18
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,18
+                      6,8,4,2,  0,0,0,8
+  7,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,8
+  6,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,8
+  7,8,4,2,  0,0,0,18
+  6,8,4,2,  0,0,0,8,  6,8,4,2,  0,0,0,8
+  255
+end
+   _Ch1_Duration = 1
+
+   goto __Skip_Ch_1
+
 ;#endregion
 
    bank 4
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Bank 4 bB Drawscreen"
+;#region "Bank 4 bB Drawscreen and sprites"
 
    inline 6lives.asm
 
@@ -958,14 +1182,62 @@ end
    %00111100
 end
 
+  data Small_Plane_up
+   %00111100
+   %00011000
+   %01111110
+   %01111110
+   %00011000
+end
+
+  data _Small_Plane_lr
+   %0011000
+   %0011010
+   %0111110
+   %0111110
+   %0011010
+   %0011000
+end
+
   data _Middle_Plane_down
-   %00000000
    %00011000
    %11111111
    %11111111
    %00111100
    %00011000
    %00011000
+   %00111100
+end
+
+  data _Middle_Plane_up
+   %00111100
+   %00011000
+   %00011000
+   %00111100
+   %11111111
+   %11111111
+   %00011000
+end
+
+  data _Middle_Plane_lr 
+   %01100000
+   %01100000
+   %01110001
+   %11111111
+   %11111111
+   %01110001
+   %01100000
+   %01100000
+end
+
+  data _Big_Plane_down
+   %01011010
+   %11111111
+   %11111111
+   %11111111
+   %00011000
+   %00011000
+   %00111100
    %00111100
 end
 
@@ -980,14 +1252,35 @@ end
    %01011010
 end
 
-  data _Small_Plane_lr
-   %0011000
-   %0011010
-   %0111110
-   %0111110
-   %0011010
-   %0011000
+  data _Carrier_88
+   %00100010
+   %01010101
+   %01010101
+   %01010101
+   %01010101
+   %00100010
+   %01010101
+   %01010101
+   %01010101
+   %01010101
+   %00100010
 end
 
+  data _Carrier_Runway
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+end
 
 ;#endregion
