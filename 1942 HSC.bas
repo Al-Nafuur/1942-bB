@@ -37,6 +37,7 @@
    const screen_v_res      = 12
    const map_length        = 256
    const takeoff_point     = 17
+   const takeoff_sound_s   = takeoff_point  + 5
    const carrier_end       = 41
    const attackzone_start  = carrier_end + 5
    const map_end           = map_length - screen_v_res - 1
@@ -383,7 +384,7 @@
 
    dim _Ch0_Counter     = a
    dim _Ch0_Duration    = b
-   dim _Ch1_Counter     = c
+   dim _Ch0_Sound       = c
    dim _Ch1_Duration    = d
 
    dim framecounter     = e
@@ -740,11 +741,11 @@ end
    %00011000
 end
 
-   if PF1pointer < carrier_end then goto _skip_player0_collision
+   if PF1pointer < carrier_end then _Ch1_Duration = 30 : AUDV0 = 0 : AUDV1 = 0 : goto _skip_player0_collision
 
    if !collision(player1, missile0) then goto _skip_missile0_collision
    
-   score = score + 50
+   score = score + 50 :  _Ch0_Sound = 3 : _Ch0_Duration = 1 : _Ch0_Counter = 0
 
    temp1 = player1y + 5 : temp2 = player1y - 5
    if missile0y > temp2 && missile0y < temp1 then player1y = plane_1_parking_point : goto _end_collision
@@ -768,6 +769,7 @@ _end_collision
 _skip_missile0_collision
 
    if !collision(player0, player1) then goto _skip_player0_collision
+   _Ch0_Sound = 4 : _Ch0_Duration = 1 : _Ch0_Counter = 0
    ; set game state to player0 explosion, skip game loop and switch back to titlescreen when lives are empty
    if lives < 32 then goto titlescreen_start bank2 else lives = lives - 32 : player0x = 76 : player0y = 10 : gosub build_attack_position
 
@@ -775,13 +777,15 @@ _skip_player0_collision
 
 
    if PF1pointer > carrier_end then _select_planes
+
+   if PF1pointer = takeoff_sound_s && framecounter = 5 then _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0
    
    if PF1pointer <> takeoff_point then _skip_carrier_superstructures
 
    if framecounter > 1 then goto _skip_select_planes
    
     _COLUP1 = _0E : COLUP2 = _0E : COLUP3 = _0E : COLUP4 = _0E : COLUP5 = _02
-    
+
     player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height  = 12 : _NUSIZ1 = 7 : player1x = 69 : player1y = 165
     player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height  = 15  : NUSIZ2 = 5 : player2x = 78 : player2y = 135
     player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height  = 15  : NUSIZ3 = 5 : player3x = 78 : player3y = 100
@@ -864,8 +868,8 @@ jump
 
 
    if missile0y > 88 then missile0y = 0
-   if missile0y > 1 then _skip_new_shot
-   if joy0fire then missile0y = player0y + 1 : missile0x = player0x + 5
+   if missile0y > 1 || PF1pointer < carrier_end then _skip_new_shot
+   if joy0fire then missile0y = player0y + 1 : missile0x = player0x + 5 : if _Ch0_Sound = 0 then _Ch0_Sound = 2 : _Ch0_Duration = 1 : _Ch0_Counter = 0
 _skip_new_shot
    if ! missile0y then _check_enemy_shot
    missile0y = missile0y + 3
@@ -956,6 +960,7 @@ _skip_plane_movement
    if framecounter < 10 then _skip_scrolling
    if PF1pointer > carrier_end && framecounter < 25 then _skip_scrolling
    if PF1pointer > carrier_end then _skip_carrier_superstructures_scrolling
+   _Ch1_Duration = 30 : AUDV0 = 0 : AUDV1 = 0
    for temp1 = 0 to 4
    temp4 = plane_parking_point[temp1]
    if NewSpriteY[temp1] < temp4 then NewSpriteY[temp1] = NewSpriteY[temp1] - 8
@@ -1039,7 +1044,6 @@ end
 
 titlescreen_start
    COLUBK = _00
-   _Ch0_Counter = 0 : _Ch1_Counter = 0 : _Ch0_Duration = 1 : _Ch1_Duration = 1
 
 titlescreen            
 
@@ -1050,7 +1054,7 @@ titlescreen
 
    gosub titledrawscreen
 
-   if joy0fire then _Ch0_Counter = 0 : AUDV0 = 0 : _Ch1_Counter = 0 : AUDV1 = 0 : goto start bank1
+   if joy0fire then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
    goto titlescreen
 
    asm
@@ -1072,6 +1076,257 @@ end
    return
 
 _Play_In_Game_Music
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect check.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips all channel 0 sounds if sounds are off.
+   ;
+   if !_Ch0_Sound then goto __Skip_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Decreases the channel 0 duration counter.
+   ;
+   _Ch0_Duration = _Ch0_Duration - 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips all channel 0 sounds if duration counter is greater
+   ;  than zero
+   ;
+   if _Ch0_Duration then goto __Skip_Ch_0
+
+
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 001.
+   ;
+   ;  Up sound effect.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips this section if sound 001 isn't on.
+   ;
+   if _Ch0_Sound <> 1 then goto __Skip_Ch0_Sound_001
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Takeoff[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+   temp5 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   temp6 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = temp5
+   AUDF0 = temp6
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+__Skip_Ch0_Sound_001
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 002.
+   ;
+   ;  Shoot missile sound effect.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips this section if sound 002 isn't on.
+   ;
+   if _Ch0_Sound <> 2 then goto __Skip_Ch0_Sound_002
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Shoot_Miss[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+   temp5 = _SD_Shoot_Miss[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   temp6 = _SD_Shoot_Miss[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = temp5
+   AUDF0 = temp6
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Shoot_Miss[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+__Skip_Ch0_Sound_002
+
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 003.
+   ;
+   ;  Up sound effect.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips this section if sound 003 isn't on.
+   ;
+   if _Ch0_Sound <> 3 then goto __Skip_Ch0_Sound_003
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Shot_Enemy[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+   temp5 = _SD_Shot_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   temp6 = _SD_Shot_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = temp5
+   AUDF0 = temp6
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Shot_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+__Skip_Ch0_Sound_003
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 004.
+   ;
+   ;  Touch enemy.
+   ;
+   ;```````````````````````````````````````````````````````````````
+   ;  Skips this section if sound 004 isn't on.
+   ;
+   if _Ch0_Sound <> 4 then goto __Skip_Ch0_Sound_004
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Hit_By_Enemy[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+   temp5 = _SD_Hit_By_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   temp6 = _SD_Hit_By_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = temp5
+   AUDF0 = temp6
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Hit_By_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+__Skip_Ch0_Sound_004
+
+
+   ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+   ;```````````````````````````````````````````````````````````````
+   ;
+   ;  Other channel 0 sound effects go here.
+   ;
+   ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+   ;```````````````````````````````````````````````````````````````
+
+
+
+   ;***************************************************************
+   ;
+   ;  Jumps to end of channel 0 area. (This catches any mistakes.)
+   ;
+   goto __Skip_Ch_0
+
+
+
+   ;***************************************************************
+   ;
+   ;  Clears channel 0.
+   ;
+__Clear_Ch_0
+   
+   _Ch0_Sound = 0 : AUDV0 = 0
+
+
+
+   ;***************************************************************
+   ;
+   ;  End of channel 0 area.
+   ;
+__Skip_Ch_0
+
+
+
+
+
    ;***************************************************************
    ;
    ;  Channel 1 background music check.
@@ -1135,6 +1390,161 @@ __Skip_Ch_1
 
    drawscreen
    goto main bank1
+
+   ;***************************************************************
+   ;***************************************************************
+   ;
+   ;  Sound data for takeoff.
+   ;
+   data _SD_Takeoff
+   8,3,19,2
+   2,3,19,1
+   8,3,19,2
+   2,3,19,1
+   8,3,19,2
+   2,3,19,1
+   8,3,19,2
+   2,3,19,1
+   8,3,19,2
+   2,3,19,1
+   8,3,19,2
+   2,3,19,1
+   6,3,19,2
+   2,3,19,1
+   6,3,19,2
+   2,3,19,1
+   6,3,19,2
+   2,3,19,1
+   6,3,19,2
+   2,3,19,1
+   6,3,19,2
+   2,3,19,1
+   6,3,19,2
+   2,3,19,1
+   6,3,20,2
+   2,3,20,1
+   6,3,20,2
+   2,3,18,1
+   6,3,18,2
+   2,3,18,1
+   6,3,16,2
+   2,3,16,1
+   6,3,15,2
+   2,3,15,1
+   6,3,15,2
+   2,3,15,1
+   6,3,15,2
+   2,3,15,1
+   6,3,15,2
+   4,3,15,4
+   4,3,14,16
+   3,3,13,12
+   2,3,13,12
+   1,3,13,12
+   255
+end
+
+   ;***************************************************************
+   ;***************************************************************
+   ;
+   ;  Sound data for shooting missile.
+   ;
+   data _SD_Shoot_Miss
+   6,15,0
+   1
+   10,15,1
+   1
+   6,7,20
+   1
+   8,15,3
+   1
+   6,7,22
+   1
+   8,15,5
+   1
+   6,15,6
+   1
+   8,7,24
+   1
+   6,15,8
+   1
+   7,7,27
+   1
+   6,15,10
+   1
+   5,14,11
+   1
+   4,15,12
+   1
+   3,6,13
+   1
+   2,15,14
+   1
+   1,6,27
+   1
+   1,6,30
+   8
+   255
+end
+
+   ;***************************************************************
+   ;***************************************************************
+   ;
+   ;  Sound data for shot hitting enemy.
+   ;
+   data _SD_Shot_Enemy
+   8,8,0
+   1
+   8,8,1
+   1
+   8,14,1
+   1
+   8,8,0
+   1
+   8,8,2
+   1
+   8,14,2
+   1
+   8,8,1
+   1
+   7,8,3
+   1
+   6,8,2
+   1
+   5,8,4
+   1
+   4,8,3
+   1
+   3,8,5
+   1
+   2,14,4
+   4
+   255
+end
+
+   ;***************************************************************
+   ;***************************************************************
+   ;
+   ;  Sound data for touching enemy.
+   ;
+   data _SD_Hit_By_Enemy
+   2,7,11
+   2
+   10,7,12
+   2
+   8,7,13
+   2
+   8,7,14
+   2
+   8,7,21
+   8
+   4,7,22
+   2
+   2,7,23
+   1
+   255
+end
+
 
 __BG_Music_Setup_01
 
