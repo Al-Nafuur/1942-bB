@@ -38,7 +38,7 @@
    const map_length        = 256
    const takeoff_point     = 17
    const takeoff_sound_s   = takeoff_point  + 5
-   const carrier_end       = 41
+   const carrier_end       = 35
    const attackzone_start  = carrier_end + 5
    const map_end           = map_length - screen_v_res - 1
 
@@ -398,9 +398,15 @@
    dim plane_type4      = m
    dim plane_type5      = n
    dim _NUSIZ0          = o
+   dim superstructFullHeight1 = p
+   dim superstructFullHeight2 = q
+   dim superstructFullHeight3 = r
+   dim superstructFullHeight4 = s
+   dim superstructFullHeight5 = t
 
-   dim game_flags       = z
-   dim _Bit0_mirror_pf  = z
+   dim game_flags             = z
+   dim _Bit0_mirror_pf        = z
+   dim _Bit1_reset_restrainer = z
 
    ; Slocum Player RAM variables (reuses game loop variables!)
    dim temp             = temp1
@@ -436,6 +442,8 @@ start
    player0x = 76 : player0y = 10
    lives = 64 : score = 0
    game_flags = 1
+
+   missile1y = 100 : missile1x = 100 : ballx = 100 : bally = 100
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Playfield Pacific"
@@ -657,9 +665,15 @@ start
    ................
    ................
    ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
    .............XXX
    ..........XXXXXX
-   ..........XXXXXX
+   .........XXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
@@ -673,16 +687,10 @@ start
    .......XXXXXXXXX
    .......XXXXXXXXX
    .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXXX
-   .......XXXXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
-   ................
+   .........XXXXXXX
    ................
    ................
    ................
@@ -741,7 +749,7 @@ end
    %00011000
 end
 
-   if PF1pointer < carrier_end then _Ch1_Duration = 30 : AUDV0 = 0 : AUDV1 = 0 : goto _skip_player0_collision
+   if PF1pointer < carrier_end then _Ch1_Duration = 30 : AUDV1 = 0 : goto _skip_player0_collision
 
    if !collision(player1, missile0) then goto _skip_missile0_collision
    
@@ -784,13 +792,13 @@ _skip_player0_collision
 
    if framecounter > 1 then goto _skip_select_planes
    
-    _COLUP1 = _0E : COLUP2 = _0E : COLUP3 = _0E : COLUP4 = _0E : COLUP5 = _02
+    _COLUP1 = _0A : COLUP2 = _0A : COLUP3 = _0A : COLUP4 = _0A : COLUP5 = _02
 
-    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height  = 12 : _NUSIZ1 = 7 : player1x = 69 : player1y = 165
-    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height  = 15  : NUSIZ2 = 5 : player2x = 78 : player2y = 135
-    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height  = 15  : NUSIZ3 = 5 : player3x = 78 : player3y = 100
-    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height  = 15  : NUSIZ4 = 5 : player4x = 78 : player4y =  70
-    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height  = 29  : NUSIZ5 = 5 : player5x = 105 : player5y = 110
+    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : superstructFullHeight1 = 15 : _NUSIZ1 = 7 : player1x =  69 : player1y = 170 - 40
+    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : superstructFullHeight2 =  3 :  NUSIZ2 = 7 : player2x =  71 : player2y = 135 - 40 ; plane_2_parking_point ; 135 - 40
+    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height =  2 : superstructFullHeight3 = 15 :  NUSIZ3 = 5 : player3x =  78 : player3y = plane_3_parking_point ; 100 - 40
+    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height =  3 : superstructFullHeight4 =  3 :  NUSIZ4 = 7 : player4x =  69 : player4y = plane_4_parking_point ; 66 - 40 ;  ;  70 - 40
+    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : superstructFullHeight5 = 62 :  NUSIZ5 = 5 : player5x = 105 : player5y = 128 - 40
     
     goto _skip_select_planes
 
@@ -830,8 +838,8 @@ _middle_plane_down
       goto _next_plane_type
 
 _middle_plane_up
-      playerpointerlo[temp1] = _Middle_Plane_down_low
-      playerpointerhi[temp1] = _Middle_Plane_down_high
+      playerpointerlo[temp1] = _Middle_Plane_up_low
+      playerpointerhi[temp1] = _Middle_Plane_up_high
       spriteheight[temp1]    = 8
       goto _next_plane_type
 
@@ -906,7 +914,9 @@ _plane_movement_loop_start
 _plane_moves_right
    if NewSpriteX[temp1] > 153 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
-   NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_2 : NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
+   NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_2
+
+   if NewSpriteY[temp1] > 10 then NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
 
    if NewSpriteX[temp1] < 121 then goto _check_next_plane
    if NewNUSIZ[temp1] = %00001011 && NewSpriteX[temp1] > 120 then NewNUSIZ[temp1] = %00001001
@@ -916,7 +926,9 @@ _plane_moves_right
 _plane_moves_left
    if !NewNUSIZ[temp1] && NewSpriteX[temp1] < 2 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
-   NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_2 : NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
+   NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_2
+   
+   if NewSpriteY[temp1] > 10 then NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
 
    if NewSpriteX[temp1] < 254 then goto _check_next_plane
    if NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = NewSpriteX[temp1] + 16
@@ -960,15 +972,22 @@ _skip_plane_movement
    if framecounter < 10 then _skip_scrolling
    if PF1pointer > carrier_end && framecounter < 25 then _skip_scrolling
    if PF1pointer > carrier_end then _skip_carrier_superstructures_scrolling
-   _Ch1_Duration = 30 : AUDV0 = 0 : AUDV1 = 0
+;   _Ch1_Duration = 30 : AUDV0 = 0 : AUDV1 = 0
    for temp1 = 0 to 4
    temp4 = plane_parking_point[temp1]
-   if NewSpriteY[temp1] < temp4 then NewSpriteY[temp1] = NewSpriteY[temp1] - 8
-   if player1height[temp1] > 8 && player1height[temp1] > NewSpriteY[temp1] then  NewSpriteY[temp1] = NewSpriteY[temp1] + 8 : player1height[temp1] = player1height[temp1] - 8 : playerpointerlo[temp1] = playerpointerlo[temp1] + 8
-   if NewSpriteY[temp1] < 2 || NewSpriteY[temp1] > temp4 then NewSpriteY[temp1] = temp4
-   next
+   if NewSpriteY[temp1] < temp4 then NewSpriteY[temp1] = NewSpriteY[temp1] - 8 else goto _next_superstructure
 
+   temp3 = NewSpriteY[temp1] - superstructFullHeight1[temp1]
+   if player1height[temp1] < superstructFullHeight1[temp1]  && temp3 < 85 && NewSpriteY[temp1] > player1height[temp1] then player1height[temp1] = player1height[temp1] + 8 : NewSpriteY[temp1] = 84
+   if player1height[temp1] > superstructFullHeight1[temp1] then player1height[temp1] = superstructFullHeight1[temp1]
+   if player1height[temp1] > NewSpriteY[temp1] && player1height[temp1] > 8 then player1height[temp1] = player1height[temp1] - 8 : playerpointerlo[temp1] = playerpointerlo[temp1] + 8
+
+   if NewSpriteY[temp1] < 2 || NewSpriteY[temp1] > temp4 then NewSpriteY[temp1] = temp4
+
+_next_superstructure
+   next
 _skip_carrier_superstructures_scrolling
+
    PF1pointer = PF1pointer + 1
    PF2pointer = PF2pointer + 1
    if PF1pointer <> map_end then _skip_playfield_end
@@ -1014,17 +1033,16 @@ build_attack_position
    return
 
 ;#endregion
-
+   const p5p = plane_5_parking_point
  rem plane_type                                          NewSpriteX          NewSpriteY          NewNUSIZ       NewCOLUP
    data _attack_position_data
-   %00000010, %00000010, %00000010, %00000010, %00011111, 40,110,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D6,_D6,_D6,_D6,_D2
-   %00001110, %00000010, %00000010, %00000010, %00011111, 40, 30,110, 20, 50, 88, 98,108,118,100, 0, 0, 0, 0, 0,_D4,_D6,_D6,_D6,_D2
-   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 8, 8, 0, 0, 0,_D6,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111, 40,110,110, 20, 50, 88, 98,108,118,p5p, 0, 0, 0, 0, 0,_D6,_D6,_D6,_D6,_D2
+   %00001110, %00000010, %00000010, %00000010, %00011111, 40, 30,110, 20, 50, 88, 98,108,118,p5p, 0, 0, 0, 0, 0,_D4,_D6,_D6,_D6,_D2
+   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,158,158, 50, 84, 74, 64, 54,p5p, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
    %00000010, %00000010, %00000010, %00000010, %00011111,110,110,110,110, 50, 88, 98,108,118,  1, 0, 0, 0, 0, 7,_D6,_D6,_D6,_D6,_D4
-   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,153,153, 50, 75, 65, 55, 45,100, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00011111, 20,110, 20,110, 50, 88, 98,108,118,  1, 1, 1, 1, 0, 7,_D4,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00011111, 75, 20,110, 90, 50, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
-
+   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,158,158, 50, 84, 74, 64, 54,p5p, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111, 20,110, 20,110, 75, 88, 98,108,118,  1, 1, 1, 1, 0, 7,_D4,_D6,_D6,_D6,_D4
+   %00000010, %00000010, %00000010, %00000010, %00011111, 75, 20,110, 90, 30, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
    255
 end
 
@@ -1044,6 +1062,7 @@ end
 
 titlescreen_start
    COLUBK = _00
+   beat = 0 : tempoCount = 0 : measure = 0 : _Bit1_reset_restrainer{1} = 1
 
 titlescreen            
 
@@ -1054,7 +1073,8 @@ titlescreen
 
    gosub titledrawscreen
 
-   if joy0fire then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
+   if !joy0fire then _Bit1_reset_restrainer{1} = 0
+   if joy0fire && !_Bit1_reset_restrainer{1} then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
    goto titlescreen
 
    asm
@@ -1621,6 +1641,13 @@ end
 ;   align 256
 end
 
+   asm
+   if	(<*) > (<(*+5))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data Small_Plane_down
    %00011000
    %01111110
@@ -1629,6 +1656,13 @@ end
    %00111100
 end
 
+   asm
+   if	(<*) > (<(*+5))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data Small_Plane_up
    %00111100
    %00011000
@@ -1637,6 +1671,13 @@ end
    %00011000
 end
 
+   asm
+   if	(<*) > (<(*+6))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Small_Plane_lr
    %0011000
    %0011010
@@ -1646,6 +1687,13 @@ end
    %0011000
 end
 
+   asm
+   if	(<*) > (<(*+7))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Middle_Plane_down
    %00011000
    %11111111
@@ -1656,6 +1704,13 @@ end
    %00111100
 end
 
+   asm
+   if	(<*) > (<(*+7))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Middle_Plane_up
    %00111100
    %00011000
@@ -1666,6 +1721,13 @@ end
    %00011000
 end
 
+   asm
+   if	(<*) > (<(*+8))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Middle_Plane_lr 
    %01100000
    %01100000
@@ -1677,6 +1739,13 @@ end
    %01100000
 end
 
+   asm
+   if	(<*) > (<(*+8))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Big_Plane_down
    %01011010
    %11111111
@@ -1688,6 +1757,13 @@ end
    %00111100
 end
 
+   asm
+   if	(<*) > (<(*+8))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Big_Plane_up
    %00111100
    %00111100
@@ -1699,67 +1775,133 @@ end
    %01011010
 end
 
+   asm
+   if	(<*) > (<(*+14))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Carrier_88
    %00100010
+   %01110111
    %01010101
    %01010101
    %01010101
    %01010101
    %00100010
+   %00100010
    %01010101
    %01010101
    %01010101
    %01010101
+   %01110111
    %00100010
 end
 
+   asm
+   if	(<*) > (<(*+2))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
+end
   data _Carrier_Runway
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
+   %00000000
+   %11111111
+   %11111111
 end
 
-  data _Carrier_Tower
-   %01111110
-   %10001001
-   %11111001
-   %10001001
-   %10001001
-   %11111001
-   %10001001
-   %11111111
-   %11111111
-   %11111111
-   %11111111
-   %11111111
-   %11111111
-   %11100111
-   %11100111
-   %11111111
-   %11111111
-   %11111111
-   %11111111
-   %11111111
-   %11111111
-   %10100101
-   %10100101
-   %10100101
-   %10100101
-   %10100101
-   %10100101
-   %01111110
+/*
+   asm
+   if	(<*) > (<(*+61))
+   repeat	($100-<*)
+   .byte	0
+   repend
+   endif
 end
+*/
+  data _Carrier_Tower
+ %01000000
+ %00000000
+ %01111100
+ %00100010
+ %11110001
+ %01111011
+ %01110101
+ %10101111
+ %10001111
+ %11001011
+ %10011111
+ %01011111
+ %01100111
+ %01011011
+ %00011011
+ %10010111
+ %11101111
+ %10101111
+ %11011111
+ %11011100
+ %01011101
+ %01000111
+ %10111101
+ %01001110
+ %10110110
+ %10101011
+ %01011101
+ %01011101
+ %01011101
+ %01011101
+ %01011101
+ %01011101
+ %11011101
+ %01100011
+ %11011101
+ %01011101
+ %11011101
+ %01011101
+ %01011101
+ %01011101
+ %01011101
+ %11101011
+ %10100011
+ %11011101
+ %01000011
+ %10111111
+ %11000011
+ %11111101
+ %11011101
+ %11001001
+ %01001101
+ %11010101
+ %11011101
+ %01001001
+ %11011001
+ %11101101
+ %01111101
+ %01001010
+ %00101100
+ %00110100
+ %00001000
+end
+
+/*
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+   %00001000
+end
+*/
 
 
 ;#endregion
