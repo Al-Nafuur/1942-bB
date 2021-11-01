@@ -29,10 +29,10 @@
 
 ;#region "Constants"
    rem set up planes and variables 
-   dim planey_speed   = 1
-   dim planex_speed_1 = 1
-   dim planex_speed_2 = 2
-   dim lives_compact  = 1
+   const planey_speed   = 1
+   const planex_speed_1 = 1
+   const planex_speed_2 = 2
+   const lives_compact  = 1
 
    const screen_v_res      = 12
    const map_length        = 256
@@ -715,6 +715,23 @@ end
 
    _NUSIZ0 = %00000000
 
+   lives:
+   %00111100
+   %00011000
+   %01111110 
+   %01111110
+   %00011000
+end
+
+   player0:
+   %00100100
+   %01111110
+   %00100100
+   %00111100
+   %11111111
+   %11111111
+   %00100100
+end
 
    goto  __BG_Music_Setup_01 bank3
 
@@ -731,23 +748,7 @@ main
    lifecolor = _EA
 
    COLUP0 = _EA
-   player0:
-   %00100100
-   %01111110
-   %00100100
-   %00111100
-   %11111111
-   %11111111
-   %00100100
-end
  
-   lives:
-   %00111100
-   %00011000
-   %01111110 
-   %01111110
-   %00011000
-end
 
    if PF1pointer < carrier_end then _Ch1_Duration = 30 : AUDV1 = 0 : goto _skip_player0_collision
 
@@ -779,7 +780,7 @@ _skip_missile0_collision
    if !collision(player0, player1) then goto _skip_player0_collision
    _Ch0_Sound = 4 : _Ch0_Duration = 1 : _Ch0_Counter = 0
    ; set game state to player0 explosion, skip game loop and switch back to titlescreen when lives are empty
-   if lives < 32 then goto titlescreen_start bank2 else lives = lives - 32 : player0x = 76 : player0y = 10 : gosub build_attack_position
+   if lives < 32 then goto titlescreen_start bank2 else lives = lives - 32 : player0x = 76 : player0y = 10 : gosub build_attack_position : goto _skip_scrolling 
 
 _skip_player0_collision
 
@@ -794,11 +795,11 @@ _skip_player0_collision
    
     _COLUP1 = _0A : COLUP2 = _0A : COLUP3 = _0A : COLUP4 = _0A : COLUP5 = _02
 
-    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : superstructFullHeight1 = 15 : _NUSIZ1 = 7 : player1x =  69 : player1y = 170 - 40
-    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : superstructFullHeight2 =  3 :  NUSIZ2 = 7 : player2x =  71 : player2y = 135 - 40 ; plane_2_parking_point ; 135 - 40
+    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : superstructFullHeight1 = 15 : _NUSIZ1 = 7 : player1x =  69 : player1y = 130 ; 170 - 40
+    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : superstructFullHeight2 =  3 :  NUSIZ2 = 7 : player2x =  71 : player2y =  95 ; 135 - 40 ; plane_2_parking_point ; 135 - 40
     player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height =  2 : superstructFullHeight3 = 15 :  NUSIZ3 = 5 : player3x =  78 : player3y = plane_3_parking_point ; 100 - 40
     player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height =  3 : superstructFullHeight4 =  3 :  NUSIZ4 = 7 : player4x =  69 : player4y = plane_4_parking_point ; 66 - 40 ;  ;  70 - 40
-    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : superstructFullHeight5 = 62 :  NUSIZ5 = 5 : player5x = 105 : player5y = 128 - 40
+    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : superstructFullHeight5 = 62 :  NUSIZ5 = 5 : player5x = 105 : player5y =  88 ; 128 - 40
     
     goto _skip_select_planes
 
@@ -892,7 +893,7 @@ _plane_loop
 
    rem ################### attack speed
 
-   if framecounter{0} || PF1pointer < attackzone_start then goto _skip_plane_movement
+   if PF1pointer < attackzone_start then goto _skip_plane_movement
 ;   goto _skip_plane_movement
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -901,9 +902,9 @@ _plane_loop
    ; todo start new attack based on PF1pointer and framecounter! All previous attacks should have been ended by then!
    if player1y = plane_1_parking_point && player2y = plane_2_parking_point && player3y = plane_3_parking_point && player4y = plane_4_parking_point && player5y = plane_5_parking_point then gosub build_attack_position : goto _skip_plane_movement
 
-   if framecounter{1} then temp2 = 1 else temp2 = 0
-
-   temp1 = 0
+   if framecounter{1} then temp2 = 1 : temp1 = 2 else temp2 = 0 : temp1 = 0
+   if framecounter{0} then temp1 = 2 else temp1 = 0
+   
    
 _plane_movement_loop_start
    temp3 = plane_type[temp1] & %00000011
@@ -960,7 +961,7 @@ _plane_moves_up
 
 _check_next_plane
    temp1 = temp1 + 1
-   if temp1 < 5 then goto _plane_movement_loop_start
+   if temp1 <> 5 && temp1 <> 2 then goto _plane_movement_loop_start
 
 
 
