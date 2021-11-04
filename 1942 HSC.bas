@@ -54,39 +54,50 @@
    const plane_5_parking_point = 150
 
 
-   ; sprite pointer
-   const _Small_Plane_down_high  = >Small_Plane_down
-   const _Small_Plane_down_low   = <Small_Plane_down
+   ; sprite pointer and height
+   const _Small_Plane_down_high    = >_Small_Plane_down
+   const _Small_Plane_down_low     = <_Small_Plane_down
+   const _Small_Plane_down_height  = _Small_Plane_down_length + 1
 
-   const _Small_Plane_up_high    = >Small_Plane_up
-   const _Small_Plane_up_low     = <Small_Plane_up
+   const _Small_Plane_up_high      = >_Small_Plane_up
+   const _Small_Plane_up_low       = <_Small_Plane_up
+   const _Small_Plane_up_height    = _Small_Plane_up_length + 1
 
-   const _Small_Plane_lr_high    = >_Small_Plane_lr
-   const _Small_Plane_lr_low     = <_Small_Plane_lr
+   const _Small_Plane_lr_high      = >_Small_Plane_lr
+   const _Small_Plane_lr_low       = <_Small_Plane_lr
+   const _Small_Plane_lr_height    = _Small_Plane_lr_length + 1
 
-   const _Middle_Plane_down_high = >_Middle_Plane_down
-   const _Middle_Plane_down_low  = <_Middle_Plane_down
+   const _Middle_Plane_down_high   = >_Middle_Plane_down
+   const _Middle_Plane_down_low    = <_Middle_Plane_down
+   const _Middle_Plane_down_height = _Middle_Plane_down_length + 1
 
-   const _Middle_Plane_up_high   = >_Middle_Plane_up
-   const _Middle_Plane_up_low    = <_Middle_Plane_up
+   const _Middle_Plane_up_high     = >_Middle_Plane_up
+   const _Middle_Plane_up_low      = <_Middle_Plane_up
+   const _Middle_Plane_up_height   = _Middle_Plane_up_length + 1
 
-   const _Middle_Plane_lr_high   = >_Middle_Plane_lr
-   const _Middle_Plane_lr_low    = <_Middle_Plane_lr
+   const _Middle_Plane_lr_high     = >_Middle_Plane_lr
+   const _Middle_Plane_lr_low      = <_Middle_Plane_lr
+   const _Middle_Plane_lr_height   = _Middle_Plane_lr_length + 1
 
-   const _Big_Plane_down_high    = >_Big_Plane_down
-   const _Big_Plane_down_low     = <_Big_Plane_down
+   const _Boss_Plane_up_high      = >_Boss_Plane_up
+   const _Boss_Plane_up_low       = <_Boss_Plane_up
+   const _Boss_Plane_up_height    = _Boss_Plane_up_length + 1
 
-   const _Big_Plane_up_high      = >_Big_Plane_up
-   const _Big_Plane_up_low       = <_Big_Plane_up
+   const _Big_Plane_up_high        = >_Big_Plane_up
+   const _Big_Plane_up_low         = <_Big_Plane_up
+   const _Big_Plane_up_height      = _Big_Plane_up_length + 1
 
-   const _Carrier_88_high        = >_Carrier_88
-   const _Carrier_88_low         = <_Carrier_88
+   const _Carrier_88_high          = >_Carrier_88
+   const _Carrier_88_low           = <_Carrier_88
+   const _Carrier_88_height        = _Carrier_88_length + 1
 
-   const _Carrier_Runway_high    = >_Carrier_Runway
-   const _Carrier_Runway_low     = <_Carrier_Runway
+   const _Carrier_Runway_high      = >_Carrier_Runway
+   const _Carrier_Runway_low       = <_Carrier_Runway
+   const _Carrier_Runway_height    = _Carrier_Runway_length + 1
 
-   const _Carrier_Tower_high    = >_Carrier_Tower
-   const _Carrier_Tower_low     = <_Carrier_Tower
+   const _Carrier_Tower_high       = >_Carrier_Tower
+   const _Carrier_Tower_low        = <_Carrier_Tower
+   const _Carrier_Tower_height     = _Carrier_Tower_length + 1
    
 
 ;#region "NTSC Constants and Colors"
@@ -721,6 +732,8 @@ end
    %01111110 
    %01111110
    %00011000
+   %00000000
+   %00000000
 end
 
    player0:
@@ -795,11 +808,11 @@ _skip_player0_collision
    
     _COLUP1 = _0A : COLUP2 = _0A : COLUP3 = _0A : COLUP4 = _0A : COLUP5 = _02
 
-    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : superstructFullHeight1 = 15 : _NUSIZ1 = 7 : player1x =  69 : player1y = 130 ; 170 - 40
-    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : superstructFullHeight2 =  3 :  NUSIZ2 = 7 : player2x =  71 : player2y =  95 ; 135 - 40 ; plane_2_parking_point ; 135 - 40
-    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height =  2 : superstructFullHeight3 = 15 :  NUSIZ3 = 5 : player3x =  78 : player3y = plane_3_parking_point ; 100 - 40
-    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height =  3 : superstructFullHeight4 =  3 :  NUSIZ4 = 7 : player4x =  69 : player4y = plane_4_parking_point ; 66 - 40 ;  ;  70 - 40
-    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : superstructFullHeight5 = 62 :  NUSIZ5 = 5 : player5x = 105 : player5y =  88 ; 128 - 40
+    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : superstructFullHeight1 = _Carrier_88_height     : _NUSIZ1 = 7 : player1x =  69 : player1y = 130 ; 170 - 40
+    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : superstructFullHeight2 = _Carrier_Runway_height :  NUSIZ2 = 7 : player2x =  71 : player2y = 100 ; 135 - 40 ; plane_2_parking_point ; 135 - 40
+    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height =  2 : superstructFullHeight3 = _Carrier_Runway_height :  NUSIZ3 = 5 : player3x =  78 : player3y = plane_3_parking_point ; 100 - 40
+    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height =  3 : superstructFullHeight4 = _Carrier_Runway_height :  NUSIZ4 = 7 : player4x =  69 : player4y =  20 ; plane_4_parking_point ; 66 - 40 ;  ;  70 - 40
+    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : superstructFullHeight5 = _Carrier_Tower_height  :  NUSIZ5 = 5 : player5x = 105 : player5y =  88 ; 128 - 40
     
     goto _skip_select_planes
 
@@ -812,54 +825,54 @@ _select_planes
    for temp1 = 0 to 4
       temp2 = plane_type[temp1] / 4
 
-      on temp2 goto _small_plane_down _small_plane_up _small_plane_lr _middle_plane_down  _middle_plane_up _middle_plane_lr _big_plane_down _big_plane_up
+      on temp2 goto _small_plane_down _small_plane_up _small_plane_lr _middle_plane_down  _middle_plane_up _middle_plane_lr _boss_plane_up _big_plane_up
 
 _small_plane_down
       playerpointerlo[temp1] = _Small_Plane_down_low
       playerpointerhi[temp1] = _Small_Plane_down_high
-      spriteheight[temp1]    = 6
+      spriteheight[temp1]    = _Small_Plane_down_height
       goto _next_plane_type
 
 _small_plane_up
       playerpointerlo[temp1] = _Small_Plane_up_low
       playerpointerhi[temp1] = _Small_Plane_up_high
-      spriteheight[temp1]    = 6
+      spriteheight[temp1]    = _Small_Plane_up_height
       goto _next_plane_type
 
 _small_plane_lr
       playerpointerlo[temp1] = _Small_Plane_lr_low
       playerpointerhi[temp1] = _Small_Plane_lr_high
-      spriteheight[temp1]    = 7
+      spriteheight[temp1]    = _Small_Plane_lr_height
       goto _next_plane_type
 
 _middle_plane_down
       playerpointerlo[temp1] = _Middle_Plane_down_low
       playerpointerhi[temp1] = _Middle_Plane_down_high
-      spriteheight[temp1]    = 8
+      spriteheight[temp1]    = _Middle_Plane_down_height
       goto _next_plane_type
 
 _middle_plane_up
       playerpointerlo[temp1] = _Middle_Plane_up_low
       playerpointerhi[temp1] = _Middle_Plane_up_high
-      spriteheight[temp1]    = 8
+      spriteheight[temp1]    = _Middle_Plane_up_height
       goto _next_plane_type
 
 _middle_plane_lr
       playerpointerlo[temp1] = _Middle_Plane_lr_low
       playerpointerhi[temp1] = _Middle_Plane_lr_high
-      spriteheight[temp1]    = 9
+      spriteheight[temp1]    = _Middle_Plane_lr_height
       goto _next_plane_type
 
-_big_plane_down
-      playerpointerlo[temp1] = _Big_Plane_down_low
-      playerpointerhi[temp1] = _Big_Plane_down_high
-      spriteheight[temp1]    = 9
+_boss_plane_up
+      playerpointerlo[temp1] = _Boss_Plane_up_low
+      playerpointerhi[temp1] = _Boss_Plane_up_high
+      spriteheight[temp1]    = _Boss_Plane_up_height
       goto _next_plane_type
 
 _big_plane_up
       playerpointerlo[temp1] = _Big_Plane_up_low
       playerpointerhi[temp1] = _Big_Plane_up_high
-      spriteheight[temp1]    = 9
+      spriteheight[temp1]    = _Big_Plane_up_height
 
 
 _next_plane_type
@@ -909,6 +922,7 @@ _plane_loop
 _plane_movement_loop_start
    temp3 = plane_type[temp1] & %00000011
    temp4 = plane_parking_point[temp1]
+   temp5 = rand
 
    on temp3 goto _plane_moves_left _plane_moves_right _plane_moves_down _plane_moves_up
 
@@ -925,19 +939,21 @@ _plane_moves_right
    goto _check_next_plane
 
 _plane_moves_left
-   if !NewNUSIZ[temp1] && NewSpriteX[temp1] < 2 then NewSpriteY[temp1] = temp4
+   temp3 = NewSpriteX[temp1]
+   if !NewNUSIZ[temp1] && temp3 < 2 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
-   NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_2
+   NewSpriteX[temp1] = temp3 - planex_speed_2
    
    if NewSpriteY[temp1] > 10 then NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
+   if temp3 = 78 && temp5 < 128 then plane_type[temp1] = plane_type[temp1] + 1 : NewNUSIZ[temp1] = NewNUSIZ[temp1] ^ %00001000 : goto _check_next_plane
 
-   if NewSpriteX[temp1] < 254 then goto _check_next_plane
-   if NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = NewSpriteX[temp1] + 16
+   if temp3 < 254 then goto _check_next_plane
+   if NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = temp3 + 16
 
    goto _check_next_plane
 
 _plane_moves_down
-   temp3 = NewSpriteY[temp1] : temp5 = rand
+   temp3 = NewSpriteY[temp1]
    if temp3 = temp4 then _check_next_plane
    if temp3 < 2 then NewSpriteY[temp1] = temp4 : goto _check_next_plane
    if temp3 = 40 && temp5 < 128 then plane_type[temp1] = plane_type[temp1] + 5 : goto _check_next_plane
@@ -954,9 +970,11 @@ _check_for_escape_move
 
 
 _plane_moves_up
-   if NewSpriteY[temp1] > 100 then NewSpriteY[temp1] = temp4
+   if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 240 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then _check_next_plane
    NewSpriteY[temp1] = NewSpriteY[temp1] + planey_speed 
+   if NewSpriteY[temp1] < spriteheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] + spriteheight[temp1] - NewSpriteY[temp1] : spriteheight[temp1] = NewSpriteY[temp1]
+;   if NewSpriteY[temp1] > 84 && spriteheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] + spriteheight[temp1] - NewSpriteY[temp1] : spriteheight[temp1] = NewSpriteY[temp1]
 
 
 _check_next_plane
@@ -971,9 +989,8 @@ _skip_plane_movement
 ; pfscroll down
 
    if framecounter < 10 then _skip_scrolling
-   if PF1pointer > carrier_end && framecounter < 25 then _skip_scrolling
+   if PF1pointer > carrier_end && framecounter < 24 then _skip_scrolling
    if PF1pointer > carrier_end then _skip_carrier_superstructures_scrolling
-;   _Ch1_Duration = 30 : AUDV0 = 0 : AUDV1 = 0
    for temp1 = 0 to 4
    temp4 = plane_parking_point[temp1]
    if NewSpriteY[temp1] < temp4 then NewSpriteY[temp1] = NewSpriteY[temp1] - 8 else goto _next_superstructure
@@ -1004,8 +1021,6 @@ _skip_playfield_end
 
 _skip_scrolling
 
-; CTRLPF = 0
-; PF0 = %11110000
    goto _Play_In_Game_Music bank3
 
 ;#endregion
@@ -1015,35 +1030,81 @@ _skip_scrolling
 ;#region "Subroutines and Functions"
 
 build_attack_position
-   temp1 = _attack_position_data[attack_position]
-   if temp1 = 255 then attack_position = 0 : stage = stage + 1
+   temp2 = _attack_position_sequence[attack_position]
+   if temp2 = 255 then attack_position = 0 : stage = stage + 1 : temp2 = 0 else attack_position = attack_position + 1
 
    for temp1 = 0 to 4
-      plane_type[temp1] = _attack_position_data[attack_position]
-      attack_position = attack_position + 1
-   next
-   for temp1 = 0 to 4
-      NewSpriteX[temp1] = _attack_position_data[attack_position]
-      attack_position = attack_position + 1
-   next
-   for temp1 = 0 to 14  ; fill NewSpriteY, NewNUSIZ and  NewCOLUP1
-      NewSpriteY[temp1] = _attack_position_data[attack_position]
-      attack_position = attack_position + 1
+      plane_type[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
+      NewSpriteX[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
+      NewSpriteY[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
+      NewNUSIZ[temp1]   = _attack_position_data[temp2] : temp2 = temp2 + 1
+      NewCOLUP1[temp1]  = _attack_position_data[temp2] : temp2 = temp2 + 1
    next
 
    return
 
 ;#endregion
+
+   const p1p = plane_1_parking_point
+   const p2p = plane_2_parking_point
+   const p3p = plane_3_parking_point
+   const p4p = plane_4_parking_point
    const p5p = plane_5_parking_point
- rem plane_type                                          NewSpriteX          NewSpriteY          NewNUSIZ       NewCOLUP
+
+
+ rem plane_type, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
    data _attack_position_data
-   %00000010, %00000010, %00000010, %00000010, %00011111, 40,110,110, 20, 50, 88, 98,108,118,p5p, 0, 0, 0, 0, 0,_D6,_D6,_D6,_D6,_D2
-   %00001110, %00000010, %00000010, %00000010, %00011111, 40, 30,110, 20, 50, 88, 98,108,118,p5p, 0, 0, 0, 0, 0,_D4,_D6,_D6,_D6,_D2
-   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,158,158, 50, 84, 74, 64, 54,p5p, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00011111,110,110,110,110, 50, 88, 98,108,118,  1, 0, 0, 0, 0, 7,_D6,_D6,_D6,_D6,_D4
-   %00001001, %00001001, %00001000, %00001000, %00011111,  0,  0,158,158, 50, 84, 74, 64, 54,p5p, 9, 9, 1, 1, 0,_D6,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00011111, 20,110, 20,110, 75, 88, 98,108,118,  1, 1, 1, 1, 0, 7,_D4,_D6,_D6,_D6,_D4
-   %00000010, %00000010, %00000010, %00000010, %00011111, 75, 20,110, 90, 30, 88, 98,108,118,  1,11,11, 0, 0, 7,_D4,_D6,_D6,_D6,_D4
+      %00000010,         40,        p1p,       0, _D6  ; Boss plane Ayako
+      %00000010,        110,        p1p,       0, _D6
+      %00000010,        110,        p1p,       0, _D6
+      %00011011,         50,          1,       7, _D4
+      %00011011,         82,          1,      15, _D4
+
+      %00000010,         40,         88,       0, _D6  ; 5 small planes from top
+      %00000010,        110,         98,       0, _D6
+      %00000010,        110,        108,       0, _D6
+      %00000010,         20,        118,       0, _D6
+      %00000010,         50,        128,       0, _D6
+
+      %00001110,         40,         88,       0, _D4  ; 1 middle + 4 small planes from top
+      %00000010,         30,         98,       0, _D6
+      %00000010,        110,        108,       0, _D6
+      %00000010,         20,        118,       0, _D6
+      %00000010,         50,        128,       0, _D6
+
+      %00001001,          0,         84,       9, _D6  ; 2x2 small planes from left 
+      %00001001,          0,         74,       9, _D6 
+      %00001000,        158,         64,       1, _D6  ; 2x2 small planes from right
+      %00001000,        158,         54,       1, _D6
+      %00011111,         50,        p5p,       0, _D4
+
+      %00000010,        110,         88,       0, _D6
+      %00000010,        110,         98,       0, _D6
+      %00000010,        110,        108,       0, _D6
+      %00000010,        110,        118,       0, _D6
+      %00011111,         50,          1,       7, _D4
+
+      %00001001,          0,         84,       9, _D6
+      %00001001,          0,         74,       9, _D6
+      %00001000,        158,         64,       1, _D6
+      %00001000,        158,         54,       1, _D6
+      %00011111,         50,        p5p,       0, _D4
+
+      %00000010,         20,         88,       1, _D4
+      %00000010,        110,         98,       1, _D6
+      %00000010,         20,        108,       1, _D6
+      %00011111,        125,        247,       7, _D4
+      %00011111,         75,          1,       7, _D4
+
+      %00000010,         75,         88,      11, _D4
+      %00000010,         20,         98,      11, _D6
+      %00000010,        110,        108,       0, _D6
+      %00000010,         90,        118,       0, _D6
+      %00011111,         30,          1,       7, _D4
+end
+
+   data _attack_position_sequence
+   0,0,0,0,0,25,50,75,100,125,150
    255
 end
 
@@ -1639,17 +1700,23 @@ end
    inline 6lives.asm
 
    asm
-;   align 256
-end
+   MAC PAD_BB_SPRITE_DATA
+.SPRITE_HEIGHT  SET {1}
+      if	(<*) > (<(*+.SPRITE_HEIGHT))
+      repeat	($100-<*)
+      .byte	0
+      repend
+      endif
+      if (<*) < 90
+	   repeat (90-<*)
+	   .byte 0
+	   repend
+	   endif
+   ENDM
 
-   asm
-   if	(<*) > (<(*+5))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 4
 end
-  data Small_Plane_down
+  data _Small_Plane_down
    %00011000
    %01111110
    %01111110
@@ -1658,13 +1725,9 @@ end
 end
 
    asm
-   if	(<*) > (<(*+5))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 4
 end
-  data Small_Plane_up
+  data _Small_Plane_up
    %00111100
    %00011000
    %01111110
@@ -1673,11 +1736,7 @@ end
 end
 
    asm
-   if	(<*) > (<(*+6))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 5
 end
   data _Small_Plane_lr
    %0011000
@@ -1689,11 +1748,7 @@ end
 end
 
    asm
-   if	(<*) > (<(*+7))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 6
 end
   data _Middle_Plane_down
    %00011000
@@ -1706,11 +1761,7 @@ end
 end
 
    asm
-   if	(<*) > (<(*+7))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 6
 end
   data _Middle_Plane_up
    %00111100
@@ -1723,11 +1774,7 @@ end
 end
 
    asm
-   if	(<*) > (<(*+8))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 7
 end
   data _Middle_Plane_lr 
    %01100000
@@ -1741,13 +1788,39 @@ end
 end
 
    asm
-   if	(<*) > (<(*+8))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 27
 end
-  data _Big_Plane_down
+  data _Boss_Plane_up
+   %00000001
+   %00001111
+   %00000111
+   %00000011
+   %00000001
+   %00000001
+   %00000001
+   %00000001
+   %00000001
+   %00000001
+   %00000001
+   %00000011
+   %00000011
+   %00000011
+   %00000111
+   %00001111
+   %00111111
+   %01111111
+   %11111111
+   %11111111
+   %00101011
+   %00101011
+   %00000011
+   %00000001
+   %00000001
+   %00000001
+   %00000001
+   %00000001
+end
+/*
    %01011010
    %11111111
    %11111111
@@ -1756,14 +1829,10 @@ end
    %00011000
    %00111100
    %00111100
-end
+*/
 
    asm
-   if	(<*) > (<(*+8))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 7
 end
   data _Big_Plane_up
    %00111100
@@ -1777,11 +1846,7 @@ end
 end
 
    asm
-   if	(<*) > (<(*+14))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 13
 end
   data _Carrier_88
    %00100010
@@ -1801,89 +1866,78 @@ end
 end
 
    asm
-   if	(<*) > (<(*+2))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 1
 end
   data _Carrier_Runway
-   %00000000
    %11111111
    %11111111
 end
 
-/*
    asm
-   if	(<*) > (<(*+61))
-   repeat	($100-<*)
-   .byte	0
-   repend
-   endif
+   PAD_BB_SPRITE_DATA 60
 end
-*/
   data _Carrier_Tower
- %01000000
- %00000000
- %01111100
- %00100010
- %11110001
- %01111011
- %01110101
- %10101111
- %10001111
- %11001011
- %10011111
- %01011111
- %01100111
- %01011011
- %00011011
- %10010111
- %11101111
- %10101111
- %11011111
- %11011100
- %01011101
- %01000111
- %10111101
- %01001110
- %10110110
- %10101011
- %01011101
- %01011101
- %01011101
- %01011101
- %01011101
- %01011101
- %11011101
- %01100011
- %11011101
- %01011101
- %11011101
- %01011101
- %01011101
- %01011101
- %01011101
- %11101011
- %10100011
- %11011101
- %01000011
- %10111111
- %11000011
- %11111101
- %11011101
- %11001001
- %01001101
- %11010101
- %11011101
- %01001001
- %11011001
- %11101101
- %01111101
- %01001010
- %00101100
- %00110100
- %00001000
+   %01000000
+   %00000000
+   %01111100
+   %00100010
+   %11110001
+   %01111011
+   %01110101
+   %10101111
+   %10001111
+   %11001011
+   %10011111
+   %01011111
+   %01100111
+   %01011011
+   %00011011
+   %10010111
+   %11101111
+   %10101111
+   %11011111
+   %11011100
+   %01011101
+   %01000111
+   %10111101
+   %01001110
+   %10110110
+   %10101011
+   %01011101
+   %01011101
+   %01011101
+   %01011101
+   %01011101
+   %01011101
+   %11011101
+   %01100011
+   %11011101
+   %01011101
+   %11011101
+   %01011101
+   %01011101
+   %01011101
+   %01011101
+   %11101011
+   %10100011
+   %11011101
+   %01000011
+   %10111111
+   %11000011
+   %11111101
+   %11011101
+   %11001001
+   %01001101
+   %11010101
+   %11011101
+   %01001001
+   %11011001
+   %11101101
+   %01111101
+   %01001010
+   %00101100
+   %00110100
+   %00001000
 end
 
 /*
