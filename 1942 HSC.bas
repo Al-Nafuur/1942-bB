@@ -25,80 +25,11 @@
    set kernel multisprite
    set romsize 16k
 
-   pfheight = 7
+   pfheight = 3
 
 ;#region "Constants"
-   rem set up planes and variables 
-   const planey_speed   = 1
-   const planex_speed_1 = 1
-   const planex_speed_2 = 2
-   const lives_compact  = 1
 
-   const screen_v_res      = 12
-   const map_length        = 256
-   const takeoff_point     = 17
-   const takeoff_sound_s   = takeoff_point  + 5
-   const carrier_end       = 35
-   const attackzone_start  = carrier_end + 5
-   const map_end           = map_length - screen_v_res - 1
-
-   const carrier_color       = _04
-   const island_gras_color   = _C8
-   const island_sand_color   = _EE
-   const island_jungle_color = _C6
-
-   const plane_1_parking_point = 200
-   const plane_2_parking_point = 200
-   const plane_3_parking_point = 200
-   const plane_4_parking_point = 200
-   const plane_5_parking_point = 150
-
-
-   ; sprite pointer and height
-   const _Small_Plane_down_high    = >_Small_Plane_down
-   const _Small_Plane_down_low     = <_Small_Plane_down
-   const _Small_Plane_down_height  = _Small_Plane_down_length + 1
-
-   const _Small_Plane_up_high      = >_Small_Plane_up
-   const _Small_Plane_up_low       = <_Small_Plane_up
-   const _Small_Plane_up_height    = _Small_Plane_up_length + 1
-
-   const _Small_Plane_lr_high      = >_Small_Plane_lr
-   const _Small_Plane_lr_low       = <_Small_Plane_lr
-   const _Small_Plane_lr_height    = _Small_Plane_lr_length + 1
-
-   const _Middle_Plane_down_high   = >_Middle_Plane_down
-   const _Middle_Plane_down_low    = <_Middle_Plane_down
-   const _Middle_Plane_down_height = _Middle_Plane_down_length + 1
-
-   const _Middle_Plane_up_high     = >_Middle_Plane_up
-   const _Middle_Plane_up_low      = <_Middle_Plane_up
-   const _Middle_Plane_up_height   = _Middle_Plane_up_length + 1
-
-   const _Middle_Plane_lr_high     = >_Middle_Plane_lr
-   const _Middle_Plane_lr_low      = <_Middle_Plane_lr
-   const _Middle_Plane_lr_height   = _Middle_Plane_lr_length + 1
-
-   const _Boss_Plane_up_high      = >_Boss_Plane_up
-   const _Boss_Plane_up_low       = <_Boss_Plane_up
-   const _Boss_Plane_up_height    = _Boss_Plane_up_length + 1
-
-   const _Big_Plane_up_high        = >_Big_Plane_up
-   const _Big_Plane_up_low         = <_Big_Plane_up
-   const _Big_Plane_up_height      = _Big_Plane_up_length + 1
-
-   const _Carrier_88_high          = >_Carrier_88
-   const _Carrier_88_low           = <_Carrier_88
-   const _Carrier_88_height        = _Carrier_88_length + 1
-
-   const _Carrier_Runway_high      = >_Carrier_Runway
-   const _Carrier_Runway_low       = <_Carrier_Runway
-   const _Carrier_Runway_height    = _Carrier_Runway_length + 1
-
-   const _Carrier_Tower_high       = >_Carrier_Tower
-   const _Carrier_Tower_low        = <_Carrier_Tower
-   const _Carrier_Tower_height     = _Carrier_Tower_length + 1
-   
+   ; Color constants
 
 ;#region "NTSC Constants and Colors"
    ; requests 
@@ -386,35 +317,127 @@
    const _FE = $2E
 ;#endregion
 */
+   ; Kernel and Minikernel constants
+   const lives_compact  = 1
+
+   ; Game constants
+   const _Plane_Y_Speed  = 1
+   const _Plane_X1_Speed = 1
+   const _Plane_X2_Speed = 2
+
+   const _Player0_X_Start = 76
+   const _Player0_Y_Start = 25
+
+   const _Screen_Vertical_Resolution = 24
+   const _Map_Length                 = 256
+   const _Map_End                    = _Map_Length - _Screen_Vertical_Resolution - 1
+   const _Map_Landingzone_Start      = 0
+   const _Map_Takeoff_Point          = 34
+   const _Map_Takeoff_Sound_Start    = _Map_Takeoff_Point  + 10
+   const _Map_Carrier_End            = 70
+   const _Map_Attackzone_Start       = _Map_Carrier_End + 10
+   const _Map_Boss_Start             = 140  ; boss scrolls backwards !
+
+   const _Color_Carrier       = _04
+   const _Color_Gras_Island   = _C8
+   const _Color_Sand_Island   = _EE
+   const _Color_Jungle_Island = _C6
+
+   const _Player1_Parking_Point = 200
+   const _Player2_Parking_Point = 200
+   const _Player3_Parking_Point = 200
+   const _Player4_Parking_Point = 200
+   const _Player5_Parking_Point = 150
+
+   const _Game_State_Takeoff    = 0
+   const _Game_State_Active     = 1
+   const _Game_State_Boss       = 2
+   const _Game_State_Landing    = 3
+   const _Game_State_Explosion  = 4
+   const _Game_State_Game_Over  = 5
+   const _Game_State_Won        = 6
+
+
+   ; Sprite pointer and height
+   const _Small_Plane_down_high    = >_Small_Plane_down
+   const _Small_Plane_down_low     = <_Small_Plane_down
+   const _Small_Plane_down_height  = _Small_Plane_down_length + 1
+
+   const _Small_Plane_up_high      = >_Small_Plane_up
+   const _Small_Plane_up_low       = <_Small_Plane_up
+   const _Small_Plane_up_height    = _Small_Plane_up_length + 1
+
+   const _Small_Plane_lr_high      = >_Small_Plane_lr
+   const _Small_Plane_lr_low       = <_Small_Plane_lr
+   const _Small_Plane_lr_height    = _Small_Plane_lr_length + 1
+
+   const _Middle_Plane_down_high   = >_Middle_Plane_down
+   const _Middle_Plane_down_low    = <_Middle_Plane_down
+   const _Middle_Plane_down_height = _Middle_Plane_down_length + 1
+
+   const _Middle_Plane_up_high     = >_Middle_Plane_up
+   const _Middle_Plane_up_low      = <_Middle_Plane_up
+   const _Middle_Plane_up_height   = _Middle_Plane_up_length + 1
+
+   const _Middle_Plane_lr_high     = >_Middle_Plane_lr
+   const _Middle_Plane_lr_low      = <_Middle_Plane_lr
+   const _Middle_Plane_lr_height   = _Middle_Plane_lr_length + 1
+
+   const Big_Plane_down_high       = >Big_Plane_down
+   const Big_Plane_down_low        = <Big_Plane_down
+   const Big_Plane_down_height     = Big_Plane_down_length + 1
+
+   const _Big_Plane_up_high        = >_Big_Plane_up
+   const _Big_Plane_up_low         = <_Big_Plane_up
+   const _Big_Plane_up_height      = _Big_Plane_up_length + 1
+
+   const _Carrier_88_high          = >_Carrier_88
+   const _Carrier_88_low           = <_Carrier_88
+   const _Carrier_88_height        = _Carrier_88_length + 1
+
+   const _Carrier_Runway_high      = >_Carrier_Runway
+   const _Carrier_Runway_low       = <_Carrier_Runway
+   const _Carrier_Runway_height    = _Carrier_Runway_length + 1
+
+   const _Carrier_Tower_high       = >_Carrier_Tower
+   const _Carrier_Tower_low        = <_Carrier_Tower
+   const _Carrier_Tower_height     = _Carrier_Tower_length + 1
+   
+
 ;#endregion
 
 ;#region "Zeropage Variables"
 
-   dim playerpointerlo  = player1pointerlo
-   dim playerpointerhi  = player1pointerhi
+   dim playerpointerlo   = player1pointerlo
+   dim playerpointerhi   = player1pointerhi
+   dim PF1pointerhi      = PF1pointer + 1
+   dim PF2pointerhi      = PF2pointer + 1
 
-   dim _Ch0_Counter     = a
-   dim _Ch0_Duration    = b
-   dim _Ch0_Sound       = c
-   dim _Ch1_Duration    = d
+   dim _Ch0_Counter      = a
+   dim _Ch0_Duration     = b
+   dim _Ch0_Sound        = c
+   dim _Ch1_Duration     = d
 
-   dim framecounter     = e
-   dim bmp_96x2_2_index = f
-   dim attack_position  = g
-   dim stage            = h
-   dim level            = i
-   dim plane_type       = j
-   dim plane_type2      = k
-   dim plane_type3      = l
-   dim plane_type4      = m
-   dim plane_type5      = n
-   dim _NUSIZ0          = o
-   dim superstructFullHeight1 = p
-   dim superstructFullHeight2 = q
-   dim superstructFullHeight3 = r
-   dim superstructFullHeight4 = s
-   dim superstructFullHeight5 = t
+   dim framecounter      = e
+   dim bmp_96x2_2_index  = f
+   dim attack_position   = g
+   dim stage             = h
+   dim level             = i
+   dim playertype        = j
+   dim player1type       = j
+   dim player2type       = k
+   dim player3type       = l
+   dim player4type       = m
+   dim player5type       = n
+   dim _NUSIZ0           = o
+   dim playerfullheight  = p
+   dim player1fullheight = p
+   dim player2fullheight = q
+   dim player3fullheight = r
+   dim player4fullheight = s
+   dim player5fullheight = t
 
+   dim game_state             = y
    dim game_flags             = z
    dim _Bit0_mirror_pf        = z
    dim _Bit1_reset_restrainer = z
@@ -449,8 +472,8 @@
 start
 
    rem initial variables setup
-   missile0y = 0 : level = 0 : stage = 0 : framecounter = 0 : attack_position = 0
-   player0x = 76 : player0y = 10
+   missile0y = 0 : level = 0 : stage = 0 : framecounter = 0 : attack_position = 0 : game_state = _Game_State_Takeoff
+   player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    lives = 64 : score = 0
    game_flags = 1
 
@@ -682,12 +705,244 @@ start
    ................
    ................
    ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................ ; Start of landscape
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................ ; Start of boss plane (scrolling up)
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ...............X
+   ................
+   ...............X
+   .........X.X.X.X
+   ...............X
+   .........X.X.X.X
+   .....XXXXXXXXXXX
+   .....XXXXXXXXXXX
+   ......XXXXXXXXX.
+   ........XXXXXXXX
+   ..........XXXXX.
+   ............XXXX
+   .............XXX
+   ..............XX
+   ..............XX
+   ...............X
+   ...............X
+   ...............X
+   ...............X
+   ...............X
+   ...............X
+   ...............X
+   ...............X
+   ...............X
+   ..............XX
+   .............XX.
+   .............XXX
+   ...............X
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................ ; End of takeoff area 
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................ ; End of boss plane
+   .............XXX
    .............XXX
    ..........XXXXXX
+   ..........XXXXXX
+   .........XXXXXXX
    .........XXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
+   ........XXXXXXXX
+   ........XXXXXXXX
+   ........XXXXXXXX
    .......XXXXXXXXX
    .......XXXXXXXXX
    .......XXXXXXXXX
@@ -698,10 +953,34 @@ start
    .......XXXXXXXXX
    .......XXXXXXXXX
    .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   .......XXXXXXXXX
+   ........XXXXXXXX
+   ........XXXXXXXX
+   ........XXXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
    ........XXXXXXXX
    .........XXXXXXX
+   .........XXXXXXX
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
+   ................
    ................
    ................
    ................
@@ -719,10 +998,10 @@ start
 end
 ;#endregion
 
-   PF1pointer = takeoff_point
-   PF2pointer = takeoff_point
+   PF1pointer = _Map_Takeoff_Point
+   PF2pointer = _Map_Takeoff_Point
 
-   COLUPF = carrier_color
+   COLUPF = _Color_Carrier
 
    _NUSIZ0 = %00000000
 
@@ -762,27 +1041,27 @@ main
 
    COLUP0 = _EA
  
-
-   if PF1pointer < carrier_end then _Ch1_Duration = 30 : AUDV1 = 0 : goto _skip_player0_collision
+   if game_state = _Game_State_Boss then goto _boss_loop
+   if game_state <> _Game_State_Active then _Ch1_Duration = 30 : AUDV1 = 0 : goto _skip_player0_collision
 
    if !collision(player1, missile0) then goto _skip_missile0_collision
    
    score = score + 50 :  _Ch0_Sound = 3 : _Ch0_Duration = 1 : _Ch0_Counter = 0
 
    temp1 = player1y + 5 : temp2 = player1y - 5
-   if missile0y > temp2 && missile0y < temp1 then player1y = plane_1_parking_point : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player1y = _Player1_Parking_Point : goto _end_collision
 
    temp1 = player2y + 5 : temp2 = player2y - 5
-   if missile0y > temp2 && missile0y < temp1 then player2y = plane_2_parking_point : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player2y = _Player2_Parking_Point : goto _end_collision
 
    temp1 = player3y + 5 : temp2 = player3y - 5
-   if missile0y > temp2 && missile0y < temp1 then player3y = plane_3_parking_point : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player3y = _Player3_Parking_Point : goto _end_collision
 
    temp1 = player4y + 5 : temp2 = player4y - 5
-   if missile0y > temp2 && missile0y < temp1 then player4y = plane_4_parking_point : goto _end_collision
+   if missile0y > temp2 && missile0y < temp1 then player4y = _Player4_Parking_Point : goto _end_collision
 
    temp1 = player5y + 5 : temp2 = player5y - 5 ; Why check player 5? we had a collision and the others have not been hit!
-   if missile0y > temp2 && missile0y < temp1 then player5y = plane_5_parking_point
+   if missile0y > temp2 && missile0y < temp1 then player5y = _Player5_Parking_Point
 
 _end_collision
 
@@ -793,39 +1072,79 @@ _skip_missile0_collision
    if !collision(player0, player1) then goto _skip_player0_collision
    _Ch0_Sound = 4 : _Ch0_Duration = 1 : _Ch0_Counter = 0
    ; set game state to player0 explosion, skip game loop and switch back to titlescreen when lives are empty
-   if lives < 32 then goto titlescreen_start bank2 else lives = lives - 32 : player0x = 76 : player0y = 10 : gosub build_attack_position : goto _skip_scrolling 
+   if lives < 32 then goto titlescreen_start bank2 else lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start : gosub build_attack_position : goto _skip_scrolling 
 
 _skip_player0_collision
 
 
-   if PF1pointer > carrier_end then _select_planes
+   if PF1pointer > _Map_Carrier_End then _check_player_movement
 
-   if PF1pointer = takeoff_sound_s && framecounter = 5 then _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   if PF1pointer = _Map_Takeoff_Sound_Start && framecounter = 5 then _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0
    
-   if PF1pointer <> takeoff_point then _skip_carrier_superstructures
+   if PF1pointer <> _Map_Takeoff_Point then _skip_carrier_superstructures
 
-   if framecounter > 1 then goto _skip_select_planes
+   if framecounter > 1 then goto _skip_plane_movement
    
     _COLUP1 = _0A : COLUP2 = _0A : COLUP3 = _0A : COLUP4 = _0A : COLUP5 = _02
 
-    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : superstructFullHeight1 = _Carrier_88_height     : _NUSIZ1 = 7 : player1x =  69 : player1y = 130 ; 170 - 40
-    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : superstructFullHeight2 = _Carrier_Runway_height :  NUSIZ2 = 7 : player2x =  71 : player2y = 100 ; 135 - 40 ; plane_2_parking_point ; 135 - 40
-    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height =  2 : superstructFullHeight3 = _Carrier_Runway_height :  NUSIZ3 = 5 : player3x =  78 : player3y = plane_3_parking_point ; 100 - 40
-    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height =  3 : superstructFullHeight4 = _Carrier_Runway_height :  NUSIZ4 = 7 : player4x =  69 : player4y =  20 ; plane_4_parking_point ; 66 - 40 ;  ;  70 - 40
-    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : superstructFullHeight5 = _Carrier_Tower_height  :  NUSIZ5 = 5 : player5x = 105 : player5y =  88 ; 128 - 40
+    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : player1fullheight = _Carrier_88_height     : _NUSIZ1 = 7 : player1x =  69 : player1y = 130 ; 170 - 40
+    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : player2fullheight = _Carrier_Runway_height :  NUSIZ2 = 7 : player2x =  71 : player2y = 100 ; 135 - 40 ; _Player2_Parking_Point ; 135 - 40
+    player3pointerlo = _Carrier_Runway_low : player3pointerhi = _Carrier_Runway_high : player3height =  2 : player3fullheight = _Carrier_Runway_height :  NUSIZ3 = 5 : player3x =  78 : player3y = _Player3_Parking_Point ; 100 - 40
+    player4pointerlo = _Carrier_Runway_low : player4pointerhi = _Carrier_Runway_high : player4height =  3 : player4fullheight = _Carrier_Runway_height :  NUSIZ4 = 7 : player4x =  69 : player4y =  20 ; _Player4_Parking_Point ; 66 - 40 ;  ;  70 - 40
+    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : player5fullheight = _Carrier_Tower_height  :  NUSIZ5 = 5 : player5x = 105 : player5y =  88 ; 128 - 40
     
-    goto _skip_select_planes
+    goto _skip_plane_movement
 
 _skip_carrier_superstructures
-   if PF1pointer = carrier_end then player1y = plane_1_parking_point : player2y = plane_2_parking_point : player3y = plane_3_parking_point : player4y = plane_4_parking_point : player5y = plane_5_parking_point
+   if PF1pointer = _Map_Carrier_End then player1y = _Player1_Parking_Point : player2y = _Player2_Parking_Point : player3y = _Player3_Parking_Point : player4y = _Player4_Parking_Point : player5y = _Player5_Parking_Point
+    goto _skip_plane_movement
 
-   goto _skip_select_planes
 
-_select_planes
-   for temp1 = 0 to 4
-      temp2 = plane_type[temp1] / 4
+_check_player_movement
+   rem ################### movement 
+   if joy0up && player0y < 40 then player0y = player0y + 1 : goto jump
+   if joy0down && player0y > 10 then player0y = player0y - 1 : goto jump
+   if joy0left && player0x > 0 then player0x = player0x - 1 : goto jump
+   if joy0right && player0x < 152 then player0x = player0x + 1
+   
+jump
 
-      on temp2 goto _small_plane_down _small_plane_up _small_plane_lr _middle_plane_down  _middle_plane_up _middle_plane_lr _boss_plane_up _big_plane_up
+
+   if missile0y > 88 then missile0y = 0
+   if missile0y > 1 || PF1pointer < _Map_Carrier_End then _skip_new_shot
+   if joy0fire then missile0y = player0y + 1 : missile0x = player0x + 5 : if _Ch0_Sound = 0 then _Ch0_Sound = 2 : _Ch0_Duration = 1 : _Ch0_Counter = 0
+_skip_new_shot
+   if ! missile0y then _check_enemy_shot
+   missile0y = missile0y + 3
+   if framecounter{0} then missile0x = missile0x - 2 else missile0x = missile0x + 2
+
+_check_enemy_shot
+;  if player1x = player0x && n = 0 && player1y < 20 then missile1x = player1x + 5 : missile1y = player1y + 2 :  n = 1
+
+
+_plane_loop
+
+
+   rem ################### attack speed
+
+   if game_state <> _Game_State_Active then goto _skip_plane_movement
+;   goto _skip_plane_movement
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Plane attack movement"
+
+   ; todo start new attack based on PF1pointer and framecounter! All previous attacks should have been ended by then!
+   if player1y = _Player1_Parking_Point && player2y = _Player2_Parking_Point && player3y = _Player3_Parking_Point && player4y = _Player4_Parking_Point && player5y = _Player5_Parking_Point then gosub build_attack_position : goto _skip_plane_movement
+
+   if framecounter{1} then temp2 = 1 : temp1 = 2 else temp2 = 0 : temp1 = 0
+   if framecounter{0} then temp1 = 2 else temp1 = 0
+   
+   
+_plane_movement_loop_start
+
+
+      temp3 = playertype[temp1] / 4
+      on temp3 goto _small_plane_down _small_plane_up _small_plane_lr _middle_plane_down  _middle_plane_up _middle_plane_lr _big_plane_down _big_plane_up
 
 _small_plane_down
       playerpointerlo[temp1] = _Small_Plane_down_low
@@ -863,10 +1182,10 @@ _middle_plane_lr
       spriteheight[temp1]    = _Middle_Plane_lr_height
       goto _next_plane_type
 
-_boss_plane_up
-      playerpointerlo[temp1] = _Boss_Plane_up_low
-      playerpointerhi[temp1] = _Boss_Plane_up_high
-      spriteheight[temp1]    = _Boss_Plane_up_height
+_big_plane_down
+      playerpointerlo[temp1] = Big_Plane_down_low
+      playerpointerhi[temp1] = Big_Plane_down_high
+      spriteheight[temp1]    = Big_Plane_down_height
       goto _next_plane_type
 
 _big_plane_up
@@ -874,53 +1193,9 @@ _big_plane_up
       playerpointerhi[temp1] = _Big_Plane_up_high
       spriteheight[temp1]    = _Big_Plane_up_height
 
-
 _next_plane_type
-   next
 
-_skip_select_planes
-
-   rem ################### movement 
-   if joy0up && player0y < 40 then player0y = player0y + 1 : goto jump
-   if joy0down && player0y > 10 then player0y = player0y - 1 : goto jump
-   if joy0left && player0x > 0 then player0x = player0x - 1 : goto jump
-   if joy0right && player0x < 152 then player0x = player0x + 1
-   
-jump
-
-
-   if missile0y > 88 then missile0y = 0
-   if missile0y > 1 || PF1pointer < carrier_end then _skip_new_shot
-   if joy0fire then missile0y = player0y + 1 : missile0x = player0x + 5 : if _Ch0_Sound = 0 then _Ch0_Sound = 2 : _Ch0_Duration = 1 : _Ch0_Counter = 0
-_skip_new_shot
-   if ! missile0y then _check_enemy_shot
-   missile0y = missile0y + 3
-   if framecounter{0} then missile0x = missile0x - 2 else missile0x = missile0x + 2
-
-_check_enemy_shot
-;  if player1x = player0x && n = 0 && player1y < 20 then missile1x = player1x + 5 : missile1y = player1y + 2 :  n = 1
-
-
-_plane_loop
-
-
-   rem ################### attack speed
-
-   if PF1pointer < attackzone_start then goto _skip_plane_movement
-;   goto _skip_plane_movement
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Plane attack movement"
-
-   ; todo start new attack based on PF1pointer and framecounter! All previous attacks should have been ended by then!
-   if player1y = plane_1_parking_point && player2y = plane_2_parking_point && player3y = plane_3_parking_point && player4y = plane_4_parking_point && player5y = plane_5_parking_point then gosub build_attack_position : goto _skip_plane_movement
-
-   if framecounter{1} then temp2 = 1 : temp1 = 2 else temp2 = 0 : temp1 = 0
-   if framecounter{0} then temp1 = 2 else temp1 = 0
-   
-   
-_plane_movement_loop_start
-   temp3 = plane_type[temp1] & %00000011
+   temp3 = playertype[temp1] & %00000011
    temp4 = plane_parking_point[temp1]
    temp5 = rand
 
@@ -929,7 +1204,7 @@ _plane_movement_loop_start
 _plane_moves_right
    if NewSpriteX[temp1] > 153 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
-   NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_2
+   NewSpriteX[temp1] = NewSpriteX[temp1] + _Plane_X2_Speed
 
    if NewSpriteY[temp1] > 10 then NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
 
@@ -942,10 +1217,10 @@ _plane_moves_left
    temp3 = NewSpriteX[temp1]
    if !NewNUSIZ[temp1] && temp3 < 2 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
-   NewSpriteX[temp1] = temp3 - planex_speed_2
+   NewSpriteX[temp1] = temp3 - _Plane_X2_Speed
    
    if NewSpriteY[temp1] > 10 then NewSpriteY[temp1] = NewSpriteY[temp1] - temp2
-   if temp3 = 78 && temp5 < 128 then plane_type[temp1] = plane_type[temp1] + 1 : NewNUSIZ[temp1] = NewNUSIZ[temp1] ^ %00001000 : goto _check_next_plane
+   if temp3 = 78 && temp5 < 128 then playertype[temp1] = playertype[temp1] + 1 : NewNUSIZ[temp1] = NewNUSIZ[temp1] ^ %00001000 : goto _check_next_plane
 
    if temp3 < 254 then goto _check_next_plane
    if NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = temp3 + 16
@@ -956,14 +1231,14 @@ _plane_moves_down
    temp3 = NewSpriteY[temp1]
    if temp3 = temp4 then _check_next_plane
    if temp3 < 2 then NewSpriteY[temp1] = temp4 : goto _check_next_plane
-   if temp3 = 40 && temp5 < 128 then plane_type[temp1] = plane_type[temp1] + 5 : goto _check_next_plane
-   NewSpriteY[temp1] = temp3 - planey_speed 
+   if temp3 = 40 && temp5 < 128 then playertype[temp1] = playertype[temp1] + 5 : goto _check_next_plane
+   NewSpriteY[temp1] = temp3 - _Plane_Y_Speed 
    if temp3 < 71 then _check_for_escape_move
-   if NewSpriteX[temp1] > player0x then NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1 : goto _check_next_plane
-   if NewSpriteX[temp1] < player0x then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1 : goto _check_next_plane
+   if NewSpriteX[temp1] > player0x then NewSpriteX[temp1] = NewSpriteX[temp1] - _Plane_X1_Speed : goto _check_next_plane
+   if NewSpriteX[temp1] < player0x then NewSpriteX[temp1] = NewSpriteX[temp1] + _Plane_X1_Speed : goto _check_next_plane
 _check_for_escape_move
    if temp3 > 39 || temp5 < 128 then _check_next_plane
-   if NewSpriteX[temp1] > player0x && NewSpriteX[temp1] < 153 then NewSpriteX[temp1] = NewSpriteX[temp1] + planex_speed_1 else NewSpriteX[temp1] = NewSpriteX[temp1] - planex_speed_1
+   if NewSpriteX[temp1] > player0x && NewSpriteX[temp1] < 153 then NewSpriteX[temp1] = NewSpriteX[temp1] + _Plane_X1_Speed else NewSpriteX[temp1] = NewSpriteX[temp1] - _Plane_X1_Speed
 
    goto _check_next_plane
 
@@ -972,7 +1247,7 @@ _check_for_escape_move
 _plane_moves_up
    if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 240 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then _check_next_plane
-   NewSpriteY[temp1] = NewSpriteY[temp1] + planey_speed 
+   NewSpriteY[temp1] = NewSpriteY[temp1] + _Plane_Y_Speed 
    if NewSpriteY[temp1] < spriteheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] + spriteheight[temp1] - NewSpriteY[temp1] : spriteheight[temp1] = NewSpriteY[temp1]
 ;   if NewSpriteY[temp1] > 84 && spriteheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] + spriteheight[temp1] - NewSpriteY[temp1] : spriteheight[temp1] = NewSpriteY[temp1]
 
@@ -989,15 +1264,15 @@ _skip_plane_movement
 ; pfscroll down
 
    if framecounter < 10 then _skip_scrolling
-   if PF1pointer > carrier_end && framecounter < 24 then _skip_scrolling
-   if PF1pointer > carrier_end then _skip_carrier_superstructures_scrolling
+   if PF1pointer > _Map_Carrier_End && framecounter < 24 then _skip_scrolling
+   if PF1pointer > _Map_Carrier_End then _skip_carrier_superstructures_scrolling
    for temp1 = 0 to 4
    temp4 = plane_parking_point[temp1]
    if NewSpriteY[temp1] < temp4 then NewSpriteY[temp1] = NewSpriteY[temp1] - 8 else goto _next_superstructure
 
-   temp3 = NewSpriteY[temp1] - superstructFullHeight1[temp1]
-   if player1height[temp1] < superstructFullHeight1[temp1]  && temp3 < 85 && NewSpriteY[temp1] > player1height[temp1] then player1height[temp1] = player1height[temp1] + 8 : NewSpriteY[temp1] = 84
-   if player1height[temp1] > superstructFullHeight1[temp1] then player1height[temp1] = superstructFullHeight1[temp1]
+   temp3 = NewSpriteY[temp1] - playerfullheight[temp1]
+   if player1height[temp1] < playerfullheight[temp1]  && temp3 < 85 && NewSpriteY[temp1] > player1height[temp1] then player1height[temp1] = player1height[temp1] + 8 : NewSpriteY[temp1] = 84
+   if player1height[temp1] > playerfullheight[temp1] then player1height[temp1] = playerfullheight[temp1]
    if player1height[temp1] > NewSpriteY[temp1] && player1height[temp1] > 8 then player1height[temp1] = player1height[temp1] - 8 : playerpointerlo[temp1] = playerpointerlo[temp1] + 8
 
    if NewSpriteY[temp1] < 2 || NewSpriteY[temp1] > temp4 then NewSpriteY[temp1] = temp4
@@ -1008,18 +1283,34 @@ _skip_carrier_superstructures_scrolling
 
    PF1pointer = PF1pointer + 1
    PF2pointer = PF2pointer + 1
-   if PF1pointer <> map_end then _skip_playfield_end
-   if level && _Bit0_mirror_pf{0} then CTRLPF = %00000000 : game_flags = game_flags ^ 1 : PF1pointer = attackzone_start : PF2pointer = attackzone_start : COLUPF = island_sand_color : goto _skip_playfield_end
-   PF1pointer = 0 : PF2pointer = 0 : stage = 0 : level = level + 1 : game_flags = game_flags ^ 1 : CTRLPF = %00000001 : COLUPF = carrier_color
-   
-   player1y = plane_1_parking_point : player2y = plane_2_parking_point : player3y = plane_3_parking_point : player4y = plane_4_parking_point : player5y = plane_5_parking_point
+   if PF1pointer = _Map_Attackzone_Start then game_state = _Game_State_Active : PF1pointerhi = PF1pointerhi + 1 : PF2pointerhi = PF2pointerhi + 1 : COLUPF = _Color_Gras_Island : goto _skip_playfield_restart
+   if PF1pointer <> _Map_End then _skip_playfield_restart
+   PF1pointer = _Map_Attackzone_Start : PF2pointer = _Map_Attackzone_Start
 
-_skip_playfield_end
+   if _Bit0_mirror_pf{0} then CTRLPF = %00000000 else CTRLPF = %00000001
+   _Bit0_mirror_pf = _Bit0_mirror_pf ^ 1
+   temp1 = framecounter & %00000011
+   if temp1 < 2 then COLUPF = _Color_Gras_Island
+   if temp1 = 2 then COLUPF = _Color_Sand_Island else COLUPF = _Color_Jungle_Island
+
+_skip_playfield_restart
    framecounter = 0
-   if PF1pointer = carrier_end then COLUPF = island_gras_color
-
 
 _skip_scrolling
+
+   goto _Play_In_Game_Music bank3
+
+;#endregion
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Boss Fight loop"
+
+_boss_loop
+   if PF1pointer > 62 && framecounter{0} then  PF1pointer = PF1pointer - 1 :  PF2pointer = PF2pointer - 1
+ 
+_skip_boss_scrolling
+   ; end of boss fight:
+   ; game_state = _Game_State_Landing : pfheight = 3 : PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
 
    goto _Play_In_Game_Music bank3
 
@@ -1031,10 +1322,15 @@ _skip_scrolling
 
 build_attack_position
    temp2 = _attack_position_sequence[attack_position]
-   if temp2 = 255 then attack_position = 0 : stage = stage + 1 : temp2 = 0 else attack_position = attack_position + 1
+   attack_position = attack_position + 1
+   if temp2 < 226 then _read_attack_data
+   if temp2 = 255 then attack_position = 0 : goto build_attack_position ; game_state = _Game_State_Won : return
+   if temp2 = 226 then game_state = _Game_State_Boss : pfheight = 0 : PF1pointer = _Map_Boss_Start : PF2pointer = _Map_Boss_Start : PF1pointerhi = PF1pointerhi - 1 : PF2pointerhi = PF2pointerhi - 1 : level = level + 1 : COLUPF = _D4 : goto park_all_planes else goto build_attack_position
+   if temp2 = 227 then game_state = _Game_State_Landing : PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start : level = level + 1 : COLUPF = _Color_Carrier : goto park_all_planes else goto build_attack_position
 
+_read_attack_data
    for temp1 = 0 to 4
-      plane_type[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
+      playertype[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewSpriteX[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewSpriteY[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewNUSIZ[temp1]   = _attack_position_data[temp2] : temp2 = temp2 + 1
@@ -1043,23 +1339,30 @@ build_attack_position
 
    return
 
+park_all_planes
+   player1y = _Player1_Parking_Point
+   player2y = _Player2_Parking_Point
+   player3y = _Player3_Parking_Point
+   player4y = _Player4_Parking_Point
+   player5y = _Player5_Parking_Point
+   return
+
 ;#endregion
 
-   const p1p = plane_1_parking_point
-   const p2p = plane_2_parking_point
-   const p3p = plane_3_parking_point
-   const p4p = plane_4_parking_point
-   const p5p = plane_5_parking_point
+   const p1p = _Player1_Parking_Point
+   const p2p = _Player2_Parking_Point
+   const p3p = _Player3_Parking_Point
+   const p4p = _Player4_Parking_Point
+   const p5p = _Player5_Parking_Point
 
+   data _attack_position_sequence
+     0,  226
+     0,  0, 25, 50,  0, 25, 75, 50, 50,100,  0,125, 25,150, 75, 75,125,  0, 227
+   255
+end
 
- rem plane_type, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
+ rem playertype, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
    data _attack_position_data
-      %00000010,         40,        p1p,       0, _D6  ; Boss plane Ayako
-      %00000010,        110,        p1p,       0, _D6
-      %00000010,        110,        p1p,       0, _D6
-      %00011011,         50,          1,       7, _D4
-      %00011011,         82,          1,      15, _D4
-
       %00000010,         40,         88,       0, _D6  ; 5 small planes from top
       %00000010,        110,         98,       0, _D6
       %00000010,        110,        108,       0, _D6
@@ -1101,19 +1404,21 @@ build_attack_position
       %00000010,        110,        108,       0, _D6
       %00000010,         90,        118,       0, _D6
       %00011111,         30,          1,       7, _D4
+
+      %00000010,         40,        p1p,       0, _D6  ; Boss plane Ayako
+      %00000010,        110,        p1p,       0, _D6
+      %00000010,        110,        p1p,       0, _D6
+      %00011011,         50,          1,       7, _D2
+      %00011011,         80,          1,      15, _D2
 end
 
-   data _attack_position_sequence
-   0,0,0,0,0,25,50,75,100,125,150
-   255
-end
 
    data plane_parking_point
-   plane_1_parking_point
-   plane_2_parking_point
-   plane_3_parking_point
-   plane_4_parking_point
-   plane_5_parking_point
+   _Player1_Parking_Point
+   _Player2_Parking_Point
+   _Player3_Parking_Point
+   _Player4_Parking_Point
+   _Player5_Parking_Point
 end
 
 ;#endregion
@@ -1131,7 +1436,7 @@ titlescreen
    framecounter = framecounter + 1
    if framecounter{0} then bmp_96x2_2_index = 25 else  bmp_96x2_2_index = 0
 
-   gosub _Play_Titlescreen_Music bank3
+   gosub songPlayer bank3
 
    gosub titledrawscreen
 
@@ -1150,12 +1455,6 @@ end
 
    inline song.h
    inline songplay.h
-
-_Play_Titlescreen_Music
-   asm
-   jsr songPlayer
-end
-   return
 
 _Play_In_Game_Music
 
@@ -1206,15 +1505,13 @@ _Play_In_Game_Music
    ;  Retrieves more channel 0 data.
    ;
    _Ch0_Counter = _Ch0_Counter + 1
-   temp5 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   temp6 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Plays channel 0.
    ;
    AUDV0 = temp4
-   AUDC0 = temp5
-   AUDF0 = temp6
+   AUDC0 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Sets Duration.
@@ -1242,7 +1539,7 @@ __Skip_Ch0_Sound_001
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
    ;
-   temp4 = _SD_Shoot_Miss[_Ch0_Counter]
+   temp4 = _SD_Shoot[_Ch0_Counter]
 
    ;```````````````````````````````````````````````````````````````
    ;  Checks for end of data.
@@ -1253,20 +1550,18 @@ __Skip_Ch0_Sound_001
    ;  Retrieves more channel 0 data.
    ;
    _Ch0_Counter = _Ch0_Counter + 1
-   temp5 = _SD_Shoot_Miss[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   temp6 = _SD_Shoot_Miss[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Plays channel 0.
    ;
    AUDV0 = temp4
-   AUDC0 = temp5
-   AUDF0 = temp6
+   AUDC0 = _SD_Shoot[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Shoot[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Sets Duration.
    ;
-   _Ch0_Duration = _SD_Shoot_Miss[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   _Ch0_Duration = _SD_Shoot[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Jumps to end of channel 0 area.
@@ -1290,7 +1585,7 @@ __Skip_Ch0_Sound_002
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
    ;
-   temp4 = _SD_Shot_Enemy[_Ch0_Counter]
+   temp4 = _SD_Enemy_Destroyed[_Ch0_Counter]
 
    ;```````````````````````````````````````````````````````````````
    ;  Checks for end of data.
@@ -1301,20 +1596,18 @@ __Skip_Ch0_Sound_002
    ;  Retrieves more channel 0 data.
    ;
    _Ch0_Counter = _Ch0_Counter + 1
-   temp5 = _SD_Shot_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   temp6 = _SD_Shot_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Plays channel 0.
    ;
    AUDV0 = temp4
-   AUDC0 = temp5
-   AUDF0 = temp6
+   AUDC0 = _SD_Enemy_Destroyed[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Enemy_Destroyed[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Sets Duration.
    ;
-   _Ch0_Duration = _SD_Shot_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   _Ch0_Duration = _SD_Enemy_Destroyed[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Jumps to end of channel 0 area.
@@ -1337,7 +1630,7 @@ __Skip_Ch0_Sound_003
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
    ;
-   temp4 = _SD_Hit_By_Enemy[_Ch0_Counter]
+   temp4 = _SD_Death[_Ch0_Counter]
 
    ;```````````````````````````````````````````````````````````````
    ;  Checks for end of data.
@@ -1348,20 +1641,18 @@ __Skip_Ch0_Sound_003
    ;  Retrieves more channel 0 data.
    ;
    _Ch0_Counter = _Ch0_Counter + 1
-   temp5 = _SD_Hit_By_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   temp6 = _SD_Hit_By_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Plays channel 0.
    ;
    AUDV0 = temp4
-   AUDC0 = temp5
-   AUDF0 = temp6
+   AUDC0 = _SD_Death[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Death[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Sets Duration.
    ;
-   _Ch0_Duration = _SD_Hit_By_Enemy[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   _Ch0_Duration = _SD_Death[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Jumps to end of channel 0 area.
@@ -1446,16 +1737,11 @@ __Skip_Ch_0
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves more channel 1 data.
-   ;
-   temp5 = sread(_SD_Music01)
-   temp6 = sread(_SD_Music01)
-
-   ;```````````````````````````````````````````````````````````````
    ;  Plays channel 1.
    ;
    AUDV1 = temp4
-   AUDC1 = temp5
-   AUDF1 = temp6
+   AUDC1 = sread(_SD_Music01)
+   AUDF1 = sread(_SD_Music01)
 
    ;```````````````````````````````````````````````````````````````
    ;  Sets duration.
@@ -1529,43 +1815,14 @@ end
    ;***************************************************************
    ;***************************************************************
    ;
-   ;  Sound data for shooting missile.
+   ;  Sound data for shooting.
    ;
-   data _SD_Shoot_Miss
-   6,15,0
-   1
-   10,15,1
-   1
-   6,7,20
-   1
-   8,15,3
-   1
-   6,7,22
-   1
-   8,15,5
-   1
-   6,15,6
-   1
-   8,7,24
-   1
-   6,15,8
-   1
-   7,7,27
-   1
-   6,15,10
-   1
-   5,14,11
-   1
-   4,15,12
-   1
-   3,6,13
-   1
-   2,15,14
-   1
-   1,6,27
-   1
-   1,6,30
-   8
+
+   data _SD_Shoot
+   15,2,2,1
+   3,8,4,4
+   2,8,4,8
+   1,8,4,11
    255
 end
 
@@ -1574,33 +1831,16 @@ end
    ;
    ;  Sound data for shot hitting enemy.
    ;
-   data _SD_Shot_Enemy
-   8,8,0
-   1
-   8,8,1
-   1
-   8,14,1
-   1
-   8,8,0
-   1
-   8,8,2
-   1
-   8,14,2
-   1
-   8,8,1
-   1
-   7,8,3
-   1
-   6,8,2
-   1
-   5,8,4
-   1
-   4,8,3
-   1
-   3,8,5
-   1
-   2,14,4
-   4
+
+   data _SD_Enemy_Destroyed
+   12,2,3,1
+   2,2,3,1
+   12,2,3,1
+   2,2,3,1
+   12,2,3,1
+   3,8,5,9
+   6,8,2,1
+   3,8,2,1
    255
 end
 
@@ -1609,24 +1849,32 @@ end
    ;
    ;  Sound data for touching enemy.
    ;
-   data _SD_Hit_By_Enemy
-   2,7,11
-   2
-   10,7,12
-   2
-   8,7,13
-   2
-   8,7,14
-   2
-   8,7,21
-   8
-   4,7,22
-   2
-   2,7,23
-   1
+   data _SD_Death
+   6,8,3,1
+   4,8,3,2
+   2,8,3,5
+   8,8,18,1
+   2,8,18,1
+   10,8,18,1
+   2,8,18,1
+   12,8,18,1
+   2,8,18,1
+   12,8,18,1
+   2,8,17,1
+   12,8,16,1
+   2,8,15,1
+   12,8,14,1
+   2,8,13,1
+   10,8,12,1
+   2,8,11,1
+   8,8,10,1
+   2,8,9,1
+   5,8,7,1
+   3,8,5,4
+   2,8,5,4
+   1,8,5,6
    255
 end
-
 
 __BG_Music_Setup_01
 
@@ -1790,37 +2038,7 @@ end
    asm
    PAD_BB_SPRITE_DATA 27
 end
-  data _Boss_Plane_up
-   %00000001
-   %00001111
-   %00000111
-   %00000011
-   %00000001
-   %00000001
-   %00000001
-   %00000001
-   %00000001
-   %00000001
-   %00000001
-   %00000011
-   %00000011
-   %00000011
-   %00000111
-   %00001111
-   %00111111
-   %01111111
-   %11111111
-   %11111111
-   %00101011
-   %00101011
-   %00000011
-   %00000001
-   %00000001
-   %00000001
-   %00000001
-   %00000001
-end
-/*
+  data Big_Plane_down
    %01011010
    %11111111
    %11111111
@@ -1829,7 +2047,7 @@ end
    %00011000
    %00111100
    %00111100
-*/
+end
 
    asm
    PAD_BB_SPRITE_DATA 7
@@ -1939,24 +2157,5 @@ end
    %00110100
    %00001000
 end
-
-/*
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-   %00001000
-end
-*/
-
 
 ;#endregion
