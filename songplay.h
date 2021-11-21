@@ -278,7 +278,7 @@ noCut
 ;
 ; Call this once per screen-draw.
 ;--------------------------------------------------------------------------
-songPlayer
+.songPlayer
 
 ;--------------------------------------------------------------------------
 ; Generates tempo based on TEMPODELAY
@@ -323,7 +323,9 @@ notEndOfSong
     lda song2,y
 
     ldx #1
-    jmp playPattern
+    jsr playPattern
+
+    jmp BS_return
 
     ; songPlayer
 ;--------------------------------------------------------------------------

@@ -7,11 +7,32 @@
 
  MAC titlescreenlayout
 ;	draw_96x2_1
-	draw_96x2_2
-	draw_space 40
-	draw_48x2_1
-	draw_space 40
 	draw_score
+	draw_space 10
+	draw_96x2_2
+	draw_space 10
+	draw_48x2_1
+	draw_space 10
+	lda _Bit5_PlusROM
+	and #32
+	beq _Skip_HSC_Logo
+	draw_48x1_1
+	jmp _Skip_Space_1
+_Skip_HSC_Logo
+	draw_space 19
+_Skip_Space_1
+
+
+	lda	_Bit4_genesispad
+	and	#16
+	beq	_Skip_Genesispad_Logo
+	draw_48x1_2
+	jmp _Skip_Space_2
+_Skip_Genesispad_Logo
+	draw_space 19
+_Skip_Space_2
+
+
 ;	draw_96x2_3
 ;	draw_48x1_2
 ;	draw_48x1_3
