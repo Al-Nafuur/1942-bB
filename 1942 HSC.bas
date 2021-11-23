@@ -330,7 +330,7 @@
    const _Player0_X_Start =  76
    const _Player0_Y_Start =  25
    const _Player0_X_Max   = 152
-   const _Player0_Y_Max   =  40
+   const _Player0_Y_Max   =  55
    const _Player0_X_Min   =   0
    const _Player0_Y_Min   =  10
 
@@ -430,6 +430,42 @@ end
    const _Carrier_Tower_low        = <_Carrier_Tower
    const _Carrier_Tower_height     = _Carrier_Tower_length + 1
 
+   const _Player0_Plane_up_high    = >_Player0_Plane_up
+   const _Player0_Plane_up_low     = <_Player0_Plane_up
+   const _Player0_Plane_up_height  = _Player0_Plane_up_length
+
+   const _Player0_Plane_down_high   = >_Player0_Plane_down
+   const _Player0_Plane_down_low    = <_Player0_Plane_down
+   const _Player0_Plane_down_height = _Player0_Plane_down_length
+
+   const _Player0_Looping_1_high    = >_Player0_Looping_1
+   const _Player0_Looping_1_low     = <_Player0_Looping_1
+   const _Player0_Looping_1_height  = _Player0_Looping_1_length
+
+   const _Player0_Looping_2_high    = >_Player0_Looping_2
+   const _Player0_Looping_2_low     = <_Player0_Looping_2
+   const _Player0_Looping_2_height  = _Player0_Looping_2_length
+
+   const _Player0_Explosion_0_high  = >_Player0_Explosion_0
+   const _Player0_Explosion_0_low   = <_Player0_Explosion_0
+   const _Player0_Explosion_0_height= _Player0_Explosion_0_length
+
+   const _Player0_Explosion_1_high  = >_Player0_Explosion_1
+   const _Player0_Explosion_1_low   = <_Player0_Explosion_1
+   const _Player0_Explosion_1_height= _Player0_Explosion_1_length
+
+   const _Player0_Explosion_2_high  = >_Player0_Explosion_2
+   const _Player0_Explosion_2_low   = <_Player0_Explosion_2
+   const _Player0_Explosion_2_height= _Player0_Explosion_2_length
+
+   const _Player0_Explosion_3_high  = >_Player0_Explosion_3
+   const _Player0_Explosion_3_low   = <_Player0_Explosion_3
+   const _Player0_Explosion_3_height= _Player0_Explosion_3_length
+
+   const _Player0_Explosion_4_high  = >_Player0_Explosion_4
+   const _Player0_Explosion_4_low   = <_Player0_Explosion_4
+   const _Player0_Explosion_4_height= _Player0_Explosion_4_length
+
 ;#endregion
 
 ;#region "Zeropage Variables"
@@ -475,7 +511,7 @@ end
    dim map_section            = y
    dim _Bit0_map_speed        = y
    dim _Bit1_map_speed        = y
-   dim _Bit2_map_pfheight     = y
+   dim _Bit2_map_pfheight     = y  ; Playfield pixel height
    dim _Bit3_map_direction    = y  
    dim _Bit4_map_P_moving     = y  ; Player can move
    dim _Bit5_map_E_moving     = y  ; Enemies moving
@@ -484,12 +520,13 @@ end
 
 
    dim game_flags             = z
-   dim _Bit0_mirror_pf        = z
+   dim _Bit0_gf               = z
    dim _Bit1_reset_restrainer = z
    dim _Bit2_looping          = z
    dim _Bit3_mute_bg_music    = z
    dim _Bit4_genesispad       = z
    dim _Bit5_PlusROM          = z
+   dim _Bit6_p0_explosion     = z
 
    ; Slocum Player and titlescreen RAM variables (reuses game loop variables!)
    dim bmp_96x2_2_index = f
@@ -512,12 +549,16 @@ end
 ;#region "SC RAM Variables"
    dim w_NUSIZ0           = w000
    dim r_NUSIZ0           = r000
-;   dim _COLUPF           = w001
-;   dim _COLUPF           = r001
+;   dim w_COLUPF           = w001
+;   dim r_COLUPF           = r001
    dim w_player_animation_state = w001
    dim r_player_animation_state = r001
    dim w_stage            = w002
    dim r_stage            = r002
+   dim w_COLUP0           = w003 
+   dim r_COLUP0           = r003
+   dim w_CTRLPF           = w004
+   dim r_CTRLPF           = r004
 
 ;#endregion
 
@@ -1071,6 +1112,8 @@ end
    PF2pointer = _Map_Takeoff_Point
 
    _COLUPF = _Color_Carrier
+   w_COLUP0 = _EA
+   w_CTRLPF = 1
 
    lives:
    %00111100
@@ -1082,15 +1125,8 @@ end
    %00000000
 end
 
-   player0:
-   %00100100
-   %01111110
-   %00100100
-   %00111100
-   %11111111
-   %11111111
-   %00100100
-end
+
+   player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height
 
    goto  __BG_Music_Setup_01 bank3
 
@@ -1101,8 +1137,34 @@ main
 
    framecounter = framecounter + 1
    COLUBK = _96
-   lifecolor = _EA : COLUP0 = _EA : COLUPF = _COLUPF
- 
+   COLUP0 = r_COLUP0
+   CTRLPF = r_CTRLPF
+
+   lifecolor = _EA : COLUPF = _COLUPF
+
+   if !_Bit6_p0_explosion{6} then _skip_player0_explosion
+
+   if framecounter{0} then _skip_player0_collision
+
+   w_player_animation_state = r_player_animation_state + 1
+   if r_player_animation_state = 50 then _player0_animation_end
+   if r_player_animation_state = 1 then w_COLUP0 = _4E : player0pointerlo = _Player0_Explosion_0_low : player0pointerhi = _Player0_Explosion_0_high : player0height = _Player0_Explosion_0_height : goto _skip_player0_collision
+   if r_player_animation_state = 10 then w_COLUP0 = _48 : player0pointerlo = _Player0_Explosion_1_low : player0pointerhi = _Player0_Explosion_1_high : player0height = _Player0_Explosion_1_height : goto _skip_player0_collision
+   if r_player_animation_state = 20 then w_COLUP0 = _46 : player0pointerlo = _Player0_Explosion_2_low : player0pointerhi = _Player0_Explosion_2_high : player0height = _Player0_Explosion_2_height : goto _skip_player0_collision
+   if r_player_animation_state = 30 then w_COLUP0 = _42 : player0pointerlo = _Player0_Explosion_3_low : player0pointerhi = _Player0_Explosion_3_high : player0height = _Player0_Explosion_3_height : goto _skip_player0_collision
+   if r_player_animation_state = 40 then w_COLUP0 = _42 : player0pointerlo = _Player0_Explosion_4_low : player0pointerhi = _Player0_Explosion_4_high : player0height = _Player0_Explosion_4_height
+
+   goto _skip_player0_collision
+
+_player0_animation_end
+   player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0
+   if lives < 32 then goto titlescreen_start bank2
+   lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
+   statusbarlength = %10101000 : w_COLUP0 = _EA
+   attack_position = attack_position - 1
+   goto build_attack_position
+_skip_player0_explosion
+
    if !_Bit7_map_E_collsion{7} || _Bit2_looping{2} then goto _skip_player0_collision
    if _Bit6_map_PF_collision{6} && collision(missile0, playfield) then _missile0_collision
    if !collision(player1, missile0) then goto _skip_missile0_collision
@@ -1140,11 +1202,8 @@ _skip_missile0_collision
    if !_Bit7_map_E_collsion{7} || !collision(player0, player1) then goto _skip_player0_collision
 _player0_collision
    _Ch0_Sound = 4 : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   ; todo player0 explosion animation
-   if lives < 32 then goto titlescreen_start bank2
-   lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
-   attack_position = attack_position - 1
-   goto build_attack_position
+   _Bit6_p0_explosion{6} = 1 : w_player_animation_state = 0
+   goto _skip_game_action
 
 _skip_player0_collision
 
@@ -1199,7 +1258,7 @@ _skip_carrier_superstructures_scrolling
 _skip_carrier_superstructures_init
 
    if PF1pointer = _Map_Takeoff_Sound_Start then _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : goto _skip_playfield_restart
-   if PF1pointer = _Map_Attackzone_Start then map_section = _Map_Pacific : _Bit3_mute_bg_music{0} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high : goto _next_playfield_variation
+   if PF1pointer = _Map_Attackzone_Start then map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high : goto _next_playfield_variation
 
 _skip_carrier_superstructures
 
@@ -1211,8 +1270,7 @@ _skip_boss_moving_down
    if PF1pointer <> _Map_End then _skip_playfield_restart
 _next_playfield_variation
    PF1pointer = 0 : PF2pointer = 0
-   if _Bit0_mirror_pf{0} then CTRLPF = %00000000 else CTRLPF = %00000001
-   _Bit0_mirror_pf = _Bit0_mirror_pf ^ 1
+   w_CTRLPF = r_CTRLPF ^ 1
    temp1 = r_stage & %00000011
    if temp1 < 2 then _COLUPF = _Color_Gras_Island : goto _skip_playfield_restart
    if temp1 = 2 then _COLUPF = _Color_Sand_Island else _COLUPF = _Color_Jungle_Island
@@ -1227,6 +1285,7 @@ _skip_scrolling
 
 
 _check_player_movement
+   if _Bit6_p0_explosion{6} then goto _plane_loop
    if map_section <> _Map_Carrier then _player_movement
 
    if player0y < _Player0_Y_Start then player0y = player0y + 1
@@ -1239,12 +1298,17 @@ _check_player_movement
 
 _player_movement
    if !_Bit2_looping{2} then goto _check_for_new_looping
+   if framecounter{0} then jump_1
    w_player_animation_state = r_player_animation_state + 1
-   if r_player_animation_state < 5  && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto _skip_looping_back
-   if r_player_animation_state < 25 && player0y > _Player0_Y_Min then player0y = player0y - 1
-_skip_looping_back
-   ; looping
-   if r_player_animation_state = 25 then _Bit2_looping{2} = 0
+   
+   if r_player_animation_state = 5 then player0pointerlo = _Player0_Looping_1_low : player0pointerhi = _Player0_Looping_1_high : player0height = _Player0_Looping_1_height
+   if r_player_animation_state < 10 && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto jump_1
+   if r_player_animation_state = 10 then player0pointerlo = _Player0_Plane_down_low : player0pointerhi = _Player0_Plane_down_high : player0height = _Player0_Plane_down_height : goto jump_1
+   if r_player_animation_state = 25 then player0pointerlo = _Player0_Looping_2_low : player0pointerhi = _Player0_Looping_2_high : player0height = _Player0_Looping_2_height
+   if r_player_animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _E6 : goto jump_1
+   if r_player_animation_state = 30 then player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : goto jump_1
+   if r_player_animation_state < 40 then player0y = player0y + 1 : goto jump_1
+   if r_player_animation_state = 40 then _Bit2_looping{2} = 0
    goto jump_1
 
 _check_for_new_looping
@@ -1380,8 +1444,8 @@ _skip_game_action
 set_game_state_landing
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
-   map_section = _Map_Carrier : _Bit3_mute_bg_music{0} = 1 : _COLUPF = _Color_Carrier
-   _Ch0_Sound = 5 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : pfheight = 3 : CTRLPF = %00000001
+   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : _COLUPF = _Color_Carrier
+   _Ch0_Sound = 5 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : pfheight = 3 : w_CTRLPF = %00000001
    goto park_all_planes
 
 set_game_state_looping
@@ -1391,7 +1455,7 @@ set_game_state_looping
 
 set_game_state_boss
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
-   pfheight = 0 : CTRLPF = %00000001
+   pfheight = 0 : w_CTRLPF = %00000001
    for temp1 = 0 to 4
       NewSpriteY[temp1] = _plane_parking_point[temp1] + 5
       NewNUSIZ[temp1]   = temp3
@@ -2312,6 +2376,133 @@ end
    %11000011
    %00000011
 end
+
+   asm
+   PAD_BB_SPRITE_DATA 7
+end
+   data _Player0_Plane_up
+   0
+   %00100100
+   %01111110
+   %00100100
+   %00111100
+   %11111111
+   %11111111
+   %00100100
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 7
+end
+   data _Player0_Plane_down
+   0
+   %00100100
+   %00111100
+   %11111111
+   %11111111
+   %00100100
+   %01111110
+   %00100100
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 2
+end
+  data _Player0_Looping_1
+   0
+   %00111100
+   %11111111
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 2
+end
+  data _Player0_Looping_2
+   0
+   %11111111
+   %00111100
+end
+
+
+   asm
+   PAD_BB_SPRITE_DATA 8
+end
+
+  data _Player0_Explosion_0
+   0
+   %00000000
+   %01001010
+   %00111100
+   %00111100
+   %00111100
+   %00111100
+   %01010010
+   %00000000
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 8
+end
+  data _Player0_Explosion_1
+   0
+   %01111110
+   %11011111
+   %11111111
+   %11111110
+   %11111111
+   %11111101
+   %11111111
+   %01111010
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 8
+end
+  data _Player0_Explosion_2
+   0
+   %00000000
+   %00011000
+   %00111100
+   %00111100
+   %00101100
+   %00111100
+   %00011000
+   %00000000
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 9
+end
+  data _Player0_Explosion_3
+   0
+   %00000000
+   %00000000
+   %00000000
+   %00010100
+   %00000000
+   %00101010
+   %00000100
+   %00010000
+   %00000000
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 10
+end
+  data _Player0_Explosion_4
+   0
+   %00000000
+   %00000000
+   %00000000
+   %00001000
+   %00100100
+   %01000000
+   %10001001
+   %01000000
+   %01000010
+   %00101100
+end
+
 
    asm
    PAD_BB_SPRITE_DATA 60
