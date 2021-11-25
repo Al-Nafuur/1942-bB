@@ -483,8 +483,7 @@ end
    dim _Ch1_Read_Pos_Hi  = f
 
    dim attack_position   = g
-;   dim player_animation_state = h
-   dim _COLUPF = h
+   dim player_animation_state = h
 
    dim playertype        = i
    dim player1type       = i
@@ -547,18 +546,16 @@ end
 ;#endregion
 
 ;#region "SC RAM Variables"
-   dim w_NUSIZ0           = w000
-   dim r_NUSIZ0           = r000
-;   dim w_COLUPF           = w001
-;   dim r_COLUPF           = r001
-   dim w_player_animation_state = w001
-   dim r_player_animation_state = r001
-   dim w_stage            = w002
-   dim r_stage            = r002
-   dim w_COLUP0           = w003 
-   dim r_COLUP0           = r003
-   dim w_CTRLPF           = w004
-   dim r_CTRLPF           = r004
+   dim w_NUSIZ0           = w127
+   dim r_NUSIZ0           = r127
+   dim w_COLUPF           = w126
+   dim r_COLUPF           = r126
+   dim w_stage            = w125
+   dim r_stage            = r125
+   dim w_COLUP0           = w124 
+   dim r_COLUP0           = r124
+   dim w_CTRLPF           = w123
+   dim r_CTRLPF           = r123
 
 ;#endregion
 
@@ -1111,7 +1108,7 @@ end
    PF1pointer = _Map_Takeoff_Point
    PF2pointer = _Map_Takeoff_Point
 
-   _COLUPF = _Color_Carrier
+   w_COLUPF = _Color_Carrier
    w_COLUP0 = _EA
    w_CTRLPF = 1
 
@@ -1140,19 +1137,19 @@ main
    COLUP0 = r_COLUP0
    CTRLPF = r_CTRLPF
 
-   lifecolor = _EA : COLUPF = _COLUPF
+   lifecolor = _EA : COLUPF = r_COLUPF
 
    if !_Bit6_p0_explosion{6} then _skip_player0_explosion
 
    if framecounter{0} then _skip_player0_collision
 
-   w_player_animation_state = r_player_animation_state + 1
-   if r_player_animation_state = 50 then _player0_animation_end
-   if r_player_animation_state = 1 then w_COLUP0 = _4E : player0pointerlo = _Player0_Explosion_0_low : player0pointerhi = _Player0_Explosion_0_high : player0height = _Player0_Explosion_0_height : goto _skip_player0_collision
-   if r_player_animation_state = 10 then w_COLUP0 = _48 : player0pointerlo = _Player0_Explosion_1_low : player0pointerhi = _Player0_Explosion_1_high : player0height = _Player0_Explosion_1_height : goto _skip_player0_collision
-   if r_player_animation_state = 20 then w_COLUP0 = _46 : player0pointerlo = _Player0_Explosion_2_low : player0pointerhi = _Player0_Explosion_2_high : player0height = _Player0_Explosion_2_height : goto _skip_player0_collision
-   if r_player_animation_state = 30 then w_COLUP0 = _42 : player0pointerlo = _Player0_Explosion_3_low : player0pointerhi = _Player0_Explosion_3_high : player0height = _Player0_Explosion_3_height : goto _skip_player0_collision
-   if r_player_animation_state = 40 then w_COLUP0 = _42 : player0pointerlo = _Player0_Explosion_4_low : player0pointerhi = _Player0_Explosion_4_high : player0height = _Player0_Explosion_4_height
+   player_animation_state = player_animation_state + 1
+   if player_animation_state = 50 then _player0_animation_end
+   if player_animation_state = 1 then w_COLUP0 = _4E : player0pointerlo = _Player0_Explosion_0_low : player0pointerhi = _Player0_Explosion_0_high : player0height = _Player0_Explosion_0_height : goto _skip_player0_collision
+   if player_animation_state = 10 then w_COLUP0 = _48 : player0pointerlo = _Player0_Explosion_1_low : player0pointerhi = _Player0_Explosion_1_high : player0height = _Player0_Explosion_1_height : goto _skip_player0_collision
+   if player_animation_state = 20 then w_COLUP0 = _46 : player0pointerlo = _Player0_Explosion_2_low : player0pointerhi = _Player0_Explosion_2_high : player0height = _Player0_Explosion_2_height : goto _skip_player0_collision
+   if player_animation_state = 30 then w_COLUP0 = _42 : player0pointerlo = _Player0_Explosion_3_low : player0pointerhi = _Player0_Explosion_3_high : player0height = _Player0_Explosion_3_height : goto _skip_player0_collision
+   if player_animation_state = 40 then w_COLUP0 = _42 : player0pointerlo = _Player0_Explosion_4_low : player0pointerhi = _Player0_Explosion_4_high : player0height = _Player0_Explosion_4_height
 
    goto _skip_player0_collision
 
@@ -1202,7 +1199,7 @@ _skip_missile0_collision
    if !_Bit7_map_E_collsion{7} || !collision(player0, player1) then goto _skip_player0_collision
 _player0_collision
    _Ch0_Sound = 4 : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   _Bit6_p0_explosion{6} = 1 : w_player_animation_state = 0
+   _Bit6_p0_explosion{6} = 1 : player_animation_state = 0
    goto _skip_game_action
 
 _skip_player0_collision
@@ -1272,8 +1269,8 @@ _next_playfield_variation
    PF1pointer = 0 : PF2pointer = 0
    w_CTRLPF = r_CTRLPF ^ 1
    temp1 = r_stage & %00000011
-   if temp1 < 2 then _COLUPF = _Color_Gras_Island : goto _skip_playfield_restart
-   if temp1 = 2 then _COLUPF = _Color_Sand_Island else _COLUPF = _Color_Jungle_Island
+   if temp1 < 2 then w_COLUPF = _Color_Gras_Island : goto _skip_playfield_restart
+   if temp1 = 2 then w_COLUPF = _Color_Sand_Island else w_COLUPF = _Color_Jungle_Island
 
 _skip_playfield_restart
 
@@ -1299,16 +1296,16 @@ _check_player_movement
 _player_movement
    if !_Bit2_looping{2} then goto _check_for_new_looping
    if framecounter{0} then jump_1
-   w_player_animation_state = r_player_animation_state + 1
+   player_animation_state = player_animation_state + 1
    
-   if r_player_animation_state = 5 then player0pointerlo = _Player0_Looping_1_low : player0pointerhi = _Player0_Looping_1_high : player0height = _Player0_Looping_1_height
-   if r_player_animation_state < 10 && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto jump_1
-   if r_player_animation_state = 10 then player0pointerlo = _Player0_Plane_down_low : player0pointerhi = _Player0_Plane_down_high : player0height = _Player0_Plane_down_height : goto jump_1
-   if r_player_animation_state = 25 then player0pointerlo = _Player0_Looping_2_low : player0pointerhi = _Player0_Looping_2_high : player0height = _Player0_Looping_2_height
-   if r_player_animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _E6 : goto jump_1
-   if r_player_animation_state = 30 then player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : goto jump_1
-   if r_player_animation_state < 40 then player0y = player0y + 1 : goto jump_1
-   if r_player_animation_state = 40 then _Bit2_looping{2} = 0
+   if player_animation_state = 5 then player0pointerlo = _Player0_Looping_1_low : player0pointerhi = _Player0_Looping_1_high : player0height = _Player0_Looping_1_height
+   if player_animation_state < 10 && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto jump_1
+   if player_animation_state = 10 then player0pointerlo = _Player0_Plane_down_low : player0pointerhi = _Player0_Plane_down_high : player0height = _Player0_Plane_down_height : goto jump_1
+   if player_animation_state = 25 then player0pointerlo = _Player0_Looping_2_low : player0pointerhi = _Player0_Looping_2_high : player0height = _Player0_Looping_2_height
+   if player_animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _E6 : goto jump_1
+   if player_animation_state = 30 then player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : goto jump_1
+   if player_animation_state < 40 then player0y = player0y + 1 : goto jump_1
+   if player_animation_state = 40 then _Bit2_looping{2} = 0
    goto jump_1
 
 _check_for_new_looping
@@ -1444,13 +1441,13 @@ _skip_game_action
 set_game_state_landing
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
-   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : _COLUPF = _Color_Carrier
+   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier
    _Ch0_Sound = 5 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : pfheight = 3 : w_CTRLPF = %00000001
    goto park_all_planes
 
 set_game_state_looping
    statusbarlength = statusbarlength / 4 & %11111000
-   _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : w_player_animation_state = 0 : _Bit2_looping{2} = 1
+   _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : player_animation_state = 0 : _Bit2_looping{2} = 1
    goto _player_normal_movement
 
 set_game_state_boss
@@ -1472,10 +1469,10 @@ build_attack_position
    temp2 = _attack_position_sequence[attack_position]
    attack_position = attack_position + 1
    if temp2 < 226 then goto _read_attack_data
-   if temp2 = 226 then map_section = _Map_Boss_down : player5hits = 25 : temp3 = 0 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : _COLUPF = _D8 : goto set_game_state_boss
-   if temp2 = 227 then map_section = _Map_Boss_down : player5hits = 35 : temp3 = 1 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : _COLUPF = _D6 : goto set_game_state_boss
-   if temp2 = 228 then map_section = _Map_Boss_up   : player5hits = 55 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : _COLUPF = _D6 : goto set_game_state_boss
-   if temp2 = 229 then map_section = _Map_Boss_up   : player5hits = 70 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : _COLUPF = _D4 : goto set_game_state_boss
+   if temp2 = 226 then map_section = _Map_Boss_down : player5hits = 25 : temp3 = 0 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D8 : goto set_game_state_boss
+   if temp2 = 227 then map_section = _Map_Boss_down : player5hits = 35 : temp3 = 1 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D6 : goto set_game_state_boss
+   if temp2 = 228 then map_section = _Map_Boss_up   : player5hits = 55 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D6 : goto set_game_state_boss
+   if temp2 = 229 then map_section = _Map_Boss_up   : player5hits = 70 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D4 : goto set_game_state_boss
    if temp2 = 254 then w_stage = r_stage + 1 : goto set_game_state_landing
    if temp2 = 255 then attack_position = 0 : goto build_attack_position ; todo game finished screen
 _read_attack_data
