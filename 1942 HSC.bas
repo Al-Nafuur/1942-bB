@@ -557,6 +557,45 @@ end
    dim w_CTRLPF           = w123
    dim r_CTRLPF           = r123
 
+   dim w_player5hits_a      = w119
+   dim r_player5hits_a      = r119
+   dim w_player4hits_a      = w118
+   dim r_player4hits_a      = r118
+   dim w_player3hits_a      = w117
+   dim r_player3hits_a      = r117
+   dim w_player2hits_a      = w116
+   dim r_player2hits_a      = r116
+   dim w_player1hits_a      = w115
+   dim r_player1hits_a      = r115
+   dim w_playerhits_a       = w115
+   dim r_playerhits_a       = r115
+
+   dim w_player5hits_b      = w114
+   dim r_player5hits_b      = r114
+   dim w_player4hits_b      = w113
+   dim r_player4hits_b      = r113
+   dim w_player3hits_b      = w112
+   dim r_player3hits_b      = r112
+   dim w_player2hits_b      = w111
+   dim r_player2hits_b      = r111
+   dim w_player1hits_b      = w110
+   dim r_player1hits_b      = r110
+   dim w_playerhits_b       = w110
+   dim r_playerhits_b       = r110
+
+   dim w_player5hits_c      = w109
+   dim r_player5hits_c      = r109
+   dim w_player4hits_c      = w108
+   dim r_player4hits_c      = r108
+   dim w_player3hits_c      = w107
+   dim r_player3hits_c      = r107
+   dim w_player2hits_c      = w106
+   dim r_player2hits_c      = r106
+   dim w_player1hits_c      = w105
+   dim r_player1hits_c      = r105
+   dim w_playerhits_c       = w105
+   dim r_playerhits_c       = r105
+
 ;#endregion
 
 
@@ -1163,10 +1202,8 @@ _player0_animation_end
 _skip_player0_explosion
 
    if !_Bit7_map_E_collsion{7} || _Bit2_looping{2} then goto _skip_player0_collision
-   if _Bit6_map_PF_collision{6} && collision(missile0, playfield) then _missile0_collision
+   if _Bit6_map_PF_collision{6} && collision(missile0, playfield) then _missile0_collision_p5
    if !collision(player1, missile0) then goto _skip_missile0_collision
-_missile0_collision   
-   _Ch0_Sound = 3 : _Ch0_Duration = 1 : _Ch0_Counter = 0
 
    temp1 = player1y + 1 : temp2 = player1y - player1height
    if missile0y > temp2 && missile0y < temp1 then temp1 = 0 : goto _end_collision_check
@@ -1180,9 +1217,11 @@ _missile0_collision
    temp1 = player4y + 1 : temp2 = player4y - player4height
    if missile0y > temp2 && missile0y < temp1 then temp1 = 3 : goto _end_collision_check
 
+_missile0_collision_p5   
    temp1 = 4
 
 _end_collision_check
+   _Ch0_Sound = 3 : _Ch0_Duration = 1 : _Ch0_Counter = 0
    temp2 = playerhits[temp1] - 1
    if temp2 then score = score + 100 : goto _end_collision
    player1y[temp1] = _plane_parking_point[temp1]
@@ -1199,7 +1238,7 @@ _skip_missile0_collision
    if !_Bit7_map_E_collsion{7} || !collision(player0, player1) then goto _skip_player0_collision
 _player0_collision
    _Ch0_Sound = 4 : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   _Bit6_p0_explosion{6} = 1 : player_animation_state = 0
+   _Bit6_p0_explosion{6} = 1 : player_animation_state = 0 : missile0y = 0
    goto _skip_game_action
 
 _skip_player0_collision
@@ -1311,7 +1350,7 @@ _player_movement
 _check_for_new_looping
    if !statusbarlength then goto _player_normal_movement
    if _Bit4_genesispad{4} && !INPT1{7} then goto set_game_state_looping
-   if switchselect then goto set_game_state_looping
+   if switchselect || joy1fire then goto set_game_state_looping
 
 
 _player_normal_movement
@@ -1325,6 +1364,7 @@ jump
 
    if missile0y > 88 then missile0y = 0
    if missile0y > 1 || !_Bit7_map_E_collsion{7} then _skip_new_shot
+   if _Bit2_looping{2} then _skip_new_shot
    if joy0fire then missile0y = player0y + 1 : missile0x = player0x + 5 : _Ch0_Sound = 2 : _Ch0_Duration = 1 : _Ch0_Counter = 0
 _skip_new_shot
    if ! missile0y then _check_enemy_shot
@@ -1626,6 +1666,10 @@ titlescreen
 
    if !joy0fire then _Bit1_reset_restrainer{1} = 0
    if joy0fire && !_Bit1_reset_restrainer{1} then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
+   asm
+   lda SWCHA
+   lda SWCHB
+end
    goto titlescreen
 
    asm
