@@ -840,7 +840,7 @@ beginscore
  txs
  lax  (scorepointers+$4),y  ;+5  36  108
  sleep 3
- ifconst pfscore > 1
+ ifconst pfscore
          if pfscore > 1
  lda statusbarlength
  sta PF1
