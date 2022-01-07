@@ -31,7 +31,7 @@
 ;#region "Constants"
 
    ; Color constants
-/*
+
 ;#region "NTSC Constants and Colors"
    ; requests 
    const req_load        = 0
@@ -174,7 +174,7 @@
    const _FC = $FC
    const _FE = $FE
 ;#endregion
-*/
+/*
 ;#region "PAL Constants and Colors"
    ; requests 
    const req_load        = 128 ; PAL x+128
@@ -317,7 +317,7 @@
    const _FC = $2C
    const _FE = $2E
 ;#endregion
-
+*/
    ; Kernel and Minikernel constants
    const lives_compact  = 1
    const pfscore = 2
@@ -342,8 +342,15 @@
    const _Bonus_Points_5000  = 17
    const _Bonus_Points_10000 = 20
 
-   const _Score_Table_High = >scoretable
-   const _Score_Table_Low  = <scoretable
+   const _Sfx_Mute              = 0
+   const _Sfx_Takeoff           = 1
+   const _Sfx_Player_Shot       = 2
+   const _Sfx_Enemy_Hit         = 3
+   const _Sfx_Player_Explosion  = 4
+   const _Sfx_Landing           = 5
+   const _Sfx_Looping           = 1
+   const _Sfx_Bonus_Life        = 1
+   const _Sfx_Enemy_Down        = 3
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -400,6 +407,9 @@
 end
 
    rem Sprite pointer and height
+   const _Score_Table_High         = >scoretable
+   const _Score_Table_Low          = <scoretable
+
    const _Power_Up_high            = >_Power_Up
    const _Power_Up_low             = <_Power_Up
    const _Power_Up_height          = _Power_Up_length + 1
@@ -1148,9 +1158,9 @@ main
    framecounter = framecounter + 1
    COLUBK = _96
    COLUP0 = r_COLUP0
-   NUSIZ0 = r_NUSIZ0
+   
    lifecolor = _EA : COLUPF = r_COLUPF
-   if PF1pointerhi = _PF1_Pacific_high then CTRLPF = r_CTRLPF
+   if PF1pointerhi = _PF1_Pacific_high then CTRLPF = r_CTRLPF : NUSIZ0 = r_NUSIZ0
 
    if _Bit0_intro{0} then goto stage_intro bank2
 
@@ -1207,8 +1217,8 @@ _missile0_collision_p5
 _end_collision_check
    _Ch0_Duration = 1 : _Ch0_Counter = 0 : temp1 = temp1 + temp3 - 1
    temp2 = r_playerhits_a[temp1] - 1
-   if temp2 then temp6 = _Bonus_Points_100 : _Ch0_Sound = 3 : goto _add_collision_score
-   _Ch0_Sound = 3
+   if temp2 then temp6 = _Bonus_Points_100 : _Ch0_Sound = _Sfx_Enemy_Hit : goto _add_collision_score
+   _Ch0_Sound = _Sfx_Enemy_Down
    if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank1
    enemies_shoot_down = enemies_shoot_down + 1
    if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
@@ -1233,7 +1243,7 @@ _skip_missile0_collision
    if !_Bit7_map_E_collsion{7} || !collision(player0, player1) then goto _skip_player0_collision
    if _Bit7_powerup{7} then goto power_up_bonus
 _player0_collision
-   _Ch0_Sound = 4 : _Ch0_Duration = 1
+   _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
    _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0 : w_NUSIZ0 = 0
    _Bit6_p0_explosion{6} = 1
    goto _skip_game_action
@@ -1279,7 +1289,7 @@ _next_superstructure
 _skip_carrier_superstructures_scrolling
 
    if PF1pointer = _Map_Takeoff_Point_1 then _Bit0_intro{0} = 1 : framecounter = 0 : goto _skip_game_action
-   if PF1pointer = _Map_Takeoff_Sound_Start then _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : goto _skip_playfield_restart
+   if PF1pointer = _Map_Takeoff_Sound_Start then _Ch0_Sound = _Sfx_Takeoff : _Ch0_Duration = 1 : _Ch0_Counter = 0 : goto _skip_playfield_restart
    if PF1pointer = _Map_Attackzone_Start then map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high : goto _next_playfield_variation
 
 _skip_carrier_superstructures
@@ -1356,7 +1366,7 @@ _skip_player_movement
    missile0y = player0y + 1
    if r_NUSIZ0{5} then temp1 = 4 else temp1 = 5  ;    temp1 = 5 - ( r_NUSIZ0 / 32)
    missile0x = player0x + temp1
-   if _Ch0_Sound = 0 then _Ch0_Sound = 2 : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   if _Ch0_Sound = _Sfx_Mute then _Ch0_Sound = _Sfx_Player_Shot : _Ch0_Duration = 1 : _Ch0_Counter = 0
 _skip_new_shot
    if ! missile0y then _skip_missile0_movement
    missile0y = missile0y + 3
@@ -1495,7 +1505,7 @@ add_scores
 	STA score
 	CLD
 end
-   if _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   if _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
    return
 
 set_game_state_powerup
@@ -1523,14 +1533,14 @@ _end_power_up_bonus
 
 set_game_state_looping
    statusbarlength = statusbarlength * 4
-   _Ch0_Sound = 1 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : player_animation_state = 0 : _Bit2_looping{2} = 1
+   _Ch0_Sound = _Sfx_Looping : _Ch0_Duration = 1 : _Ch0_Counter = 0 : player_animation_state = 0 : _Bit2_looping{2} = 1
    goto _skip_new_looping
 
 set_game_state_landing_bank1
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
-   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier
-   _Ch0_Sound = 5 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
+   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier : NUSIZ0 = 0
+   _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
    stage = stage - 1
    if stage = 15 then attack_position = 0
 
@@ -1752,8 +1762,8 @@ _bank_2_code_end
 set_game_state_landing
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
-   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier
-   _Ch0_Sound = 5 : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
+   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier : NUSIZ0 = 0
+   _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
    stage = stage - 1
    if stage = 15 then attack_position = 0
    player1y = _Player1_Parking_Point
@@ -1967,18 +1977,18 @@ _Play_In_Game_Music
    ;
    if _Ch0_Duration then goto __Skip_Ch_0
 
-
+   ;```````````````````````````````````````````````````````````````
+   ;  Jump to the channel 0 sound
+   ;
+   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Takeoff __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Hit __Ch0_Sound_Player_Explosion __Ch0_Sound_Landing
 
    ;***************************************************************
    ;
    ;  Channel 0 sound effect 001.
    ;
-   ;  Up sound effect.
+   ;  Takeoff sound effect.
    ;
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips this section if sound 001 isn't on.
-   ;
-   if _Ch0_Sound <> 1 then goto __Skip_Ch0_Sound_001
+__Ch0_Sound_Takeoff
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
@@ -2012,7 +2022,6 @@ _Play_In_Game_Music
    ;
    goto __Skip_Ch_0
 
-__Skip_Ch0_Sound_001
 
    ;***************************************************************
    ;
@@ -2020,10 +2029,7 @@ __Skip_Ch0_Sound_001
    ;
    ;  Shoot missile sound effect.
    ;
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips this section if sound 002 isn't on.
-   ;
-   if _Ch0_Sound <> 2 then goto __Skip_Ch0_Sound_002
+__Ch0_Sound_Player_Shot
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
@@ -2057,19 +2063,14 @@ __Skip_Ch0_Sound_001
    ;
    goto __Skip_Ch_0
 
-__Skip_Ch0_Sound_002
-
 
    ;***************************************************************
    ;
    ;  Channel 0 sound effect 003.
    ;
-   ;  Up sound effect.
+   ;  Enemy Hit sound effect.
    ;
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips this section if sound 003 isn't on.
-   ;
-   if _Ch0_Sound <> 3 then goto __Skip_Ch0_Sound_003
+__Ch0_Sound_Enemy_Hit
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
@@ -2103,18 +2104,14 @@ __Skip_Ch0_Sound_002
    ;
    goto __Skip_Ch_0
 
-__Skip_Ch0_Sound_003
 
    ;***************************************************************
    ;
    ;  Channel 0 sound effect 004.
    ;
-   ;  Touch enemy.
+   ;  Player Explosion enemy.
    ;
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips this section if sound 004 isn't on.
-   ;
-   if _Ch0_Sound <> 4 then goto __Skip_Ch0_Sound_004
+__Ch0_Sound_Player_Explosion
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
@@ -2148,8 +2145,6 @@ __Skip_Ch0_Sound_003
    ;
    goto __Skip_Ch_0
 
-__Skip_Ch0_Sound_004
-
 
    ;***************************************************************
    ;
@@ -2157,10 +2152,7 @@ __Skip_Ch0_Sound_004
    ;
    ;  Landing.
    ;
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips this section if sound 005 isn't on.
-   ;
-   if _Ch0_Sound <> 5 then goto __Skip_Ch0_Sound_005
+__Ch0_Sound_Landing
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
@@ -2194,7 +2186,6 @@ __Skip_Ch0_Sound_004
    ;
    goto __Skip_Ch_0
 
-__Skip_Ch0_Sound_005
 
 
    ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -2221,7 +2212,7 @@ __Skip_Ch0_Sound_005
    ;
 __Clear_Ch_0
    
-   _Ch0_Sound = 0 : AUDV0 = 0
+   _Ch0_Sound = _Sfx_Mute : AUDV0 = 0
 
 
 
@@ -2836,9 +2827,24 @@ end
 end
 
    asm
-   PAD_BB_SPRITE_DATA 9
+   PAD_BB_SPRITE_DATA 8
 end
   data _Power_Up
+   0
+   %11111111
+   %11010101
+   %11110001
+   %11000000
+   %11111110
+   %11000110
+   %11000110
+   %11111110
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 9
+end
+  data _Power_Up_orig
    0
    %11111101
    %11101111
@@ -2849,6 +2855,24 @@ end
    %11000110
    %11000110
    %11111110
+end
+
+   asm
+   PAD_BB_SPRITE_DATA 11
+end
+  data _Power_Up_Orange808
+   0
+   %01111110
+   %10110101
+   %01001010
+   %01001110
+   %10101110
+   %11111111
+   %11000000
+   %11111110
+   %11000010
+   %11000010
+   %01111110
 end
 
    asm
