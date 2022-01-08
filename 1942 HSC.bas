@@ -345,7 +345,7 @@
    const _Sfx_Mute              = 0
    const _Sfx_Takeoff           = 1
    const _Sfx_Player_Shot       = 2
-   const _Sfx_Enemy_Hit         = 3
+   const _Sfx_Enemy_Hit         = 6
    const _Sfx_Player_Explosion  = 4
    const _Sfx_Landing           = 5
    const _Sfx_Looping           = 1
@@ -1980,7 +1980,7 @@ _Play_In_Game_Music
    ;```````````````````````````````````````````````````````````````
    ;  Jump to the channel 0 sound
    ;
-   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Takeoff __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Hit __Ch0_Sound_Player_Explosion __Ch0_Sound_Landing
+   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Takeoff __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Down __Ch0_Sound_Player_Explosion __Ch0_Sound_Landing __Ch0_Sound_Enemy_Hit
 
    ;***************************************************************
    ;
@@ -2068,9 +2068,9 @@ __Ch0_Sound_Player_Shot
    ;
    ;  Channel 0 sound effect 003.
    ;
-   ;  Enemy Hit sound effect.
+   ;  Enemy destroyed sound effect.
    ;
-__Ch0_Sound_Enemy_Hit
+__Ch0_Sound_Enemy_Down
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
@@ -2180,6 +2180,47 @@ __Ch0_Sound_Landing
    ;  Sets Duration.
    ;
    _Ch0_Duration = _SD_Landing[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 006.
+   ;
+   ;  Enemy hit (but not destroyed) sound effect.
+   ;
+__Ch0_Sound_Enemy_Hit
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Large_Enemy_Hit[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = _SD_Large_Enemy_Hit[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Large_Enemy_Hit[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Large_Enemy_Hit[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
 
    ;```````````````````````````````````````````````````````````````
    ;  Jumps to end of channel 0 area.
@@ -2349,6 +2390,20 @@ end
    3,8,4,4
    2,8,4,8
    1,8,4,11
+   255
+end
+
+   ;***************************************************************
+   ;***************************************************************
+   ;
+   ;  Sound data for shot hitting but not destroying larger enemy.
+   ;
+
+   data _SD_Large_Enemy_Hit
+   6,8,2,1
+   3,1,1,2
+   2,1,1,2
+   1,1,1,2
    255
 end
 
