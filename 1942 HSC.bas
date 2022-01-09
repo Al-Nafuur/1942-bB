@@ -1171,6 +1171,8 @@ main
 
    if _Bit0_intro{0} then goto stage_intro bank2
 
+   if _Ch0_Sound = _Sfx_Respawn_Bass then goto _skip_game_action
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Player 0 explosion animation"
    if !_Bit6_p0_explosion{6} then _skip_player0_explosion
@@ -1239,11 +1241,8 @@ multi_collision_check
    temp4 = NewSpriteX[temp1]
    temp5 = temp4 - 8
    temp3 = 0
-   on temp2 goto _one_copy _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _double_size_player _three_copies_medium _quad_size_player
-_one_copy
-   rem X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0
-   goto _end_collision_check
+   on temp2 goto _end_collision_check _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _end_collision_check _three_copies_medium _end_collision_check
+
 _two_copies_close
    rem X.X
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
@@ -1270,10 +1269,6 @@ _two_copies_wide
    temp4 = temp4 + 64 : temp5 = temp4 - 8
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
    goto _end_collision_check
-_double_size_player
-   rem XX
-   if missile0x <= temp4 + 8 && missile0x >= temp5 then temp3 = 0
-   goto _end_collision_check
 _three_copies_medium
    rem X...X...X
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
@@ -1281,10 +1276,6 @@ _three_copies_medium
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
    temp4 = temp4 + 32 : temp5 = temp4 - 8
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
-   goto _end_collision_check
-_quad_size_player
-   rem XXXX
-   if missile0x <= temp4 + 24 && missile0x >= temp5 then temp3 = 0
 
 _end_collision_check
    _Ch0_Duration = 1 : _Ch0_Counter = 0 : temp4 = temp1 + ( temp3 * 5 )
@@ -2716,7 +2707,7 @@ end
    rem handle bass line as sfx for simplicity
    _Ch0_Duration = 1 : _Ch0_Counter = 0 : _Ch0_Sound = _Sfx_Respawn_Bass
    _Ch1_Duration = 1
-   goto _skip_game_action bank1
+   goto _Play_In_Game_Music
 
 __BG_Music_Setup_01
 
