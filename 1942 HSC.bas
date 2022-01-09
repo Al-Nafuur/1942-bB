@@ -454,6 +454,12 @@ end
    dim playerpointerhi   = player1pointerhi
    dim PF1pointerhi      = PF1pointer + 1
    dim PF2pointerhi      = PF2pointer + 1
+   dim SpriteGfxIndex1   = SpriteGfxIndex
+   dim SpriteGfxIndex2   = SpriteGfxIndex + 1
+   dim SpriteGfxIndex3   = SpriteGfxIndex + 2
+   dim SpriteGfxIndex4   = SpriteGfxIndex + 3
+   dim SpriteGfxIndex5   = SpriteGfxIndex + 4
+
    dim _sc1 = score
 
 
@@ -539,18 +545,18 @@ end
    dim w_CTRLPF              = w123
    dim r_CTRLPF              = r123
 
-   dim w_player5hits_a      = w119
-   dim r_player5hits_a      = r119
-   dim w_player4hits_a      = w118
-   dim r_player4hits_a      = r118
-   dim w_player3hits_a      = w117
-   dim r_player3hits_a      = r117
-   dim w_player2hits_a      = w116
-   dim r_player2hits_a      = r116
-   dim w_player1hits_a      = w115
-   dim r_player1hits_a      = r115
-   dim w_playerhits_a       = w115
-   dim r_playerhits_a       = r115
+   dim w_player5hits_c      = w119
+   dim r_player5hits_c      = r119
+   dim w_player4hits_c      = w118
+   dim r_player4hits_c      = r118
+   dim w_player3hits_c      = w117
+   dim r_player3hits_c      = r117
+   dim w_player2hits_c      = w116
+   dim r_player2hits_c      = r116
+   dim w_player1hits_c      = w115
+   dim r_player1hits_c      = r115
+   dim w_playerhits_c       = w115
+   dim r_playerhits_c       = r115
 
    dim w_player5hits_b      = w114
    dim r_player5hits_b      = r114
@@ -565,18 +571,18 @@ end
    dim w_playerhits_b       = w110
    dim r_playerhits_b       = r110
 
-   dim w_player5hits_c      = w109
-   dim r_player5hits_c      = r109
-   dim w_player4hits_c      = w108
-   dim r_player4hits_c      = r108
-   dim w_player3hits_c      = w107
-   dim r_player3hits_c      = r107
-   dim w_player2hits_c      = w106
-   dim r_player2hits_c      = r106
-   dim w_player1hits_c      = w105
-   dim r_player1hits_c      = r105
-   dim w_playerhits_c       = w105
-   dim r_playerhits_c       = r105
+   dim w_player5hits_a      = w109
+   dim r_player5hits_a      = r109
+   dim w_player4hits_a      = w108
+   dim r_player4hits_a      = r108
+   dim w_player3hits_a      = w107
+   dim r_player3hits_a      = r107
+   dim w_player2hits_a      = w106
+   dim r_player2hits_a      = r106
+   dim w_player1hits_a      = w105
+   dim r_player1hits_a      = r105
+   dim w_playerhits_a       = w105
+   dim r_playerhits_a       = r105
 
 ;#endregion
 
@@ -1194,35 +1200,140 @@ _skip_player0_explosion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Collision check for missile 0"
    if !_Bit7_map_E_collsion{7} || _Bit2_looping{2} then goto _skip_player0_collision
-   if _Bit6_map_PF_collision{6} && collision(missile0, playfield) then temp3 = 1 : goto _missile0_collision_p5
+   if _Bit6_map_PF_collision{6} && collision(missile0, playfield) then temp3 = 0 : temp1 = 4 : goto _end_collision_check
    if !collision(player1, missile0) || _Bit6_map_PF_collision{6} then goto _skip_missile0_collision
    if _Bit7_powerup{7} then goto _skip_missile0_collision
 
+   ; temp3 = bit_shift_table[SpriteGfxIndex1] | bit_shift_table[SpriteGfxIndex2] | bit_shift_table[SpriteGfxIndex3] | bit_shift_table[SpriteGfxIndex4] | bit_shift_table[SpriteGfxIndex5]
+   ; this assembly block is doing the same than the bB line above, but faster and less ROM space.
+   ; We set a bit flag in temp3 for each player1 sprite that was displayed in the last frame.
+   ; Sprites that overlap and were omitted due to the kernel's flicker management may not have collided
+   ; with the missile and need not be considered for our detection later.
+   asm
+ 	LDX SpriteGfxIndex
+	LDA bit_shift_table,x
+	LDX SpriteGfxIndex+1
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+2
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+3
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+4
+	ORA bit_shift_table,x
+	STA temp3
+end
+
+   if temp3{0} then temp1 = player1y + 1 : temp2 = player1y - player1height : if missile0y > temp2 && missile0y < temp1 then temp1 = 0 : goto multi_collision_check
+   
+   if temp3{1} then temp1 = player2y + 1 : temp2 = player2y - player2height : if missile0y > temp2 && missile0y < temp1 then temp1 = 1 : goto multi_collision_check
+   
+   if temp3{2} then temp1 = player3y + 1 : temp2 = player3y - player3height : if missile0y > temp2 && missile0y < temp1 then temp1 = 2 : goto multi_collision_check
+
+   if temp3{3} then temp1 = player4y + 1 : temp2 = player4y - player4height : if missile0y > temp2 && missile0y < temp1 then temp1 = 3 : goto multi_collision_check
+ 
+   temp1 = 4
+
+multi_collision_check
+   temp2 = NewNUSIZ[temp1] & %00000111
+   temp4 = NewSpriteX[temp1]
+   temp5 = temp4 - 8
    temp3 = 0
-   temp1 = player1y + 1 : temp2 = player1y - player1height
-   if missile0y > temp2 && missile0y < temp1 then temp1 = 0 : gosub multi_collision_check : if temp3 then goto _end_collision_check
-
-   temp1 = player2y + 1 : temp2 = player2y - player2height
-   if missile0y > temp2 && missile0y < temp1 then temp1 = 1 : gosub multi_collision_check : if temp3 then goto _end_collision_check
-
-   temp1 = player3y + 1 : temp2 = player3y - player3height
-   if missile0y > temp2 && missile0y < temp1 then temp1 = 2 : gosub multi_collision_check : if temp3 then goto _end_collision_check
-
-   temp1 = player4y + 1 : temp2 = player4y - player4height
-   if missile0y > temp2 && missile0y < temp1 then temp1 = 3 : gosub multi_collision_check : if temp3 then goto _end_collision_check
-
-_missile0_collision_p5   
-   temp1 = 4 : gosub multi_collision_check
+   on temp2 goto _one_copy _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _double_size_player _three_copies_medium _quad_size_player
+_one_copy
+   rem X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0
+   goto _end_collision_check
+_two_copies_close
+   rem X.X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 16 : temp5 = temp5 + 16
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   goto _end_collision_check
+_two_copies_medium
+   rem X...X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   goto _end_collision_check
+_three_copies_close
+   rem X.X.X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 16 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
+   temp4 = temp4 + 16 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
+   goto _end_collision_check
+_two_copies_wide
+   rem X.......X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 64 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   goto _end_collision_check
+_double_size_player
+   rem XX
+   if missile0x <= temp4 + 8 && missile0x >= temp5 then temp3 = 0
+   goto _end_collision_check
+_three_copies_medium
+   rem X...X...X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
+   goto _end_collision_check
+_quad_size_player
+   rem XXXX
+   if missile0x <= temp4 + 24 && missile0x >= temp5 then temp3 = 0
 
 _end_collision_check
-   _Ch0_Duration = 1 : _Ch0_Counter = 0 : temp1 = temp1 + temp3 - 1
-   temp2 = r_playerhits_a[temp1] - 1
-   if temp2 then temp6 = _Bonus_Points_100 : _Ch0_Sound = _Sfx_Enemy_Hit : goto _add_collision_score
+   _Ch0_Duration = 1 : _Ch0_Counter = 0 : temp4 = temp1 + ( temp3 * 5 )
+   temp5 = r_playerhits_a[temp4] - 1
+   w_playerhits_a[temp4] = temp5
+
+   ; temp1 = id of player1 that has been hit (0 - 4)
+   ; temp2 = NUSIZ of the player1
+   ; temp3 = NUSIZ copy thats been hit (0 - 2)
+   ; temp4 = hitcounter id of this copy
+   ; temp5 = hitcounter
+
+   if temp5 then temp6 = _Bonus_Points_100 : _Ch0_Sound = _Sfx_Enemy_Hit : goto _add_collision_score
    _Ch0_Sound = _Sfx_Enemy_Down
    if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank1
    enemies_shoot_down = enemies_shoot_down + 1
    if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
+
+   on temp2 goto _del_one_copy _del_two_copies_close _del_two_copies_medium _del_three_copies_close _del_two_copies_wide _del_one_copy _del_three_copies_medium _del_one_copy
+
+_del_one_copy
    player1y[temp1] = _plane_parking_point_bank1[temp1]
+   goto _determine_collision_score
+
+_del_two_copies_close
+   NewNUSIZ[temp1] = 0
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits
+   goto _determine_collision_score
+_del_two_copies_medium
+   NewNUSIZ[temp1] = 0
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits
+   goto _determine_collision_score
+_del_three_copies_close
+   if temp3 = 1 then NewNUSIZ[temp1] = 2 : goto _swap_b_c_hits
+   NewNUSIZ[temp1] = 1
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits : goto _swap_b_c_hits
+   goto _determine_collision_score
+_del_two_copies_wide 
+   NewNUSIZ[temp1] = 0
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 64 : gosub swap_a_b_hits
+   goto _determine_collision_score
+_del_three_copies_medium
+   if temp3 = 1 then NewNUSIZ[temp1] = 4 : goto _swap_b_c_hits
+   NewNUSIZ[temp1] = 2
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits : goto _swap_b_c_hits
+   goto _determine_collision_score   
+
+_swap_b_c_hits
+   w_playerhits_b[temp1] = r_playerhits_c[temp1]
+
 _determine_collision_score
    if playertype[temp1] < 3 then temp6 = _Bonus_Points_50 : goto _add_collision_score
    if playertype[temp1] < 6 then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
@@ -1230,7 +1341,6 @@ _add_collision_score
    gosub add_scores
 
 _end_collision
-   w_playerhits_a[temp1] = temp2
    missile0y = 0
    goto _skip_game_action
 
@@ -1505,7 +1615,11 @@ add_scores
 	STA score
 	CLD
 end
-   if _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   if _sc1 < $10 && _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   return
+
+swap_a_b_hits
+   w_playerhits_a[temp1] = r_playerhits_b[temp1]
    return
 
 set_game_state_powerup
@@ -1552,58 +1666,6 @@ park_all_planes
    player5y = _Player5_Parking_Point
    goto _skip_game_action 
 
-multi_collision_check
-   temp2 = NewNUSIZ[temp1] & %00000111
-   temp4 = NewSpriteX[temp1]
-   temp5 = temp4 - 8
-   on temp2 goto _one_copy _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _double_size_player _three_copies_medium _quad_size_player
-_one_copy
-   rem X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
-   return
-_two_copies_close
-   rem X.X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : return 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
-   return
-_two_copies_medium
-   rem X...X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : return 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
-   return
-_three_copies_close
-   rem X.X.X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : return 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2 : return 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 3
-   return
-_two_copies_wide
-   rem X.......X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : return 
-   temp4 = temp4 + 64 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
-   return
-_double_size_player
-   rem XX
-   if missile0x <= temp4 + 8 && missile0x >= temp5 then temp3 = 1
-   return
-_three_copies_medium
-   rem X...X...X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : return 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2 : return 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 3
-   return
-_quad_size_player
-   rem XXXX
-   if missile0x <= temp4 + 24 && missile0x >= temp5 then temp3 = 1
-   return
-
 ;#endregion
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1617,6 +1679,10 @@ _quad_size_player
    $00, $15, $00  ;  +  1500 points
    $00, $50, $00  ;  +  5000 points
    $01, $00, $00  ;  + 10000 points
+end
+
+   data bit_shift_table
+   1, 2, 4, 8, 16
 end
 
    data _player_pointer_lo_bank1
@@ -1738,18 +1804,25 @@ build_attack_position
    if temp2 = 255 then attack_position = 0 : stage = $20 : goto build_attack_position ; todo game finished screen
 _read_attack_data
    for temp1 = 0 to 4
-      playertype[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
+      temp3             = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewSpriteX[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewSpriteY[temp1] = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewNUSIZ[temp1]   = _attack_position_data[temp2] : temp2 = temp2 + 1
       NewCOLUP1[temp1]  = _attack_position_data[temp2] : temp2 = temp2 + 1
 
-      temp3 = playertype[temp1] / 4
+      playertype[temp1] = temp3
+      temp3 = temp3 / 4
+
       playerpointerlo[temp1]  = _player_pointer_lo[temp3]
       playerpointerhi[temp1]  = _player_pointer_hi[temp3]
       playerfullheight[temp1] = _player_full_height[temp3]
       spriteheight[temp1]     = _player_full_height[temp3]
-      w_playerhits_a[temp1]   = _player_max_hits[temp3]
+      temp5                   = _player_max_hits[temp3]
+
+      w_playerhits_a[temp1]   = temp5
+      w_playerhits_b[temp1]   = temp5
+      w_playerhits_c[temp1]   = temp5
+
    next
 
 
@@ -1758,7 +1831,7 @@ _bank_2_code_end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region rem "Subroutines and Functions Bank1"
+;#region rem "Subroutines and Functions Bank 2"
 set_game_state_landing
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
@@ -1797,7 +1870,6 @@ carrier_superstructures_init
    player5pointerlo = _Carrier_Tower_low  : player5pointerhi = _Carrier_Tower_high  : player5height = 62 : player5fullheight = _Carrier_Tower_height  :  NUSIZ5 = 5 : player5x = 105 : player5y =  88
    goto _bank_2_code_end
 ;#endregion
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region rem "Data Tables Bank2"
@@ -2831,66 +2903,14 @@ end
 end
   data _Power_Up
    0
-   %11111111
-   %11010101
-   %11110001
+   %11111010
+   %11011111
+   %11110101
    %11000000
    %11111110
    %11000110
    %11000110
    %11111110
-end
-
-   asm
-   PAD_BB_SPRITE_DATA 9
-end
-  data _Power_Up_orig
-   0
-   %11111101
-   %11101111
-   %11101101
-   %11111101
-   %11000000
-   %11111110
-   %11000110
-   %11000110
-   %11111110
-end
-
-   asm
-   PAD_BB_SPRITE_DATA 11
-end
-  data _Power_Up_Orange808
-   0
-   %01111110
-   %10110101
-   %01001010
-   %01001110
-   %10101110
-   %11111111
-   %11000000
-   %11111110
-   %11000010
-   %11000010
-   %01111110
-end
-
-   asm
-   PAD_BB_SPRITE_DATA 11
-end
-  data _Power_Up_Gemintronic
-   0
-   %00111100
-   %01010110
-   %01000110
-   %00000000
-   %01011110
-   %01010010
-   %01011110
-   %01000000
-   %01111110
-   %01000010
-   %01111110
 end
 
    asm
