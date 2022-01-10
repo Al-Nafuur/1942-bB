@@ -349,9 +349,10 @@
    const _Sfx_Player_Explosion  = 4
    const _Sfx_Landing           = 5
    const _Sfx_Looping           = 1
-   const _Sfx_Bonus_Life        = 1
+   const _Sfx_Bonus_Life        = 9
    const _Sfx_Enemy_Down        = 3
    const _Sfx_Respawn_Bass      = 7
+   const _Sfx_Power_Up          = 8
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -1626,6 +1627,7 @@ set_game_state_powerup
 
 power_up_bonus
    _Bit7_powerup{7} = 0
+   _Ch0_Sound = _Sfx_Power_Up : _Ch0_Duration = 1 : _Ch0_Counter = 0
    if NewCOLUP1 = _Power_Up_Black_Extra_Life && lives < 224 then lives = lives + 32 : goto _end_power_up_bonus
    if NewCOLUP1 = _Power_Up_Yellow_Extra_Loop && statusbarlength < 170 then statusbarlength = ( statusbarlength / 4 ) + %10000000 : goto _end_power_up_bonus
    if NewCOLUP1 = _Power_Up_Dark_Gray_Quad_Gun then w_NUSIZ0 = r_NUSIZ0 | %00100000 : goto _end_power_up_bonus
@@ -2044,7 +2046,7 @@ _Play_In_Game_Music
    ;```````````````````````````````````````````````````````````````
    ;  Jump to the channel 0 sound
    ;
-   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Takeoff __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Down __Ch0_Sound_Player_Explosion __Ch0_Sound_Landing __Ch0_Sound_Enemy_Hit __Ch0_Respawn_Bass
+   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Takeoff __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Down __Ch0_Sound_Player_Explosion __Ch0_Sound_Landing __Ch0_Sound_Enemy_Hit __Ch0_Respawn_Bass __Ch0_Power_Up __Ch0_Bonus_Life
 
    ;***************************************************************
    ;
@@ -2334,6 +2336,90 @@ __Ch0_Respawn_Bass ; _Ch0_Sound = _Sfx_Respawn_Bass
 
 
 
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 008.
+   ;
+   ;  Power up sound effect.
+   ;
+__Ch0_Power_Up ; _Ch0_Sound = _Sfx_Power_Up
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Power_Up[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = _SD_Power_Up[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Power_Up[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Power_Up[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+
+
+   ;***************************************************************
+   ;
+   ;  Channel 0 sound effect 009.
+   ;
+   ;  Power up sound effect.
+   ;
+__Ch0_Bonus_Life ; _Ch0_Sound = _Sfx_Bonus_Life
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves first part of channel 0 data.
+   ;
+   temp4 = _SD_Bonus_Life[_Ch0_Counter]
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Checks for end of data.
+   ;
+   if temp4 = 255 then goto __Clear_Ch_0
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Retrieves more channel 0 data.
+   ;
+   _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Plays channel 0.
+   ;
+   AUDV0 = temp4
+   AUDC0 = _SD_Bonus_Life[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+   AUDF0 = _SD_Bonus_Life[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Sets Duration.
+   ;
+   _Ch0_Duration = _SD_Bonus_Life[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
+
+   ;```````````````````````````````````````````````````````````````
+   ;  Jumps to end of channel 0 area.
+   ;
+   goto __Skip_Ch_0
+
+
+
    ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
    ;```````````````````````````````````````````````````````````````
    ;
@@ -2511,10 +2597,8 @@ end
    ;
 
    data _SD_Large_Enemy_Hit
-   6,8,2,1
-   3,1,1,2
-   2,1,1,2
-   1,1,1,2
+   3,1,1,1
+   1,1,1,3
    255
 end
 
@@ -2525,13 +2609,13 @@ end
    ;
 
    data _SD_Enemy_Destroyed
-   6,8,2,1
-   3,8,2,1
-   12,2,3,1
+   4,8,2,1
+   2,8,2,1
+   8,2,3,1
    2,2,3,1
-   12,2,3,1
+   8,2,3,1
    2,2,3,1
-   12,2,3,1
+   8,2,3,1
    3,8,5,2
    2,8,6,3
    1,8,7,4
@@ -2609,6 +2693,31 @@ end
    2,3,21,5
    1,3,21,5
    255
+end
+
+
+  data _SD_Power_Up
+  $6,$4,$1D, 2
+  $6,$4,$1A, 2
+  $6,$4,$18, 2
+  $6,$4,$13, 2
+  $6,$4,$0E, 2
+  $6,$4,$1D, 2
+  $6,$4,$1A, 2
+  $6,$4,$18, 2
+  $6,$4,$13, 2
+  $6,$4,$0E, 2
+  $FF ; end
+end
+
+
+  data _SD_Bonus_Life
+  $6,$C,$0E, 5
+  $0,$0,$00, 5
+  $6,$C,$13, 5
+  $6,$C,$0E, 5
+  $6,$C,$0B, 8
+  $FF ; end
 end
 
 
@@ -3094,14 +3203,13 @@ end
 end
   data _Power_Up
    0
-   %11111010
-   %11011111
-   %11110101
+   %11010100
+   %10111110
+   %01101010
    %11000000
-   %11111110
-   %11000110
-   %11000110
-   %11111110
+   %11110000
+   %11011000
+   %11111000
 end
 
    asm
