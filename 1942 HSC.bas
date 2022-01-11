@@ -31,7 +31,7 @@
 ;#region "Constants"
 
    ; Color constants
-/*
+
 ;#region "NTSC Constants and Colors"
    ; requests 
    const req_load        = 0
@@ -174,7 +174,7 @@
    const _FC = $FC
    const _FE = $FE
 ;#endregion
-*/
+/*
 ;#region "PAL Constants and Colors"
    ; requests 
    const req_load        = 128 ; PAL x+128
@@ -317,7 +317,7 @@
    const _FC = $2C
    const _FE = $2E
 ;#endregion
-
+*/
    ; Kernel and Minikernel constants
    const lives_compact  = 1
    const pfscore = 2
