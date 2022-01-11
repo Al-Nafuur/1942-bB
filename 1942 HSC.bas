@@ -31,7 +31,7 @@
 ;#region "Constants"
 
    ; Color constants
-
+/*
 ;#region "NTSC Constants and Colors"
    ; requests 
    const req_load        = 0
@@ -174,7 +174,7 @@
    const _FC = $FC
    const _FE = $FE
 ;#endregion
-/*
+*/
 ;#region "PAL Constants and Colors"
    ; requests 
    const req_load        = 128 ; PAL x+128
@@ -317,7 +317,7 @@
    const _FC = $2C
    const _FE = $2E
 ;#endregion
-*/
+
    ; Kernel and Minikernel constants
    const lives_compact  = 1
    const pfscore = 2
@@ -343,16 +343,16 @@
    const _Bonus_Points_10000 = 20
 
    const _Sfx_Mute              = 0
-   const _Sfx_Takeoff           = 1
-   const _Sfx_Player_Shot       = 2
-   const _Sfx_Enemy_Hit         = 6
-   const _Sfx_Player_Explosion  = 4
-   const _Sfx_Landing           = 5
-   const _Sfx_Looping           = 1
-   const _Sfx_Bonus_Life        = 9
-   const _Sfx_Enemy_Down        = 3
-   const _Sfx_Respawn_Bass      = 7
-   const _Sfx_Power_Up          = 8
+   const _Sfx_Player_Shot       = 1
+   const _Sfx_Enemy_Down        = 2
+   const _Sfx_Enemy_Hit         = 3
+   const _Sfx_Power_Up          = 4
+   const _Sfx_Bonus_Life        = 5
+   const _Sfx_Takeoff           = 6
+   const _Sfx_Looping           = _Sfx_Takeoff ; until it has dedicated sfx
+   const _Sfx_Landing           = 7
+   const _Sfx_Respawn_Bass      = 8
+   const _Sfx_Player_Explosion  = 9
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -1279,7 +1279,7 @@ _three_copies_medium
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
 
 _end_collision_check
-   _Ch0_Duration = 1 : _Ch0_Counter = 0 : temp4 = temp1 + ( temp3 * 5 )
+   temp4 = temp1 + ( temp3 * 5 )
    temp5 = r_playerhits_a[temp4] - 1
    w_playerhits_a[temp4] = temp5
 
@@ -1289,8 +1289,12 @@ _end_collision_check
    ; temp4 = hitcounter id of this copy
    ; temp5 = hitcounter
 
-   if temp5 then temp6 = _Bonus_Points_100 : _Ch0_Sound = _Sfx_Enemy_Hit : goto _add_collision_score
-   _Ch0_Sound = _Sfx_Enemy_Down
+   if !temp5 then goto _enemy_explosion
+   if _Ch0_Sound <= _Sfx_Enemy_Hit then _Ch0_Sound = _Sfx_Enemy_Hit : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   temp6 = _Bonus_Points_100
+   goto _add_collision_score
+_enemy_explosion
+   if _Ch0_Sound <= _Sfx_Enemy_Hit then _Ch0_Sound = _Sfx_Enemy_Down : _Ch0_Duration = 1 : _Ch0_Counter = 0
    if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank1
    enemies_shoot_down = enemies_shoot_down + 1
    if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
@@ -1469,7 +1473,7 @@ _skip_player_movement
    missile0y = player0y + 1
    if r_NUSIZ0{5} then temp1 = 4 else temp1 = 5  ;    temp1 = 5 - ( r_NUSIZ0 / 32)
    missile0x = player0x + temp1
-   if _Ch0_Sound = _Sfx_Mute then _Ch0_Sound = _Sfx_Player_Shot : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   if _Ch0_Sound <= _Sfx_Player_Shot then _Ch0_Sound = _Sfx_Player_Shot : _Ch0_Duration = 1 : _Ch0_Counter = 0
 _skip_new_shot
    if ! missile0y then _skip_missile0_movement
    missile0y = missile0y + 3
@@ -1545,7 +1549,7 @@ _plane_moves_down
    goto _check_next_plane
 
 _plane_moves_up
-   if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 240 then NewSpriteY[temp1] = temp4
+   if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 140 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then _check_next_plane
    NewSpriteY[temp1] = NewSpriteY[temp1] + _Plane_Y_Speed 
    if NewSpriteY[temp1] > 1 && NewSpriteY[temp1] <= playerfullheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] - _Plane_Y_Speed : spriteheight[temp1] = NewSpriteY[temp1]
@@ -1641,7 +1645,8 @@ _end_power_up_bonus
 
 set_game_state_looping
    statusbarlength = statusbarlength * 4
-   _Ch0_Sound = _Sfx_Looping : _Ch0_Duration = 1 : _Ch0_Counter = 0 : player_animation_state = 0 : _Bit2_looping{2} = 1
+   if _Ch0_Sound <= _Sfx_Looping then _Ch0_Sound = _Sfx_Looping : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   player_animation_state = 0 : _Bit2_looping{2} = 1
    goto _skip_new_looping
 
 set_game_state_landing_bank1
@@ -1905,8 +1910,9 @@ end
    const p4p = _Player4_Parking_Point
    const p5p = _Player5_Parking_Point
 
+  ;  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+  ;225,175,180,185,190,195,200, 50,225,254                         ; test stage 
    data _attack_position_sequence_1
-   ; 1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
      0, 25, 225, 50,  0,25, 75, 50,225,254                         ; stage 32
      0,125,225,150, 75, 75,125,  0,225, 50,254                     ; stage 31
     25, 25, 75,225, 50,100,  0,125,225,150, 75,254                 ; stage 30
@@ -1926,8 +1932,8 @@ end
      0,  0, 25, 50,125, 25,150,225, 75,  0, 25,225, 50, 50,100,254 ; stage 16
 end
 
-   data _attack_position_sequence_2
    ; 1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16 17
+   data _attack_position_sequence_2
     25, 75,225, 50,100,  0,125, 25,150, 50,  0, 25,  0,100,225,100,254 ; stage 15
      0,  0, 25,225,  0, 25, 75, 50, 50,100, 25, 75,225,175,175,200,254 ; stage 14
     50,100,  0,125,225,150, 25, 75,150,175,200, 75, 75,225,125,  0,254 ; stage 13
@@ -1989,17 +1995,17 @@ end
       %00000010,         72,        118,       6, _D6
       %00000010,         40,        128,       6, _D6
 
-      %00000010,         75,         88,      11, _D4
-      %00000010,         20,         98,      11, _D6
-      %00000010,        110,        108,       0, _D6
-      %00000010,         90,        118,       0, _D6
-      %00011111,         30,          1,       7, _D4
+      %00000010,         20,         88,       3, _D6  ; (175)
+      %00000010,         40,         98,       3, _D6
+      %00000010,         60,        108,       3, _D6
+      %00000010,         80,        118,       3, _D6
+      %00000010,        100,        128,       3, _D6
 
-      %00000010,         75,         88,      11, _D4
-      %00000010,         20,         98,      11, _D6
-      %00000010,        110,        108,       0, _D6
-      %00000010,         90,        118,       0, _D6
-      %00011111,         30,          1,       7, _D4
+      %00011111,          8,          1,       7, _D4  ; (200)
+      %00011111,         40,        244,       7, _D4
+      %00011111,         72,        231,       7, _D4
+      %00011111,        104,        218,       7, _D4
+      %00011111,        136,        205,       7, _D4
 
       %00000010,         40,         88,       0, _42  ; (225) 5 small red planes (power up) from top
       %00000010,         50,         98,       0, _42
@@ -2046,7 +2052,7 @@ _Play_In_Game_Music
    ;```````````````````````````````````````````````````````````````
    ;  Jump to the channel 0 sound
    ;
-   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Takeoff __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Down __Ch0_Sound_Player_Explosion __Ch0_Sound_Landing __Ch0_Sound_Enemy_Hit __Ch0_Respawn_Bass __Ch0_Power_Up __Ch0_Bonus_Life
+   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Down __Ch0_Sound_Enemy_Hit __Ch0_Power_Up __Ch0_Bonus_Life __Ch0_Sound_Takeoff __Ch0_Sound_Landing __Ch0_Respawn_Bass __Ch0_Sound_Player_Explosion
 
    ;***************************************************************
    ;
