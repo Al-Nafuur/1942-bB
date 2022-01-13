@@ -28,6 +28,28 @@
    set romsize 32kSC
 ;   set debug cyclescore
 
+;#region "Macros"
+
+   macro _Set_SFX_By_Prio_bB
+   if _Ch0_Sound <= {1} then _Ch0_Sound = {1} : _Ch0_Duration = 1 : _Ch0_Counter = 0
+end
+
+   macro _Set_SFX_By_Prio
+   asm
+   LDA {1}
+	CMP _Ch0_Sound
+   BCC .skip_Set_SFX
+	STA _Ch0_Sound
+	LDX #1
+	STX _Ch0_Duration
+	DEX
+	STX _Ch0_Counter
+.skip_Set_SFX
+end
+end
+
+;#endregion
+
 ;#region "Constants"
 
    ; Color constants
@@ -344,15 +366,15 @@
 
    const _Sfx_Mute              = 0
    const _Sfx_Player_Shot       = 1
-   const _Sfx_Enemy_Down        = 2
-   const _Sfx_Enemy_Hit         = 3
+   const _Sfx_Enemy_Hit         = 2
+   const _Sfx_Enemy_Down        = 3
    const _Sfx_Power_Up          = 4
    const _Sfx_Bonus_Life        = 5
-   const _Sfx_Takeoff           = 6
-   const _Sfx_Looping           = _Sfx_Takeoff ; until it has dedicated sfx
-   const _Sfx_Landing           = 7
+   const _Sfx_Looping           = 6
+   const _Sfx_Player_Explosion  = 7
    const _Sfx_Respawn_Bass      = 8
-   const _Sfx_Player_Explosion  = 9
+   const _Sfx_Takeoff           = 9
+   const _Sfx_Landing           = 10
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -1172,7 +1194,7 @@ main
 
    if _Bit0_intro{0} then goto stage_intro bank2
 
-   if _Ch0_Sound = _Sfx_Respawn_Bass then goto _skip_game_action
+   ;if _Ch0_Sound = _Sfx_Respawn_Bass then goto _skip_game_action
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Player 0 explosion animation"
@@ -1290,11 +1312,11 @@ _end_collision_check
    ; temp5 = hitcounter
 
    if !temp5 then goto _enemy_explosion
-   if _Ch0_Sound <= _Sfx_Enemy_Hit then _Ch0_Sound = _Sfx_Enemy_Hit : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   callmacro _Set_SFX_By_Prio _Sfx_Enemy_Hit
    temp6 = _Bonus_Points_100
    goto _add_collision_score
 _enemy_explosion
-   if _Ch0_Sound <= _Sfx_Enemy_Hit then _Ch0_Sound = _Sfx_Enemy_Down : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   callmacro _Set_SFX_By_Prio _Sfx_Enemy_Down
    if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank1
    enemies_shoot_down = enemies_shoot_down + 1
    if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
@@ -1473,7 +1495,7 @@ _skip_player_movement
    missile0y = player0y + 1
    if r_NUSIZ0{5} then temp1 = 4 else temp1 = 5  ;    temp1 = 5 - ( r_NUSIZ0 / 32)
    missile0x = player0x + temp1
-   if _Ch0_Sound <= _Sfx_Player_Shot then _Ch0_Sound = _Sfx_Player_Shot : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   callmacro _Set_SFX_By_Prio _Sfx_Player_Shot
 _skip_new_shot
    if ! missile0y then _skip_missile0_movement
    missile0y = missile0y + 3
@@ -1645,7 +1667,7 @@ _end_power_up_bonus
 
 set_game_state_looping
    statusbarlength = statusbarlength * 4
-   if _Ch0_Sound <= _Sfx_Looping then _Ch0_Sound = _Sfx_Looping : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   callmacro _Set_SFX_By_Prio _Sfx_Looping
    player_animation_state = 0 : _Bit2_looping{2} = 1
    goto _skip_new_looping
 
@@ -2052,7 +2074,7 @@ _Play_In_Game_Music
    ;```````````````````````````````````````````````````````````````
    ;  Jump to the channel 0 sound
    ;
-   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Down __Ch0_Sound_Enemy_Hit __Ch0_Power_Up __Ch0_Bonus_Life __Ch0_Sound_Takeoff __Ch0_Sound_Landing __Ch0_Respawn_Bass __Ch0_Sound_Player_Explosion
+   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Hit __Ch0_Sound_Enemy_Down __Ch0_Power_Up __Ch0_Bonus_Life __Ch0_Looping __Ch0_Sound_Player_Explosion __Ch0_Respawn_Bass __Ch0_Sound_Takeoff __Ch0_Sound_Landing
 
    ;***************************************************************
    ;
@@ -2061,6 +2083,7 @@ _Play_In_Game_Music
    ;  Takeoff sound effect.
    ;
 __Ch0_Sound_Takeoff ; _Ch0_Sound = _Sfx_Takeoff
+__Ch0_Looping ; toDo create sfx for looping
 
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 0 data.
