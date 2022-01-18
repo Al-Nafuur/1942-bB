@@ -52,6 +52,9 @@ end
 
 ;#region "Constants"
 
+   ; PlusROM HSC Id (https://highscore.firmaplus.de/index.php?game_id=49)
+   const HighScoreDB_ID = 49
+
    ; Color constants
 
 ;#region "NTSC Constants and Colors"
@@ -485,7 +488,8 @@ end
    dim SpriteGfxIndex5   = SpriteGfxIndex + 4
 
    dim _sc1 = score
-
+   dim _sc2 = score+1
+   dim _sc3 = score+2
 
    dim _Ch0_Counter      = a
    dim _Ch0_Duration     = b
@@ -1213,7 +1217,7 @@ main
 
 _player0_animation_end
    player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0
-   if lives < 32 then goto titlescreen_start bank7
+   if lives < 32 then WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : goto titlescreen_start bank7
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
@@ -1226,142 +1230,13 @@ _skip_player0_explosion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Collision check for missile 0"
    if !_Bit7_map_E_collsion{7} || _Bit2_looping{2} then goto _skip_player0_collision
-   if _Bit6_map_PF_collision{6} && collision(missile0, playfield) then temp3 = 0 : temp1 = 4 : goto _end_collision_check
-   if !collision(player1, missile0) || _Bit6_map_PF_collision{6} then goto _skip_missile0_collision
+   if !_Bit6_map_PF_collision{6} then goto _skip_m0_pf_collision
+   if collision(missile0, playfield) then temp3 = 0 : temp1 = 4 : goto _end_collision_check bank3 else goto _skip_missile0_collision
+_skip_m0_pf_collision
+   if !collision(player1, missile0) then goto _skip_missile0_collision
    if _Bit7_powerup{7} then goto _skip_missile0_collision
 
-   ; temp3 = bit_shift_table[SpriteGfxIndex1] | bit_shift_table[SpriteGfxIndex2] | bit_shift_table[SpriteGfxIndex3] | bit_shift_table[SpriteGfxIndex4] | bit_shift_table[SpriteGfxIndex5]
-   ; this assembly block is doing the same than the bB line above, but faster and less ROM space.
-   ; We set a bit flag in temp3 for each player1 sprite that was displayed in the last frame.
-   ; Sprites that overlap and were omitted due to the kernel's flicker management may not have collided
-   ; with the missile and need not be considered for our detection later.
-   asm
- 	LDX SpriteGfxIndex
-	LDA bit_shift_table,x
-	LDX SpriteGfxIndex+1
-	ORA bit_shift_table,x
-	LDX SpriteGfxIndex+2
-	ORA bit_shift_table,x
-	LDX SpriteGfxIndex+3
-	ORA bit_shift_table,x
-	LDX SpriteGfxIndex+4
-	ORA bit_shift_table,x
-	STA temp3
-end
-
-   if temp3{0} then temp1 = player1y + 1 : temp2 = player1y - player1height : if missile0y > temp2 && missile0y < temp1 then temp1 = 0 : goto multi_collision_check
-   
-   if temp3{1} then temp1 = player2y + 1 : temp2 = player2y - player2height : if missile0y > temp2 && missile0y < temp1 then temp1 = 1 : goto multi_collision_check
-   
-   if temp3{2} then temp1 = player3y + 1 : temp2 = player3y - player3height : if missile0y > temp2 && missile0y < temp1 then temp1 = 2 : goto multi_collision_check
-
-   if temp3{3} then temp1 = player4y + 1 : temp2 = player4y - player4height : if missile0y > temp2 && missile0y < temp1 then temp1 = 3 : goto multi_collision_check
- 
-   temp1 = 4
-
-multi_collision_check
-   temp2 = NewNUSIZ[temp1] & %00000111
-   temp4 = NewSpriteX[temp1]
-   temp5 = temp4 - 8
-   temp3 = 0
-   on temp2 goto _end_collision_check _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _end_collision_check _three_copies_medium _end_collision_check
-
-_two_copies_close
-   rem X.X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 16 : temp5 = temp5 + 16
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
-   goto _end_collision_check
-_two_copies_medium
-   rem X...X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
-   goto _end_collision_check
-_three_copies_close
-   rem X.X.X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
-   goto _end_collision_check
-_two_copies_wide
-   rem X.......X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 64 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
-   goto _end_collision_check
-_three_copies_medium
-   rem X...X...X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
-
-_end_collision_check
-   temp4 = temp1 + ( temp3 * 5 )
-   temp5 = r_playerhits_a[temp4] - 1
-   w_playerhits_a[temp4] = temp5
-
-   ; temp1 = id of player1 that has been hit (0 - 4)
-   ; temp2 = NUSIZ of the player1
-   ; temp3 = NUSIZ copy thats been hit (0 - 2)
-   ; temp4 = hitcounter id of this copy
-   ; temp5 = hitcounter
-
-   if !temp5 then goto _enemy_explosion
-   callmacro _Set_SFX_By_Prio _Sfx_Enemy_Hit
-   temp6 = _Bonus_Points_100
-   goto _add_collision_score
-_enemy_explosion
-   callmacro _Set_SFX_By_Prio _Sfx_Enemy_Down
-   if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank1
-   enemies_shoot_down = enemies_shoot_down + 1
-   if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
-
-   on temp2 goto _del_one_copy _del_two_copies_close _del_two_copies_medium _del_three_copies_close _del_two_copies_wide _del_one_copy _del_three_copies_medium _del_one_copy
-
-_del_one_copy
-   player1y[temp1] = _plane_parking_point_bank1[temp1]
-   goto _determine_collision_score
-
-_del_two_copies_close
-   NewNUSIZ[temp1] = 0
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits
-   goto _determine_collision_score
-_del_two_copies_medium
-   NewNUSIZ[temp1] = 0
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits
-   goto _determine_collision_score
-_del_three_copies_close
-   if temp3 = 1 then NewNUSIZ[temp1] = 2 : goto _swap_b_c_hits
-   NewNUSIZ[temp1] = 1
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits : goto _swap_b_c_hits
-   goto _determine_collision_score
-_del_two_copies_wide 
-   NewNUSIZ[temp1] = 0
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 64 : gosub swap_a_b_hits
-   goto _determine_collision_score
-_del_three_copies_medium
-   if temp3 = 1 then NewNUSIZ[temp1] = 4 : goto _swap_b_c_hits
-   NewNUSIZ[temp1] = 2
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits : goto _swap_b_c_hits
-   goto _determine_collision_score   
-
-_swap_b_c_hits
-   w_playerhits_b[temp1] = r_playerhits_c[temp1]
-
-_determine_collision_score
-   if playertype[temp1] < 3 then temp6 = _Bonus_Points_50 : goto _add_collision_score
-   if playertype[temp1] < 6 then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
-_add_collision_score
-   gosub add_scores
-
-_end_collision
-   missile0y = 0
-   goto _skip_game_action
+   goto _collision_detection bank3
 
 _skip_missile0_collision
 ;#endregion
@@ -1615,7 +1490,7 @@ _skip_game_action
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region rem "Subroutines and Functions Bank 1"
 
-add_scores
+add_scores_bank1
    temp5 = _sc1
    asm
    LDX temp6
@@ -1635,21 +1510,9 @@ add_scores
 	CLD
 end
    if _sc1 < $10 && _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   return
-
-swap_a_b_hits
-   w_playerhits_a[temp1] = r_playerhits_b[temp1]
-   return
-
-set_game_state_powerup
-   temp2 = (stage - 1 ) * 2   +  r_stage_bonus_counter
-   NewCOLUP1 = _bonus_list[temp2] : NewCOLUP1[temp1] = _bonus_list[temp2] : NewNUSIZ[temp1] = 0
-   playerpointerlo[temp1] = _Power_Up_low
-   playerpointerhi[temp1] = _Power_Up_high
-   player1height[temp1] = _Power_Up_height
-   player1fullheight[temp1] = _Power_Up_height
-   _Bit7_powerup{7} = 1 :  w_stage_bonus_counter = r_stage_bonus_counter + 1
-   goto _determine_collision_score
+   asm
+   rts   ; we are not using bB "return" here, because we are using this subroutine only in this bank!
+end
 
 power_up_bonus
    _Bit7_powerup{7} = 0
@@ -1659,7 +1522,7 @@ power_up_bonus
    if NewCOLUP1 = _Power_Up_Dark_Gray_Quad_Gun then w_NUSIZ0 = r_NUSIZ0 | %00100000 : goto _end_power_up_bonus
    if NewCOLUP1 = _Power_Up_Light_Gray_Side_Fighters then w_NUSIZ0 = r_NUSIZ0 | %00000011 : goto _end_power_up_bonus 
    ; default bonus
-   temp6 = _Bonus_Points_1000 : gosub add_scores
+   temp6 = _Bonus_Points_1000 : gosub add_scores_bank1
 
 _end_power_up_bonus
    goto park_all_planes
@@ -1702,10 +1565,6 @@ park_all_planes
    $01, $00, $00  ;  + 10000 points
 end
 
-   data bit_shift_table
-   1, 2, 4, 8, 16
-end
-
    data _player_pointer_lo_bank1
    <_Small_Plane_down,  ( <_Small_Plane_up  + _Small_Plane_up_length  ), <_Small_Plane_lr
    <_Middle_Plane_down, ( <_Middle_Plane_up + _Middle_Plane_up_length ), <_Middle_Plane_lr
@@ -1744,41 +1603,6 @@ end
 
    data _playfield_color_table
    _Color_Gras_Island, _Color_Sand_Island, _Color_Jungle_Island, _Color_Gras_Island
-end
-
-   data _bonus_list
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 01
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 02
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 03
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Black_Extra_Life ; Stage 04
-   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 05
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 06
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 07
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Black_Extra_Life ; Stage 08
-   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 09
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 10
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 11
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 12
-   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 13
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 14
-   _Power_Up_Orange_No_Enemy_Bullets,  _Power_Up_Black_Extra_Life ; Stage 15
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 16
-   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 17
-   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 18
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 19
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Black_Extra_Life ; Stage 20
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 21
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 22
-   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 23
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 24
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 25
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 26
-   _Power_Up_Orange_No_Enemy_Bullets,  _Power_Up_Black_Extra_Life ; Stage 27
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 28
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 29
-   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 30
-   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 31
-   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 32
 end
 
 ;#endregion
@@ -2040,7 +1864,1323 @@ end
 ;#endregion
 
    bank 3
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Bank 3 Collsision detection for missile 0"
+
+_collision_detection
+   ; temp3 = bit_shift_table[SpriteGfxIndex1] | bit_shift_table[SpriteGfxIndex2] | bit_shift_table[SpriteGfxIndex3] | bit_shift_table[SpriteGfxIndex4] | bit_shift_table[SpriteGfxIndex5]
+   ; this assembly block is doing the same than the bB line above, but faster and less ROM space.
+   ; We set a bit flag in temp3 for each player1 sprite that was displayed in the last frame.
+   ; Sprites that overlap and were omitted due to the kernel's flicker management may not have collided
+   ; with the missile and need not be considered for our detection later.
+   asm
+ 	LDX SpriteGfxIndex
+	LDA bit_shift_table,x
+	LDX SpriteGfxIndex+1
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+2
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+3
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+4
+	ORA bit_shift_table,x
+	STA temp3
+end
+
+   if temp3{0} then temp1 = player1y + 1 : temp2 = player1y - player1height : if missile0y > temp2 && missile0y < temp1 then temp1 = 0 : goto multi_collision_check
+   
+   if temp3{1} then temp1 = player2y + 1 : temp2 = player2y - player2height : if missile0y > temp2 && missile0y < temp1 then temp1 = 1 : goto multi_collision_check
+   
+   if temp3{2} then temp1 = player3y + 1 : temp2 = player3y - player3height : if missile0y > temp2 && missile0y < temp1 then temp1 = 2 : goto multi_collision_check
+
+   if temp3{3} then temp1 = player4y + 1 : temp2 = player4y - player4height : if missile0y > temp2 && missile0y < temp1 then temp1 = 3 : goto multi_collision_check
+ 
+   temp1 = 4
+
+multi_collision_check
+   temp2 = NewNUSIZ[temp1] & %00000111
+   temp4 = NewSpriteX[temp1]
+   temp5 = temp4 - 8
+   temp3 = 0
+   on temp2 goto _end_collision_check _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _end_collision_check _three_copies_medium _end_collision_check
+
+_two_copies_close
+   rem X.X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 16 : temp5 = temp5 + 16
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   goto _end_collision_check
+_two_copies_medium
+   rem X...X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   goto _end_collision_check
+_three_copies_close
+   rem X.X.X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 16 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
+   temp4 = temp4 + 16 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
+   goto _end_collision_check
+_two_copies_wide
+   rem X.......X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 64 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   goto _end_collision_check
+_three_copies_medium
+   rem X...X...X
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
+
+_end_collision_check
+   temp4 = temp1 + ( temp3 * 5 )
+   temp5 = r_playerhits_a[temp4] - 1
+   w_playerhits_a[temp4] = temp5
+
+   ; temp1 = id of player1 that has been hit (0 - 4)
+   ; temp2 = NUSIZ of the player1
+   ; temp3 = NUSIZ copy thats been hit (0 - 2)
+   ; temp4 = hitcounter id of this copy
+   ; temp5 = hitcounter
+
+   if !temp5 then goto _enemy_explosion
+   callmacro _Set_SFX_By_Prio _Sfx_Enemy_Hit
+   temp6 = _Bonus_Points_100
+   goto _add_collision_score
+_enemy_explosion
+   callmacro _Set_SFX_By_Prio _Sfx_Enemy_Down
+   if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank3
+   enemies_shoot_down = enemies_shoot_down + 1
+   if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
+
+   on temp2 goto _del_one_copy _del_two_copies_close _del_two_copies_medium _del_three_copies_close _del_two_copies_wide _del_one_copy _del_three_copies_medium _del_one_copy
+
+_del_one_copy
+   player1y[temp1] = _plane_parking_point_bank3[temp1]
+   goto _determine_collision_score
+
+_del_two_copies_close
+   NewNUSIZ[temp1] = 0
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits
+   goto _determine_collision_score
+_del_two_copies_medium
+   NewNUSIZ[temp1] = 0
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits
+   goto _determine_collision_score
+_del_three_copies_close
+   if temp3 = 1 then NewNUSIZ[temp1] = 2 : goto _swap_b_c_hits
+   NewNUSIZ[temp1] = 1
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits : goto _swap_b_c_hits
+   goto _determine_collision_score
+_del_two_copies_wide 
+   NewNUSIZ[temp1] = 0
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 64 : gosub swap_a_b_hits
+   goto _determine_collision_score
+_del_three_copies_medium
+   if temp3 = 1 then NewNUSIZ[temp1] = 4 : goto _swap_b_c_hits
+   NewNUSIZ[temp1] = 2
+   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits : goto _swap_b_c_hits
+   goto _determine_collision_score   
+
+_swap_b_c_hits
+   w_playerhits_b[temp1] = r_playerhits_c[temp1]
+
+_determine_collision_score
+   if playertype[temp1] < 3 then temp6 = _Bonus_Points_50 : goto _add_collision_score
+   if playertype[temp1] < 6 then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
+_add_collision_score
+   gosub add_scores
+
+_end_collision
+   missile0y = 0
+
+_bank_3_code_end
+   goto _Play_In_Game_Music bank6
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Subroutines and Functions Bank 3"
+
+add_scores
+   temp5 = _sc1
+   asm
+   LDX temp6
+	SED
+	CLC
+	LDA score+2
+	ADC _bonus_points_bank3,X
+	STA score+2
+   DEX
+	LDA score+1
+	ADC _bonus_points_bank3,X
+	STA score+1
+   DEX
+	LDA score
+	ADC _bonus_points_bank3,X
+	STA score
+	CLD
+end
+   if _sc1 < $10 && _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   asm
+   rts   ; we are not using bB "return" here, because we are using this subroutine only in this bank!
+end
+
+swap_a_b_hits
+   w_playerhits_a[temp1] = r_playerhits_b[temp1]
+   asm
+   rts   ; we are not using bB "return" here, because we are using this subroutine only in this bank!
+end
+
+set_game_state_powerup
+   temp2 = (stage - 1 ) * 2   +  r_stage_bonus_counter
+   NewCOLUP1 = _bonus_list[temp2] : NewCOLUP1[temp1] = _bonus_list[temp2] : NewNUSIZ[temp1] = 0
+   playerpointerlo[temp1] = _Power_Up_low
+   playerpointerhi[temp1] = _Power_Up_high
+   player1height[temp1] = _Power_Up_height
+   player1fullheight[temp1] = _Power_Up_height
+   _Bit7_powerup{7} = 1 :  w_stage_bonus_counter = r_stage_bonus_counter + 1
+   goto _determine_collision_score
+
+
+
+set_game_state_landing_bank3
+   PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
+   PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
+   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier : NUSIZ0 = 0
+   _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
+   stage = stage - 1
+   if stage = 15 then attack_position = 0
+
+   player1y = _Player1_Parking_Point
+   player2y = _Player2_Parking_Point
+   player3y = _Player3_Parking_Point
+   player4y = _Player4_Parking_Point
+   player5y = _Player5_Parking_Point
+   goto _bank_3_code_end 
+
+;#endregion
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Data Tables Bank 3"
+
+   data _bonus_points_bank3
+   $00, $00, $50  ;  +    50 points
+   $00, $01, $00  ;  +   100 points
+   $00, $05, $00  ;  +   500 points
+   $00, $10, $00  ;  +  1000 points
+   $00, $15, $00  ;  +  1500 points
+   $00, $50, $00  ;  +  5000 points
+   $01, $00, $00  ;  + 10000 points
+end
+
+   data bit_shift_table
+   1, 2, 4, 8, 16
+end
+
+   data _plane_parking_point_bank3
+   _Player1_Parking_Point
+   _Player2_Parking_Point
+   _Player3_Parking_Point
+   _Player4_Parking_Point
+   _Player5_Parking_Point
+end
+
+   data _bonus_list
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 01
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 02
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 03
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Black_Extra_Life ; Stage 04
+   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 05
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 06
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 07
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Black_Extra_Life ; Stage 08
+   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 09
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 10
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 11
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 12
+   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 13
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 14
+   _Power_Up_Orange_No_Enemy_Bullets,  _Power_Up_Black_Extra_Life ; Stage 15
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 16
+   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 17
+   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 18
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 19
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Black_Extra_Life ; Stage 20
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 21
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 22
+   _Power_Up_Yellow_Extra_Loop,        _Power_Up_Red_1000_Points  ; Stage 23
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 24
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 25
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 26
+   _Power_Up_Orange_No_Enemy_Bullets,  _Power_Up_Black_Extra_Life ; Stage 27
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 28
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 29
+   _Power_Up_Light_Gray_Side_Fighters, _Power_Up_Red_1000_Points  ; Stage 30
+   _Power_Up_White_Enemy_Crash,        _Power_Up_Red_1000_Points  ; Stage 31
+   _Power_Up_Dark_Gray_Quad_Gun,       _Power_Up_Red_1000_Points  ; Stage 32
+end
+
+;#endregion
+
+;#endregion
+
    bank 4
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Bank 4 PlusROM HSC Highscore Table"
+
+   asm
+  ; 24 Char textkernel by AtariAge member c-dw
+  ; https://atariage.com/forums/blogs/entry/4523-13-lines/
+
+NO_ILLEGAL_OPCODES = 0
+TEXTHEIGHT  = 4
+
+  ; Alphabet Constants
+_COMMA  = 0
+_DOT    = 1
+__      = (1 * TEXTHEIGHT)
+_A      = (2 * TEXTHEIGHT)
+_B      = (3 * TEXTHEIGHT)
+_C      = (4 * TEXTHEIGHT)
+_D      = (5 * TEXTHEIGHT)
+_E      = (6 * TEXTHEIGHT)
+_F      = (7 * TEXTHEIGHT)
+_G      = (8 * TEXTHEIGHT)
+_H      = (9 * TEXTHEIGHT)
+_I      = (10 * TEXTHEIGHT)
+_J      = (11 * TEXTHEIGHT)
+_K      = (12 * TEXTHEIGHT)
+_L      = (13 * TEXTHEIGHT)
+_M      = (14 * TEXTHEIGHT)
+_N      = (15 * TEXTHEIGHT)
+_O      = (16 * TEXTHEIGHT)
+_P      = (17 * TEXTHEIGHT)
+_Q      = (18 * TEXTHEIGHT)
+_R      = (19 * TEXTHEIGHT)
+_S      = (20 * TEXTHEIGHT)
+_T      = (21 * TEXTHEIGHT)
+_U      = (22 * TEXTHEIGHT)
+_V      = (23 * TEXTHEIGHT)
+_W      = (24 * TEXTHEIGHT)
+_X      = (25 * TEXTHEIGHT)
+_Y      = (26 * TEXTHEIGHT)
+_Z      = (27 * TEXTHEIGHT)
+_a      = (28 * TEXTHEIGHT)
+_b      = (29 * TEXTHEIGHT)
+_c      = (30 * TEXTHEIGHT)
+_d      = (31 * TEXTHEIGHT)
+_e      = (32 * TEXTHEIGHT)
+_f      = (33 * TEXTHEIGHT)
+_g      = (34 * TEXTHEIGHT)
+_h      = (35 * TEXTHEIGHT)
+_i      = (36 * TEXTHEIGHT)
+_j      = (37 * TEXTHEIGHT)
+_k      = (38 * TEXTHEIGHT)
+_l      = (39 * TEXTHEIGHT)
+_m      = (40 * TEXTHEIGHT)
+_n      = (41 * TEXTHEIGHT)
+_o      = (42 * TEXTHEIGHT)
+_p      = (43 * TEXTHEIGHT)
+_q      = (44 * TEXTHEIGHT)
+_r      = (45 * TEXTHEIGHT)
+_s      = (46 * TEXTHEIGHT)
+_t      = (47 * TEXTHEIGHT)
+_u      = (48 * TEXTHEIGHT)
+_v      = (49 * TEXTHEIGHT)
+_w      = (50 * TEXTHEIGHT)
+_x      = (51 * TEXTHEIGHT)
+_y      = (52 * TEXTHEIGHT)
+_z      = (53 * TEXTHEIGHT)
+_0      = (54 * TEXTHEIGHT)
+_1      = (55 * TEXTHEIGHT)
+_2      = (56 * TEXTHEIGHT)
+_3      = (57 * TEXTHEIGHT)
+_4      = (58 * TEXTHEIGHT)
+_5      = (59 * TEXTHEIGHT)
+_6      = (60 * TEXTHEIGHT)
+_7      = (61 * TEXTHEIGHT)
+_8      = (62 * TEXTHEIGHT)
+_9      = (63 * TEXTHEIGHT)
+;_BANG   = (64 * TEXTHEIGHT)
+;_QMARK  = (65 * TEXTHEIGHT)
+;_DASH   = (66 * TEXTHEIGHT)
+;_COLON  = (67 * TEXTHEIGHT)
+
+
+CYCLE=$80
+TEMP=$81
+LOOP=$82
+TPTR0=$83
+TPTR1=$85
+
+TEXT=$86
+BUFF1=$9e
+BUFF2=$C8
+
+
+RAM_Messages=r000
+
+ROM_Messages
+Message0
+  DC.B  __, __, __, __, __, __, __, __, __, __, _1, _9, _4, _2, __, __, __, __, __, __, __, __, __, __
+Message1
+  DC.B  __, __, _T, _O, _P, __, _5, __, _R, _A, _N, _K, _I, _N, _G, __, _S, _C, _O, _R, _E, __, __, __
+Loading_Messages
+Message2
+  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+Message3
+  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+Message4
+  DC.B  __, __, __, __, __, __, __, __, _L, _o, _a, _d, _i, _n, _g, __, __, __, __, __, __, __, __, __
+Message5
+  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+Message6
+  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+EndMessages
+
+
+
+Start_HSC
+  ; Wipe Registers & Memory
+  ; CLEAN_START
+
+  ; Send request for 1942 HSC table
+  lda #0
+  sta WriteToBuffer
+  lda #HighScoreDB_ID
+  sta WriteSendBuffer 
+
+  ; Copy loading message to SC-RAM
+  ldx #120
+loading_msg_copy_loop
+  lda Loading_Messages-1,x
+  sta w000-1,x
+  DEX
+  bne loading_msg_copy_loop
+
+  ; Set 3 sprite copies
+  lda #%00000110
+  sta NUSIZ0
+  sta NUSIZ1
+
+  ; Delay P0 & P1
+  lda #%00000001
+  sta VDELP0
+  sta VDELP1
+  
+  ; Set P0/P1 Colours
+  lda #_0E
+  sta COLUP0
+  sta COLUP1
+
+  ; Reflect PF
+  lda #1
+  sta CTRLPF
+  
+  ; Set Background 
+  lda #_96
+  sta COLUPF
+  lda #$C0
+  sta PF0
+  lda #$FF
+  sta PF1
+  sta PF2
+
+MainLoop
+  ; Do Vertical Sync (VSync Routine by Manuel Polik)
+  lda #2
+  sta WSYNC
+  sta VSYNC
+  sta WSYNC
+  sta WSYNC
+  lsr
+  sta WSYNC
+  sta VSYNC
+
+  ; Set Vertical Blank Timer 
+  ldy #43
+  sty TIM64T
+  
+  ; Update Game Cycle
+  dec CYCLE
+
+  ; Clear Sprites
+  lda #0
+  sta GRP0
+  sta GRP1
+  sta GRP0
+  sta GRP1
+  
+  ; Set Loop Iterations
+  lda #9
+  sta LOOP
+  
+  ; Set Pointer for Forst Message
+  lda #176
+  jsr LoadText
+  
+  ; Set Sprite Positions and Preload First Text Line
+  jsr TextPosition
+  jsr TextCopy
+
+  ; Wait for Vertical Blank End
+WaitVblank
+  lda INTIM
+  bne WaitVblank
+  sta WSYNC
+  sta VBLANK
+  sta WSYNC
+
+  ; Display First Line
+  jsr TextKernel
+
+TextLoop
+  
+  ; Clear Sprite Data
+  lda #0
+  sta GRP1
+  sta GRP0
+  sta GRP1
+  
+  ; Set Next Message Pointer
+  ldx LOOP
+  lda Offset,X
+  jsr LoadText
+  
+  ; Copy and Display Message
+  jsr TextCopy
+  jsr TextKernel
+  
+  ; Decrement Loop
+  dec LOOP
+  bpl TextLoop
+EndKernel
+
+
+  ; Start Vertical Blank
+  lda #2
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta VBLANK
+  
+  ; Set Timer for Overscan
+  ldy #35
+  sty TIM64T
+end
+
+   if ReceiveBufferSize < 120 then _skip_copy_response_to_SC_RAM
+
+   asm
+   LDX #0
+.copy_loop
+   LDA	ReceiveBuffer   		; 4
+   STA	w000,x		   ; 5   
+   INX					         ; 2   
+   LDA	ReceiveBufferSize		; 4
+   BNE	.copy_loop			   ; 2/3 
+end
+
+_skip_copy_response_to_SC_RAM
+   if joy0right then goto restart_bB bank8
+
+
+   asm
+  ; Finish Overscan
+WaitOverscanEnd
+  lda INTIM
+  bne WaitOverscanEnd
+  
+  ; Loop To Beginning
+  jmp MainLoop
+
+  ALIGN 256
+  
+TextKernel
+  ; Alternate each frame
+  lda CYCLE
+  lsr
+  bcs Kernel1A
+  jmp Kernel2A
+Kernel1A
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+6                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+13                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+20                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 6                       ; [21] + 6
+  lda #0                        ; [27] + 2
+  sta HMP0                      ; [29] + 3
+  sta HMP1                      ; [32] + 3
+  lda BUFF1+27                  ; [35] + 3
+  sta GRP1                      ; [38] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+34                  ; [41] + 3
+  sta GRP0                      ; [44] + 3      5 7 9 -   > 44 < 52 
+  lda BUFF1+41                  ; [47] + 3
+  sta GRP1                      ; [50] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [53] + 3      9 11 - -  > 54 < 63
+  SLEEP 15                      ; [56] + 15
+  sta HMOVE                     ; [71] + 3      = 74!
+  lda BUFF1+2                   ; [74] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [1] + 3       - - 0 -
+  lda BUFF1+9                   ; [4] + 3
+  sta GRP1                      ; [7] + 3       0 - - 2   < 34
+  lda BUFF1+16                  ; [10] + 3
+  sta GRP0                      ; [13] + 3      0 2 4 -   < 39
+  SLEEP 9                       ; [16] + 9
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+23                  ; [33] + 3      
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+30                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+37                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+  ; SPARE 22 CYCLES
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+5                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+12                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+19                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 6                       ; [21] + 6
+  lda #0                        ; [27] + 2
+  sta HMP0                      ; [29] + 3
+  sta HMP1                      ; [32] + 3
+  lda BUFF1+26                  ; [35] + 3
+  sta GRP1                      ; [38] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+33                  ; [41] + 3
+  sta GRP0                      ; [44] + 3      5 7 9 -   > 44 < 52 
+  lda BUFF1+40                  ; [47] + 3
+  sta GRP1                      ; [50] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [53] + 3      9 11 - -  > 54 < 63
+  SLEEP 15                      ; [56] + 15
+  sta HMOVE                     ; [71] + 3      = 74!
+  lda BUFF1+1                   ; [74] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [1] + 3       - - 0 -
+  lda BUFF1+8                   ; [4] + 3
+  sta GRP1                      ; [7] + 3       0 - - 2   < 34
+  lda BUFF1+15                  ; [10] + 3
+  sta GRP0                      ; [13] + 3      0 2 4 -   < 39
+  SLEEP 9                       ; [16] + 9
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+22                  ; [33] + 3      
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+29                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+36                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+4                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+11                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+18                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 6                       ; [21] + 6
+  lda #0                        ; [27] + 2
+  sta HMP0                      ; [29] + 3
+  sta HMP1                      ; [32] + 3
+  lda BUFF1+25                  ; [35] + 3
+  sta GRP1                      ; [38] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+32                  ; [41] + 3
+  sta GRP0                      ; [44] + 3      5 7 9 -   > 44 < 52 
+  lda BUFF1+39                  ; [47] + 3
+  sta GRP1                      ; [50] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [53] + 3      9 11 - -  > 54 < 63
+  SLEEP 15                      ; [56] + 15
+  sta HMOVE                     ; [71] + 3      = 74!
+  lda BUFF1+0                   ; [74] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [1] + 3       - - 0 -
+  lda BUFF1+7                   ; [4] + 3
+  sta GRP1                      ; [7] + 3       0 - - 2   < 34
+  lda BUFF1+14                  ; [10] + 3
+  sta GRP0                      ; [13] + 3      0 2 4 -   < 39
+  SLEEP 6                       ; [16] + 6
+  jmp Kernel1B                  ; [22] + 3
+EndKernel1A
+
+  if (>TextKernel != >EndKernel1A)
+    echo "WARNING: Kernel1A Crosses Page Boundary!"
+  endif
+
+  ALIGN 256
+  
+Kernel1B
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+21                  ; [33] + 3      
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+28                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+35                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+  ; SPARE 22 CYCLES
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+3                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+10                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+17                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 6                       ; [21] + 6
+  lda #0                        ; [27] + 2
+  sta HMP0                      ; [29] + 3
+  sta HMP1                      ; [32] + 3
+  lda BUFF1+24                  ; [35] + 3
+  sta GRP1                      ; [38] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+31                  ; [41] + 3
+  sta GRP0                      ; [44] + 3      5 7 9 -   > 44 < 52 
+  lda BUFF1+38                  ; [47] + 3
+  sta GRP1                      ; [50] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [53] + 3      9 11 - -  > 54 < 63
+EndKernel1B
+  rts
+  
+Kernel2A
+  sta WSYNC                     ; [0]
+  lda BUFF1+3                   ; [0] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [3] + 3       - - 0 -
+  lda BUFF1+10                  ; [6] + 3
+  sta GRP1                      ; [9] + 3       0 - - 2   < 34
+  lda BUFF1+17                  ; [12] + 3
+  sta GRP0                      ; [15] + 3      0 2 4 -   < 39
+  SLEEP 7                       ; [18] + 7
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+24                  ; [33] + 3
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+31                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+38                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+6                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+13                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+20                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 15                      ; [21] + 15
+  lda BUFF1+27                  ; [36] + 3
+  sta GRP1                      ; [39] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+34                  ; [42] + 3
+  sta GRP0                      ; [45] + 3      5 7 9 -   > 44 < 52
+  lda BUFF1+41                  ; [48] + 3
+  sta GRP1                      ; [51] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [54] + 3      9 11 - -  > 54 < 63
+  lda #0                        ; [57] + 2
+  sta HMP0                      ; [59] + 3
+  sta HMP1                      ; [62] + 3
+  SLEEP 6                       ; [65] + 6
+  sta HMOVE                     ; [71] + 3      = 74!   
+  lda BUFF1+2                   ; [74] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [1] + 3       - - 0 -
+  lda BUFF1+9                   ; [4] + 3
+  sta GRP1                      ; [7] + 3       0 - - 2   < 34
+  lda BUFF1+16                  ; [10] + 3
+  sta GRP0                      ; [13] + 3      0 2 4 -   < 39
+  SLEEP 9                       ; [16] + 9
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+23                  ; [33] + 3
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+30                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+37                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+5                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+12                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+19                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 15                      ; [21] + 15
+  lda BUFF1+26                  ; [36] + 3
+  sta GRP1                      ; [39] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+33                  ; [42] + 3
+  sta GRP0                      ; [45] + 3      5 7 9 -   > 44 < 52
+  lda BUFF1+40                  ; [48] + 3
+  sta GRP1                      ; [51] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [54] + 3      9 11 - -  > 54 < 63
+  lda #0                        ; [57] + 2
+  sta HMP0                      ; [59] + 3
+  sta HMP1                      ; [62] + 3
+  SLEEP 3                       ; [65] + 3
+  jmp Kernel2B                  ; [68] + 3
+EndKernel2A
+  
+  if (>Kernel1B != >EndKernel2A)
+    echo "WARNING: Kernel1B/2A Crosses Page Boundary!"
+  endif
+
+  ALIGN 256
+
+Kernel2B
+  sta HMOVE                     ; [71] + 3      = 74!   
+  lda BUFF1+1                   ; [74] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [1] + 3       - - 0 -
+  lda BUFF1+8                   ; [4] + 3
+  sta GRP1                      ; [7] + 3       0 - - 2   < 34
+  lda BUFF1+15                  ; [10] + 3
+  sta GRP0                      ; [13] + 3      0 2 4 -   < 39
+  SLEEP 9                       ; [16] + 9
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+22                  ; [33] + 3
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+29                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+36                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+  sta WSYNC                     ; [0]
+  sta HMOVE                     ; [0] + 3       P0A P1A P0B P1B
+  lda BUFF1+4                   ; [3] + 3
+  sta GRP0                      ; [6] + 3       - - 0 -
+  lda BUFF1+11                  ; [9] + 3
+  sta GRP1                      ; [12] + 3      0 - - 3   < 36
+  lda BUFF1+18                  ; [15] + 3
+  sta GRP0                      ; [18] + 3      0 3 5 -   < 42
+  SLEEP 15                      ; [21] + 15
+  lda BUFF1+25                  ; [36] + 3
+  sta GRP1                      ; [39] + 3      5 3 - 7   > 38 < 47
+  lda BUFF1+32                  ; [42] + 3
+  sta GRP0                      ; [45] + 3      5 7 9 -   > 44 < 52
+  lda BUFF1+39                  ; [48] + 3
+  sta GRP1                      ; [51] + 3      9 7 - 11  > 49 < 58
+  sta GRP0                      ; [54] + 3      9 11 - -  > 54 < 63
+  lda #0                        ; [57] + 2
+  sta HMP0                      ; [59] + 3
+  sta HMP1                      ; [62] + 3
+  SLEEP 6                       ; [65] + 6
+  sta HMOVE                     ; [71] + 3      = 74!   
+  lda BUFF1+0                   ; [74] + 3      P0A P1A P0B P1B 
+  sta GRP0                      ; [1] + 3       - - 0 -
+  lda BUFF1+7                   ; [4] + 3
+  sta GRP1                      ; [7] + 3       0 - - 2   < 34
+  lda BUFF1+14                  ; [10] + 3
+  sta GRP0                      ; [13] + 3      0 2 4 -   < 39
+  SLEEP 9                       ; [16] + 9
+  lda #%10000000                ; [25] + 2
+  sta HMP0                      ; [27] + 3
+  sta HMP1                      ; [30] + 3
+  lda BUFF1+21                  ; [33] + 3
+  sta GRP1                      ; [36] + 3      4 2 - 6   > 36 < 44
+  lda BUFF1+28                  ; [39] + 3
+  sta GRP0                      ; [42] + 3      4 6 8 -   > 41 < 50 
+  lda BUFF1+35                  ; [45] + 3
+  sta GRP1                      ; [48] + 3      8 6 - 10  > 47 < 55
+  sta GRP0                      ; [51] + 3      8 11 - -  > 52 < 60
+EndKernel2B
+  rts
+  
+  ; Set Initial Sprite Positions
+TextPosition
+  lda CYCLE
+  lsr
+  bcs Position1
+  jmp Position2
+Position1
+  sta WSYNC
+  lda #%10010000                ; [0] + 2
+  sta HMP0                      ; [2] + 3
+  lda #%10000000                ; [5] + 2
+  sta HMP1                      ; [7] + 3
+  SLEEP 19                      ; [10] + 19
+  sta RESP0                     ; [29] + 3 = 32
+  nop                           ; [32] + 2
+  sta RESP1                     ; [34] + 3 = 37
+  rts
+Position2
+  sta WSYNC
+  SLEEP 29                      ; [0] + 29
+  sta RESP0                     ; [29] + 3 = 32
+  nop                           ; [32] + 2
+  sta RESP1                     ; [34] + 3 = 37
+  lda #%10010000                ; [37] + 2
+  sta HMP0                      ; [39] + 3
+  lda #%10000000                ; [42] + 2
+  sta HMP1                      ; [44] + 3 
+  SLEEP 24                      ; [47] + 21
+  sta HMOVE                     ; [71] + 3
+  rts
+EndPosition
+
+  if (>Kernel2B != >EndPosition)
+    echo "WARNING: Kernel2B Crosses Page Boundary!"
+  endif
+
+  ALIGN 256
+
+  ; Copy Text Into Buffer
+TextCopy
+  lda CYCLE
+  lsr
+  bcs TextCopy1
+  jmp TextCopy2
+TextCopy1
+  ldx TEXT+23         ; [0] + 3
+  ldy TEXT+22         ; [3] + 3
+  lda L2CHARS+3,Y     ; [6] + 4
+  ora R2CHARS+3,X     ; [10] + 4
+  sta BUFF1+41        ; [14] + 3
+  lda L2CHARS+2,Y     ; [17] + 4
+  ora R2CHARS+2,X     ; [21] + 4
+  sta BUFF1+40        ; [25] + 3
+  lda L2CHARS+1,Y     ; [28] + 4
+  ora R2CHARS+1,X     ; [32] + 4
+  sta BUFF1+39        ; [36] + 3
+  lda L2CHARS+0,Y     ; [39] + 4
+  ora R2CHARS+0,X     ; [43] + 4
+  sta BUFF1+38        ; [47] + 3 = 50
+  ldx TEXT+21
+  ldy TEXT+20
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+37
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+36
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+35
+  ldx TEXT+19
+  ldy TEXT+18
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+34
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+33
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+32
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+31
+  ldx TEXT+17
+  ldy TEXT+16
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+30
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+29
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+28
+  ldx TEXT+15
+  ldy TEXT+14
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+27
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+26
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+25
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+24
+  ldx TEXT+13
+  ldy TEXT+12
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+23
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+22
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+21
+  ldx TEXT+11
+  ldy TEXT+10
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+20
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+19
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+18
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+17
+  ldx TEXT+9
+  ldy TEXT+8
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+16
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+15
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+14
+  ldx TEXT+7
+  ldy TEXT+6
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+13
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+12
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+11
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+10
+  ldx TEXT+5
+  ldy TEXT+4
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+9
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+8
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+7
+  ldx TEXT+3
+  ldy TEXT+2
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+6
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+5
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+4
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+3
+  ldx TEXT+1
+  ldy TEXT+0
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+2
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+1
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+0
+  rts
+EndTextCopy1
+
+TextCopy2
+  ldx TEXT+23       ; [0] + 3
+  ldy TEXT+22       ; [3] + 3
+  lda L1CHARS+3,Y   ; [6] + 4
+  ora R1CHARS+3,X   ; [10] + 4
+  sta BUFF1+41      ; [14] + 3
+  lda L1CHARS+2,Y   ; [17] + 4
+  ora R1CHARS+2,X   ; [21] + 4
+  sta BUFF1+40      ; [25] + 3
+  lda L1CHARS+1,Y   ; [28] + 4
+  ora R1CHARS+1,X   ; [32] + 4
+  sta BUFF1+39      ; [36] + 3 = 39
+  ldx TEXT+21
+  ldy TEXT+20
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+38
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+37
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+36
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+35
+  ldx TEXT+19
+  ldy TEXT+18
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+34
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+33
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+32
+  ldx TEXT+17
+  ldy TEXT+16
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+31
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+30
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+29
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+28
+  ldx TEXT+15
+  ldy TEXT+14
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+27
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+26
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+25
+  ldx TEXT+13
+  ldy TEXT+12
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+24
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+23
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+22
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+21
+  ldx TEXT+11
+  ldy TEXT+10
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+20
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+19
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+18
+  ldx TEXT+9
+  ldy TEXT+8
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+17
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+16
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+15
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+14
+  ldx TEXT+7
+  ldy TEXT+6
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+13
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+12
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+11
+  ldx TEXT+5
+  ldy TEXT+4
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+10
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+9
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+8
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+7
+  ldx TEXT+3
+  ldy TEXT+2
+  lda L1CHARS+3,Y
+  ora R1CHARS+3,X
+  sta BUFF1+6
+  lda L1CHARS+2,Y
+  ora R1CHARS+2,X
+  sta BUFF1+5
+  lda L1CHARS+1,Y
+  ora R1CHARS+1,X
+  sta BUFF1+4
+  ldx TEXT+1
+  ldy TEXT+0
+  lda L2CHARS+3,Y
+  ora R2CHARS+3,X
+  sta BUFF1+3
+  lda L2CHARS+2,Y
+  ora R2CHARS+2,X
+  sta BUFF1+2 
+  lda L2CHARS+1,Y
+  ora R2CHARS+1,X
+  sta BUFF1+1
+  lda L2CHARS+0,Y
+  ora R2CHARS+0,X
+  sta BUFF1+0
+  rts
+EndTextCopy2
+
+LoadText
+  bpl	LoadTextRAM
+  and #%01111111
+  tay
+  lda ROM_Messages+23,Y
+  sta TEXT+23
+  lda ROM_Messages+22,Y
+  sta TEXT+22
+  lda ROM_Messages+21,Y
+  sta TEXT+21
+  lda ROM_Messages+20,Y
+  sta TEXT+20
+  lda ROM_Messages+19,Y
+  sta TEXT+19
+  lda ROM_Messages+18,Y
+  sta TEXT+18
+  lda ROM_Messages+17,Y
+  sta TEXT+17
+  lda ROM_Messages+16,Y
+  sta TEXT+16
+  lda ROM_Messages+15,Y
+  sta TEXT+15
+  lda ROM_Messages+14,Y
+  sta TEXT+14
+  lda ROM_Messages+13,Y
+  sta TEXT+13
+  lda ROM_Messages+12,Y
+  sta TEXT+12
+  lda ROM_Messages+11,Y
+  sta TEXT+11
+  lda ROM_Messages+10,Y
+  sta TEXT+10
+  lda ROM_Messages+9,Y
+  sta TEXT+9
+  lda ROM_Messages+8,Y
+  sta TEXT+8
+  lda ROM_Messages+7,Y
+  sta TEXT+7
+  lda ROM_Messages+6,Y
+  sta TEXT+6
+  lda ROM_Messages+5,Y
+  sta TEXT+5
+  lda ROM_Messages+4,Y
+  sta TEXT+4
+  lda ROM_Messages+3,Y
+  sta TEXT+3
+  lda ROM_Messages+2,Y
+  sta TEXT+2
+  lda ROM_Messages+1,Y
+  sta TEXT+1
+  lda ROM_Messages+0,Y
+  sta TEXT+0
+  rts
+
+LoadTextRAM
+  tay
+  lda RAM_Messages+23,Y
+  sta TEXT+23
+  lda RAM_Messages+22,Y
+  sta TEXT+22
+  lda RAM_Messages+21,Y
+  sta TEXT+21
+  lda RAM_Messages+20,Y
+  sta TEXT+20
+  lda RAM_Messages+19,Y
+  sta TEXT+19
+  lda RAM_Messages+18,Y
+  sta TEXT+18
+  lda RAM_Messages+17,Y
+  sta TEXT+17
+  lda RAM_Messages+16,Y
+  sta TEXT+16
+  lda RAM_Messages+15,Y
+  sta TEXT+15
+  lda RAM_Messages+14,Y
+  sta TEXT+14
+  lda RAM_Messages+13,Y
+  sta TEXT+13
+  lda RAM_Messages+12,Y
+  sta TEXT+12
+  lda RAM_Messages+11,Y
+  sta TEXT+11
+  lda RAM_Messages+10,Y
+  sta TEXT+10
+  lda RAM_Messages+9,Y
+  sta TEXT+9
+  lda RAM_Messages+8,Y
+  sta TEXT+8
+  lda RAM_Messages+7,Y
+  sta TEXT+7
+  lda RAM_Messages+6,Y
+  sta TEXT+6
+  lda RAM_Messages+5,Y
+  sta TEXT+5
+  lda RAM_Messages+4,Y
+  sta TEXT+4
+  lda RAM_Messages+3,Y
+  sta TEXT+3
+  lda RAM_Messages+2,Y
+  sta TEXT+2
+  lda RAM_Messages+1,Y
+  sta TEXT+1
+  lda RAM_Messages+0,Y
+  sta TEXT+0
+  rts
+
+
+
+Offset
+  DC.B  176, 176, 96, 72, 48, 24, 0, 176, 152, 128
+  DC.B  0, 0, 0, 0
+  ; Include Font Data
+  INCLUDE "font.h"
+end
+
+_bB_entry_bank4
+   asm
+   jmp Start_HSC
+end
+
+;#endregion
+
    bank 5
    bank 6
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2929,6 +4069,8 @@ titlescreen
 
    gosub titledrawscreen
 
+   if joy0left && _Bit5_PlusROM{5} then AUDV0 = 0 : AUDV1 = 0 : goto _bB_entry_bank4 bank4
+
    if !joy0fire then _Bit1_reset_restrainer{1} = 0
    if joy0fire && !_Bit1_reset_restrainer{1} then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
    asm
@@ -2947,6 +4089,11 @@ end
 ;#region "Bank 8 bB drawscreen and sprites"
 
    inline 6lives.asm
+
+restart_bB
+   asm
+   jmp start
+end
 
    asm
    MAC PAD_BB_SPRITE_DATA
@@ -3311,8 +4458,6 @@ end
    asm
    ; HSC PlusROM API definition.
    SET_PLUSROM_API "a", "h.firmaplus.de"
-   ; just for the detection
-   sta WriteSendBuffer
 end
 
 ;#endregion
