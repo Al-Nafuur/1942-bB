@@ -346,6 +346,7 @@ end
    ; Kernel and Minikernel constants
    const lives_compact  = 1
    const pfscore = 2
+   const switch_player_0_color = 1
 
    ; Game constants
    const _Plane_Y_Speed  = 1
@@ -515,7 +516,7 @@ end
    dim player4fullheight = q
    dim player5fullheight = r
 
-   dim unused1        = s
+   dim Player0SwitchColor     = s
    dim unused2        = t
 
    dim enemies_shoot_down     = u
@@ -1191,7 +1192,8 @@ main
 
    framecounter = framecounter + 1
    COLUBK = _96
-   COLUP0 = r_COLUP0
+   COLUP0 = _40 
+   Player0SwitchColor = r_COLUP0
    
    lifecolor = _EA : COLUPF = r_COLUPF
    if PF1pointerhi = _PF1_Pacific_high then CTRLPF = r_CTRLPF : NUSIZ0 = r_NUSIZ0
@@ -1598,7 +1600,7 @@ end
 end
 
    data _player0_explosion_height_table
-   _Player0_Explosion_0_length, _Player0_Explosion_1_length, _Player0_Explosion_2_length, _Player0_Explosion_3_length, _Player0_Explosion_4_length
+   _Player0_Explosion_0_length, _Player0_Explosion_1_length, _Player0_Explosion_2_length, _Player0_Explosion_3_length, _Player0_Explosion_4_length, 0
 end
 
    data _playfield_color_table
@@ -2245,7 +2247,11 @@ Message6
   DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
 EndMessages
 
+end
+   ;batariBasic entry point to asm bank
+_bB_entry_bank4
 
+   asm
 
 Start_HSC
   ; Wipe Registers & Memory
@@ -2284,8 +2290,8 @@ loading_msg_copy_loop
   lda #1
   sta CTRLPF
   
-  ; Set Background 
-  lda #_96
+  ; Set Background _96
+  lda #_00
   sta COLUPF
   lda #$C0
   sta PF0
@@ -2351,6 +2357,9 @@ TextLoop
   
   ; Set Next Message Pointer
   ldx LOOP
+  lda FontColors,X
+  sta COLUP0
+  sta COLUP1
   lda Offset,X
   jsr LoadText
   
@@ -3165,18 +3174,14 @@ LoadTextRAM
   sta TEXT+0
   rts
 
-
+FontColors
+  DC.B  _0E, _0E, _EA, _EA, _EA, _EA, _EA, _0E, _44, _D4, _0E
 
 Offset
   DC.B  176, 176, 96, 72, 48, 24, 0, 176, 152, 128
   DC.B  0, 0, 0, 0
   ; Include Font Data
   INCLUDE "font.h"
-end
-
-_bB_entry_bank4
-   asm
-   jmp Start_HSC
 end
 
 ;#endregion
