@@ -1219,7 +1219,7 @@ main
 
 _player0_animation_end
    player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0
-   if lives < 32 then WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : goto titlescreen_start bank7
+   if lives < 32 then WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _bB_Game_Over_entry_bank4 bank4
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
@@ -1648,7 +1648,7 @@ build_attack_position
    if temp2 = 228 then map_section = _Map_Boss_up   : w_player5hits_a = 55 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D6 : goto set_game_state_boss
    if temp2 = 229 then map_section = _Map_Boss_up   : w_player5hits_a = 70 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D4 : goto set_game_state_boss
    if temp2 = 254 then goto set_game_state_landing
-   if temp2 = 255 then attack_position = 0 : stage = $20 : goto build_attack_position ; todo game finished screen
+   if temp2 = 255 then  WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _bB_Endscreen_entry_bank4 bank4
 _read_attack_data
    for temp1 = 0 to 4
       temp3             = _attack_position_data[temp2] : temp2 = temp2 + 1
@@ -2135,7 +2135,7 @@ end
 
    bank 4
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Bank 4 PlusROM HSC Highscore Table"
+;#region "Bank 4 Text Screens"
 
    asm
   ; 24 Char textkernel by AtariAge member c-dw
@@ -2234,23 +2234,31 @@ Message0
   DC.B  __, __, __, __, __, __, __, __, __, __, _1, _9, _4, _2, __, __, __, __, __, __, __, __, __, __
 Message1
   DC.B  __, __, _T, _O, _P, __, _5, __, _R, _A, _N, _K, _I, _N, _G, __, _S, _C, _O, _R, _E, __, __, __
-Loading_Messages
 Message2
   DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
 Message3
-  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+  DC.B  __, __, __, __, __, __, __, _W, _E, __, _G, _I, _V, _E, __, _U, _P, __, __, __, __, __, __, __
 Message4
-  DC.B  __, __, __, __, __, __, __, __, _L, _o, _a, _d, _i, _n, _g, __, __, __, __, __, __, __, __, __
+  DC.B  __, __, __, __, __, __, _S, _P, _E, _C, _I, _A, _L, __, _B, _O, _N, _U, _S, __, __, __, __, __
 Message5
-  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+  DC.B  __, __, __, __, __, _1, _0, _COMMA, _0, _0, _0, _COMMA, _0, _0, _0, __, _P, _T, _S, __, __, __, __, __
 Message6
-  DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
+  DC.B  __, __, __, __, __, __, __, __, _G, _A, _M, _E, __, _O, _V, _E, _R, __, __, __, __, __, __, __
+Message7
+  DC.B  __, __, __, __, __, _P, _R, _E, _S, _E, _N, _T, _E, _D, __, _B, _Y, __, _A, _A, __, __, __, __
+Loading_Messages
+  DC.B  _L, _o, _a, _d, _i, _n, _g
+Shooting_Down_Messages
+  DC.B  _S, _H, _O, _O, _T, _I, _N, _G, __, _D, _O, _W, _N
+
 EndMessages
-
 end
-   ;batariBasic entry point to asm bank
-_bB_entry_bank4
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "HSC Text Screen"
+
+   ;batariBasic entry point to asm bank
+_bB_HSC_entry_bank4
    asm
 
 Start_HSC
@@ -2264,10 +2272,17 @@ Start_HSC
   sta WriteSendBuffer 
 
   ; Copy loading message to SC-RAM
+  lda #__
   ldx #120
+clear_zp_ram_loop
+  sta w000-1,x
+  DEX
+  bne clear_zp_ram_loop
+
+  ldx #7
 loading_msg_copy_loop
   lda Loading_Messages-1,x
-  sta w000-1,x
+  sta w033-1,x
   DEX
   bne loading_msg_copy_loop
 
@@ -2299,7 +2314,7 @@ loading_msg_copy_loop
   sta PF1
   sta PF2
 
-MainLoop
+MainHSCLoop
   ; Do Vertical Sync (VSync Routine by Manuel Polik)
   lda #2
   sta WSYNC
@@ -2357,10 +2372,10 @@ TextLoop
   
   ; Set Next Message Pointer
   ldx LOOP
-  lda FontColors,X
+  lda FontColorsHSC,X
   sta COLUP0
   sta COLUP1
-  lda Offset,X
+  lda OffsetHSC,X
   jsr LoadText
   
   ; Copy and Display Message
@@ -2411,10 +2426,31 @@ WaitOverscanEnd
   bne WaitOverscanEnd
   
   ; Loop To Beginning
-  jmp MainLoop
+  jmp MainHSCLoop
+;#endregion
+
+
+; Colors and rows tables  
+FontColorsHSC
+  DC.B  _0E, _0E, _EA, _EA, _EA, _EA, _EA, _0E, _44, _D4, _0E
+OffsetHSC
+  DC.B  176, 176, 96, 72, 48, 24, 0, 176, 152, 128
+
+OffsetEndscreen
+  DC.B  48, 48, 168, 144, 48, 120, 96, 48, 72, 48
+FontColorsEndscreen
+  DC.B  _0E, _08, _8A, _44, _0E, _58, _EA, _0E, _44, _0E, _0E
+
+OffsetGameOver
+  DC.B  48, 48, 48, 144, 48, 48, 48, 48, 48, 48
+FontColorsGameOver
+  DC.B  _0E, _08, _8A, _EA, _0E, _58, _EA, _0E, _44, _0E, _0E
+
 
   ALIGN 256
-  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Text Screen Kernel"
+
 TextKernel
   ; Alternate each frame
   lda CYCLE
@@ -3067,10 +3103,14 @@ TextCopy2
   sta BUFF1+0
   rts
 EndTextCopy2
+;#endregion
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Text Kernel Subroutines"
 LoadText
   bpl	LoadTextRAM
   and #%01111111
+LoadTextROM
   tay
   lda ROM_Messages+23,Y
   sta TEXT+23
@@ -3173,15 +3213,340 @@ LoadTextRAM
   lda RAM_Messages+0,Y
   sta TEXT+0
   rts
+end
+;#endregion
 
-FontColors
-  DC.B  _0E, _0E, _EA, _EA, _EA, _EA, _EA, _0E, _44, _D4, _0E
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Endscreen Text"
 
-Offset
-  DC.B  176, 176, 96, 72, 48, 24, 0, 176, 152, 128
-  DC.B  0, 0, 0, 0
+   ;batariBasic entry point to asm code
+_bB_Endscreen_entry_bank4
+
+
+   asm
+  ; Load Score + Bonus to first SC-RAM line 
+  lda #_1
+  sta w000
+  lda #_0
+  sta w001
+
+
+  ldx #5
+  jsr _Copy_Score_To_SC_RAM
+
+  ; Set 3 sprite copies
+  lda #%00000110
+  sta NUSIZ0
+  sta NUSIZ1
+
+  ; Delay P0 & P1
+  lda #%00000001
+  sta VDELP0
+  sta VDELP1
+  
+  ; Set P0/P1 Colours
+  lda #_0E
+  sta COLUP0
+  sta COLUP1
+
+  ; Reflect PF
+  lda #1
+  sta CTRLPF
+  
+  ; Set Background _96
+  lda #_00
+  sta COLUPF
+  lda #$F0
+  sta PF0
+  lda #$FF
+  sta PF1
+  sta PF2
+
+MainEndscreenLoop
+  ; Do Vertical Sync (VSync Routine by Manuel Polik)
+  lda #2
+  sta WSYNC
+  sta VSYNC
+  sta WSYNC
+  sta WSYNC
+  lsr
+  sta WSYNC
+  sta VSYNC
+
+  ; Set Vertical Blank Timer 
+  ldy #43
+  sty TIM64T
+  
+  ; Update Game Cycle
+  dec CYCLE
+
+  ; Clear Sprites
+  lda #0
+  sta GRP0
+  sta GRP1
+  sta GRP0
+  sta GRP1
+  
+  ; Set Pointer for First Message
+  jsr LoadTextRAM
+
+  ; Set Loop Iterations
+  lda #9
+  sta LOOP
+  
+  ; Set Sprite Positions and Preload First Text Line
+  jsr TextPosition
+  jsr TextCopy
+
+  ; Wait for Vertical Blank End
+WaitVblank2
+  lda INTIM
+  bne WaitVblank2
+  sta WSYNC
+  sta VBLANK
+  sta WSYNC
+
+  ; Display First Line
+  jsr TextKernel
+
+EndscreenTextLoop
+  
+  ; Clear Sprite Data
+  lda #0
+  sta GRP1
+  sta GRP0
+  sta GRP1
+  
+  ; Set Next Message Pointer
+  ldx LOOP
+  lda FontColorsEndscreen,X
+  sta COLUP0
+  sta COLUP1
+  lda OffsetEndscreen,X
+  jsr LoadTextROM
+  
+  ; Copy and Display Message
+  jsr TextCopy
+  jsr TextKernel
+  
+  ; Decrement Loop
+  dec LOOP
+  bpl EndscreenTextLoop
+EndEndscreenKernel
+
+
+  ; Start Vertical Blank
+  lda #2
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta VBLANK
+  
+  ; Set Timer for Overscan
+  ldy #35
+  sty TIM64T
+end
+
+   if joy0right then goto restart_bB bank8
+
+   asm
+  ; Finish Overscan
+WaitOverscanEndscreenEnd
+  lda INTIM
+  bne WaitOverscanEndscreenEnd
+  
+  ; Loop To Beginning
+  jmp MainEndscreenLoop
+
+;#endregion
+
+_Copy_Score_To_SC_RAM
+  ldy #3
+  clc
+copy_score_to_text_loop
+  lda score-1,y
+  and #%00001111
+  adc #54
+  rol
+  rol
+  sta w002,X
+  dex
+  lda score-1,y
+  and #%11110000
+  lsr
+  lsr
+  adc #216
+  sta w002,x
+  dex
+  dey
+  bne copy_score_to_text_loop
+
+
+  lda #__
+  ldx #16
+clear_zp_ram_loop_bonus
+  sta w008-1,x
+  DEX
+  bne clear_zp_ram_loop_bonus
+  rts
+
+
   ; Include Font Data
   INCLUDE "font.h"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Game Over Text Screen"
+
+   ;batariBasic entry point to asm code
+_bB_Game_Over_entry_bank4
+
+
+   asm
+  ; Load Score to first SC-RAM line 
+  lda #__
+  sta w000
+  sta w001
+
+  ldx #5
+  jsr _Copy_Score_To_SC_RAM
+
+  ; Set 3 sprite copies
+  lda #%00000110
+  sta NUSIZ0
+  sta NUSIZ1
+
+  ; Delay P0 & P1
+  lda #%00000001
+  sta VDELP0
+  sta VDELP1
+  
+  ; Set P0/P1 Colours
+  lda #_0E
+  sta COLUP0
+  sta COLUP1
+
+  ; Reflect PF
+  lda #1
+  sta CTRLPF
+  
+  ; Set Background _96
+  lda #_96
+  sta COLUBK
+  lda #_00
+  sta COLUPF
+  sta PF1
+  sta PF2
+  lda #$30
+  sta PF0
+
+MainGameOverLoop
+  ; Do Vertical Sync (VSync Routine by Manuel Polik)
+  lda #2
+  sta WSYNC
+  sta VSYNC
+  sta WSYNC
+  sta WSYNC
+  lsr
+  sta WSYNC
+  sta VSYNC
+
+  ; Set Vertical Blank Timer 
+  ldy #43
+  sty TIM64T
+  
+  ; Update Game Cycle
+  dec CYCLE
+
+  ; Clear Sprites
+  lda #0
+  sta GRP0
+  sta GRP1
+  sta GRP0
+  sta GRP1
+  
+  ; Set Pointer for First Message
+  jsr LoadTextRAM
+
+  ; Set Loop Iterations
+  lda #9
+  sta LOOP
+  
+  ; Set Sprite Positions and Preload First Text Line
+  jsr TextPosition
+  jsr TextCopy
+
+  ; Wait for Vertical Blank End
+WaitVblank3
+  lda INTIM
+  bne WaitVblank3
+  sta WSYNC
+  sta VBLANK
+  sta WSYNC
+
+  ; Display First Line
+  jsr TextKernel
+
+GameOverTextLoop
+  
+  ; Clear Sprite Data
+  lda #0
+  sta GRP1
+  sta GRP0
+  sta GRP1
+  
+  ; Set Next Message Pointer
+  ldx LOOP
+  lda FontColorsGameOver,X
+  sta COLUP0
+  sta COLUP1
+  lda OffsetGameOver,X
+  jsr LoadTextROM
+  
+  ; Copy and Display Message
+  jsr TextCopy
+  jsr TextKernel
+  
+  ; Decrement Loop
+  dec LOOP
+  bpl GameOverTextLoop
+EndGameOverKernel
+
+
+  ; Start Vertical Blank
+  lda #2
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta WSYNC
+  sta VBLANK
+  
+  ; Set Timer for Overscan
+  ldy #35
+  sty TIM64T
+end
+
+   if joy0right then goto restart_bB bank8
+
+   asm
+  ; Finish Overscan
+WaitOverscanGameOverEnd
+  lda INTIM
+  bne WaitOverscanGameOverEnd
+  
+  ; Loop To Beginning
+  jmp MainGameOverLoop
+
+;#endregion
+
+
+
+
 end
 
 ;#endregion
@@ -4074,7 +4439,7 @@ titlescreen
 
    gosub titledrawscreen
 
-   if joy0left && _Bit5_PlusROM{5} then AUDV0 = 0 : AUDV1 = 0 : goto _bB_entry_bank4 bank4
+   if joy0left && _Bit5_PlusROM{5} then AUDV0 = 0 : AUDV1 = 0 : goto _bB_HSC_entry_bank4 bank4
 
    if !joy0fire then _Bit1_reset_restrainer{1} = 0
    if joy0fire && !_Bit1_reset_restrainer{1} then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
