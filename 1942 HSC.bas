@@ -3467,7 +3467,6 @@ MainGameOverLoop
   sta GRP1
   sta GRP0
   sta GRP1
-  
   ; Set Pointer for First Message
   jsr LoadTextRAM
 
@@ -3559,432 +3558,78 @@ end
    inline song.h
    inline songplay.h
 
+   asm
+_Sfx_Addr_Lo
+   DC.B <_SD_Shoot             ; _Sfx_Player_Shot
+   DC.B <_SD_Large_Enemy_Hit   ; _Sfx_Enemy_Hit
+   DC.B <_SD_Enemy_Destroyed   ; _Sfx_Enemy_Down
+   DC.B <_SD_Power_Up          ; _Sfx_Power_Up
+   DC.B <_SD_Bonus_Life        ; _Sfx_Bonus_Life
+   DC.B <_SD_Takeoff           ; TODO: _Sfx_Looping
+   DC.B <_SD_Death             ; _Sfx_Player_Explosion
+   DC.B <_SD_Respawn_Bass      ; _Sfx_Respawn_Bass
+   DC.B <_SD_Takeoff           ; _Sfx_Takeoff
+   DC.B <_SD_Landing           ; _Sfx_Landing
+_Sfx_Addr_Hi
+   DC.B >_SD_Shoot
+   DC.B >_SD_Large_Enemy_Hit
+   DC.B >_SD_Enemy_Destroyed
+   DC.B >_SD_Power_Up
+   DC.B >_SD_Bonus_Life
+   DC.B >_SD_Takeoff
+   DC.B >_SD_Death
+   DC.B >_SD_Respawn_Bass
+   DC.B >_SD_Takeoff
+   DC.B >_SD_Landing
+end
+
 _Play_In_Game_Music
 
    ;***************************************************************
    ;
    ;  Channel 0 sound effect check.
    ;
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips all channel 0 sounds if sounds are off.
-   ;
-   if !_Ch0_Sound then goto __Skip_Ch_0
+   asm
+   ldy _Ch0_Sound
+   beq __Skip_Ch_0_asm ; assume _Sfx_Mute == 0
 
-   ;```````````````````````````````````````````````````````````````
-   ;  Decreases the channel 0 duration counter.
-   ;
-   _Ch0_Duration = _Ch0_Duration - 1
+   dec _Ch0_Duration
+   bne __Skip_Ch_0_asm ; branch if current note is not over
 
-   ;```````````````````````````````````````````````````````````````
-   ;  Skips all channel 0 sounds if duration counter is greater
-   ;  than zero
-   ;
-   if _Ch0_Duration then goto __Skip_Ch_0
+   lda _Sfx_Addr_Lo-1,Y ; -1: 0 (mute) bypasses this code
+   sta temp2
+   lda _Sfx_Addr_Hi-1,Y
+   sta temp3
 
-   ;```````````````````````````````````````````````````````````````
-   ;  Jump to the channel 0 sound
-   ;
-   on _Ch0_Sound goto __Skip_Ch_0 __Ch0_Sound_Player_Shot __Ch0_Sound_Enemy_Hit __Ch0_Sound_Enemy_Down __Ch0_Power_Up __Ch0_Bonus_Life __Ch0_Looping __Ch0_Sound_Player_Explosion __Ch0_Respawn_Bass __Ch0_Sound_Takeoff __Ch0_Sound_Landing
+   ldy _Ch0_Counter
+   lda (temp2),Y
+   sta temp4
+   cmp #255
+   bne __Ch0_Not_End
+   lda #0
+   sta AUDV0 ; silence channel 0
+   sta _Ch0_Sound ; assume _Sfx_Mute == 0
+end
 
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 001.
-   ;
-   ;  Takeoff sound effect.
-   ;
-__Ch0_Sound_Takeoff ; _Ch0_Sound = _Sfx_Takeoff
-__Ch0_Looping ; toDo create sfx for looping
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Takeoff[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Takeoff[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
    goto __Skip_Ch_0
 
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 002.
-   ;
-   ;  Shoot missile sound effect.
-   ;
-__Ch0_Sound_Player_Shot ; _Ch0_Sound = _Sfx_Player_Shot
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Shoot[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Shoot[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Shoot[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Shoot[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 003.
-   ;
-   ;  Enemy destroyed sound effect.
-   ;
-__Ch0_Sound_Enemy_Down ; _Ch0_Sound = _Sfx_Enemy_Down
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Enemy_Destroyed[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Enemy_Destroyed[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Enemy_Destroyed[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Enemy_Destroyed[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 004.
-   ;
-   ;  Player Explosion enemy.
-   ;
-__Ch0_Sound_Player_Explosion ; _Ch0_Sound = _Sfx_Player_Explosion
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Death[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Death[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Death[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Death[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 005.
-   ;
-   ;  Landing.
-   ;
-__Ch0_Sound_Landing ; _Ch0_Sound = _Sfx_Landing
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Landing[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Landing[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Landing[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Landing[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 006.
-   ;
-   ;  Enemy hit (but not destroyed) sound effect.
-   ;
-__Ch0_Sound_Enemy_Hit ; _Ch0_Sound = _Sfx_Enemy_Hit
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Large_Enemy_Hit[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Large_Enemy_Hit[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Large_Enemy_Hit[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Large_Enemy_Hit[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 007.
-   ;
-   ;  Respawn music bass line, handled as sfx.
-   ;
-__Ch0_Respawn_Bass ; _Ch0_Sound = _Sfx_Respawn_Bass
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Respawn_Bass[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Respawn_Bass[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Respawn_Bass[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Respawn_Bass[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 008.
-   ;
-   ;  Power up sound effect.
-   ;
-__Ch0_Power_Up ; _Ch0_Sound = _Sfx_Power_Up
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Power_Up[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Power_Up[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Power_Up[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Power_Up[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-
-   ;***************************************************************
-   ;
-   ;  Channel 0 sound effect 009.
-   ;
-   ;  Power up sound effect.
-   ;
-__Ch0_Bonus_Life ; _Ch0_Sound = _Sfx_Bonus_Life
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves first part of channel 0 data.
-   ;
-   temp4 = _SD_Bonus_Life[_Ch0_Counter]
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Checks for end of data.
-   ;
-   if temp4 = 255 then goto __Clear_Ch_0
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Retrieves more channel 0 data.
-   ;
-   _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Plays channel 0.
-   ;
-   AUDV0 = temp4
-   AUDC0 = _SD_Bonus_Life[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-   AUDF0 = _SD_Bonus_Life[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Sets Duration.
-   ;
-   _Ch0_Duration = _SD_Bonus_Life[_Ch0_Counter] : _Ch0_Counter = _Ch0_Counter + 1
-
-   ;```````````````````````````````````````````````````````````````
-   ;  Jumps to end of channel 0 area.
-   ;
-   goto __Skip_Ch_0
-
-
-
-   ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-   ;```````````````````````````````````````````````````````````````
-   ;
-   ;  Other channel 0 sound effects go here.
-   ;
-   ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-   ;```````````````````````````````````````````````````````````````
-
-
-
-   ;***************************************************************
-   ;
-   ;  Jumps to end of channel 0 area. (This catches any mistakes.)
-   ;
-   goto __Skip_Ch_0
-
-
-
-   ;***************************************************************
-   ;
-   ;  Clears channel 0.
-   ;
-__Clear_Ch_0
-   
-   _Ch0_Sound = _Sfx_Mute : AUDV0 = 0
-
+   asm
+__Ch0_Not_End
+   iny
+   sta AUDV0
+   lda (temp2),Y
+   sta AUDC0
+   iny
+   lda (temp2),Y
+   sta AUDF0
+   iny
+   lda (temp2),Y
+   sta _Ch0_Duration
+   iny
+   sty _Ch0_Counter
+
+__Skip_Ch_0_asm
+end
 
 
    ;***************************************************************
@@ -4007,10 +3652,7 @@ __Skip_Ch_0
    ;  is set to A.
    ;
    if _Bit3_mute_bg_music{3} then goto __Mute_Ch_1
-   if _Ch0_Sound = _Sfx_Respawn_Bass || switchleftb then goto __Play_Ch_1
-__Mute_Ch_1
-  AUDV1 = 0 : goto __Skip_Ch_1
-__Play_Ch_1
+   if !switchleftb && _Ch0_Sound <> _Sfx_Respawn_Bass then goto __Mute_Ch_1
 
    ;```````````````````````````````````````````````````````````````
    ;  Decreases the channel 1 duration counter.
@@ -4061,6 +3703,9 @@ __Skip_Ch_1
 
    drawscreen
    goto main bank1
+
+__Mute_Ch_1
+  AUDV1 = 0 : goto __Skip_Ch_1
 
    ;***************************************************************
    ;***************************************************************
