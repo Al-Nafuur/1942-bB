@@ -379,6 +379,7 @@ end
    const _Sfx_Respawn_Bass      = 8
    const _Sfx_Takeoff           = 9
    const _Sfx_Landing           = 10
+   const _Sfx_Game_Over_Bass    = 11
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -1219,7 +1220,7 @@ main
 
 _player0_animation_end
    player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0
-   if lives < 32 then WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _bB_Game_Over_entry_bank4 bank4
+   if lives < 32 then WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto __Game_Over_Music_Setup_01 bank6
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
@@ -3530,7 +3531,8 @@ EndGameOverKernel
   sty TIM64T
 end
 
-   if joy0right then goto restart_bB bank8
+   goto _play_game_over_music bank6
+_return_from_game_over_music
 
    asm
   ; Finish Overscan
@@ -3570,6 +3572,7 @@ _Sfx_Addr_Lo
    DC.B <_SD_Respawn_Bass      ; _Sfx_Respawn_Bass
    DC.B <_SD_Takeoff           ; _Sfx_Takeoff
    DC.B <_SD_Landing           ; _Sfx_Landing
+   DC.B <_SD_Game_Over_Bass    ; _Sfx_Game_Over_Bass
 _Sfx_Addr_Hi
    DC.B >_SD_Shoot
    DC.B >_SD_Large_Enemy_Hit
@@ -3581,7 +3584,19 @@ _Sfx_Addr_Hi
    DC.B >_SD_Respawn_Bass
    DC.B >_SD_Takeoff
    DC.B >_SD_Landing
+   DC.B >_SD_Game_Over_Bass
 end
+
+_game_over_music_check_and_return
+   if _Ch0_Sound <> _Sfx_Game_Over_Bass then AUDV1 = 0
+_game_over_music_return
+   goto _return_from_game_over_music bank4
+
+_play_game_over_music
+   ; check joystick here to free up space in bank 4
+   if joy0right then goto restart_bB bank8
+
+   if _Ch0_Sound <> _Sfx_Game_Over_Bass then goto _game_over_music_return
 
 _Play_In_Game_Music
 
@@ -3591,6 +3606,7 @@ _Play_In_Game_Music
    ;
    asm
    ldy _Ch0_Sound
+   sty temp1
    beq __Skip_Ch_0_asm ; assume _Sfx_Mute == 0
 
    dec _Ch0_Duration
@@ -3641,7 +3657,6 @@ __Skip_Ch_0
 
 
 
-
    ;***************************************************************
    ;
    ;  Channel 1 background music check.
@@ -3652,7 +3667,7 @@ __Skip_Ch_0
    ;  is set to A.
    ;
    if _Bit3_mute_bg_music{3} then goto __Mute_Ch_1
-   if !switchleftb && _Ch0_Sound <> _Sfx_Respawn_Bass then goto __Mute_Ch_1
+   if !switchleftb && _Ch0_Sound <> _Sfx_Respawn_Bass && _Ch0_Sound <> _Sfx_Game_Over_Bass then goto __Mute_Ch_1
 
    ;```````````````````````````````````````````````````````````````
    ;  Decreases the channel 1 duration counter.
@@ -3700,6 +3715,8 @@ __Skip_Ch_0
    ;  End of channel 1 area.
    ;
 __Skip_Ch_1
+
+   if temp1 = _Sfx_Game_Over_Bass then goto _game_over_music_check_and_return
 
    drawscreen
    goto main bank1
@@ -3941,6 +3958,56 @@ end
   $FF ; end
 end
 
+  data _SD_Game_Over_Bass
+  $8,$6,$0B, 4
+  $4,$6,$0B,44
+  $8,$6,$07, 4
+  $4,$6,$07,44
+
+  $8,$6,$0B, 4
+  $4,$6,$0B,44
+  $8,$6,$07, 4
+  $4,$6,$07,44
+
+  $8,$6,$0B, 4
+  $4,$6,$0B,20
+  $8,$6,$0B, 4
+  $4,$6,$0B,20
+  $8,$6,$0A, 4
+  $4,$6,$0A,20
+  $8,$6,$09, 4
+  $4,$6,$09,20
+
+  $8,$6,$09, 4
+  $3,$6,$09, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$09, 4
+  $3,$6,$09, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$09, 4
+  $3,$6,$09, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$09, 4
+  $3,$6,$09, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+  $8,$6,$0E, 4
+  $3,$6,$0E, 4
+
+  $8,$6,$09, 4
+  $4,$6,$09,92
+  $FF
+end
+
 __Respawn_Music_Setup
   sdata _SD_Respawn_Music01 = e
   $C,$4,$18, 2
@@ -4001,6 +4068,78 @@ end
    _Ch0_Duration = 1 : _Ch0_Counter = 0 : _Ch0_Sound = _Sfx_Respawn_Bass
    _Ch1_Duration = 1
    goto _Play_In_Game_Music
+
+__Game_Over_Music_Setup_01
+
+  sdata _SD_Game_Over_Music01 = e
+  $C,$C,$0C, 2
+  $6,$C,$0C, 4
+  $2,$C,$0C,12
+  $C,$C,$0C, 2
+  $6,$C,$0C, 4
+  $C,$4,$1E, 2
+  $6,$4,$1E, 4
+  $2,$4,$1E, 8
+  $1,$4,$1E,22
+  $8,$C,$0A, 2
+  $2,$C,$0A,10
+  $8,$C,$0B, 2
+  $2,$C,$0B,10
+  $4,$1,$04, 2
+  $1,$1,$04,10
+
+  $C,$C,$0C, 2
+  $6,$C,$0C, 4
+  $2,$C,$0C,12
+  $C,$C,$0C, 2
+  $6,$C,$0C, 4
+  $C,$4,$1E, 2
+  $6,$4,$1E, 4
+  $2,$4,$1E, 8
+  $1,$4,$1E,22
+  $8,$C,$0A, 2
+  $2,$C,$0A,10
+  $8,$C,$0B, 2
+  $2,$C,$0B,10
+  $4,$1,$04, 2
+  $1,$1,$04,10
+
+  $0,$0,$00, 8
+  $8,$4,$1E, 2
+  $2,$4,$1E, 6
+  $8,$4,$1E, 2
+  $2,$4,$1E, 6
+  $0,$0,$00, 8
+  $8,$4,$1C, 2
+  $2,$4,$1C, 6
+  $8,$4,$1C, 2
+  $2,$4,$1C, 6
+  $0,$0,$00, 8
+  $8,$4,$18, 2
+  $2,$4,$18, 6
+  $8,$4,$18, 2
+  $2,$4,$18, 6
+  $0,$0,$00, 8
+  $8,$4,$16, 2
+  $2,$4,$16, 6
+  $8,$4,$16, 2
+  $2,$4,$16, 6
+
+  $8,$4,$18, 2
+  $4,$4,$18, 4
+  $2,$4,$18, 8
+  $1,$4,$18,82
+
+  $8,$4,$19, 2
+  $4,$4,$19, 4
+  $2,$4,$19, 8
+  $1,$4,$19,82
+  255
+end
+   rem handle bass line as sfx for simplicity
+   _Ch0_Duration = 1 : _Ch0_Counter = 0 : _Ch0_Sound = _Sfx_Game_Over_Bass
+   _Ch1_Duration = 1
+   goto _bB_Game_Over_entry_bank4 bank4
 
 __BG_Music_Setup_01
 
