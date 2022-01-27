@@ -325,7 +325,7 @@ notEndOfSong
     ldx #1
     jsr playPattern
 
-    jmp BS_return
+    rts ; since song player is now in bank 7 along with its caller
 
     ; songPlayer
 ;--------------------------------------------------------------------------

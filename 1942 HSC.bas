@@ -369,17 +369,19 @@ end
    const _Bonus_Points_10000 = 20
 
    const _Sfx_Mute              = 0
-   const _Sfx_Player_Shot       = 1
-   const _Sfx_Enemy_Hit         = 2
-   const _Sfx_Enemy_Down        = 3
-   const _Sfx_Power_Up          = 4
-   const _Sfx_Bonus_Life        = 5
-   const _Sfx_Looping           = 6
-   const _Sfx_Player_Explosion  = 7
-   const _Sfx_Respawn_Bass      = 8
-   const _Sfx_Takeoff           = 9
-   const _Sfx_Landing           = 10
-   const _Sfx_Game_Over_Bass    = 11
+   const _Sfx_Enemy_Down_1      = 1
+   const _Sfx_Player_Shot       = 2
+   const _Sfx_Enemy_Hit         = 3
+   const _Sfx_Enemy_Down        = 4
+   const _Sfx_Power_Up          = 5
+   const _Sfx_Bonus_Life        = 6
+   const _Sfx_Looping           = 7
+   const _Sfx_Looping_1         = 8
+   const _Sfx_Player_Explosion  = 9
+   const _Sfx_Respawn_Bass      = 10
+   const _Sfx_Takeoff           = 11
+   const _Sfx_Landing           = 12
+   const _Sfx_Game_Over_Bass    = 13
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -3557,40 +3559,60 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Bank 6 Music and Sound effects"
 
-   inline song.h
-   inline songplay.h
+_game_over_music_check_and_return
+   if _Ch0_Sound <> _Sfx_Game_Over_Bass then AUDV1 = 0
+_game_over_music_return
+   goto _return_from_game_over_music bank4
 
    asm
-_Sfx_Addr_Lo
+_Sfx_to_SD_Addr_Lo
+   DC.B <_SD_Enemy_Destroyed_1 ; _Sfx_Enemy_Down_1
    DC.B <_SD_Shoot             ; _Sfx_Player_Shot
    DC.B <_SD_Large_Enemy_Hit   ; _Sfx_Enemy_Hit
-   DC.B <_SD_Enemy_Destroyed   ; _Sfx_Enemy_Down
+   DC.B <_SD_Enemy_Destroyed_0 ; _Sfx_Enemy_Down
    DC.B <_SD_Power_Up          ; _Sfx_Power_Up
    DC.B <_SD_Bonus_Life        ; _Sfx_Bonus_Life
-   DC.B <_SD_Takeoff           ; TODO: _Sfx_Looping
+   DC.B <_SD_Looping_0         ; _Sfx_Looping
+   DC.B <_SD_Looping_1         ; _Sfx_Looping_1
    DC.B <_SD_Death             ; _Sfx_Player_Explosion
    DC.B <_SD_Respawn_Bass      ; _Sfx_Respawn_Bass
    DC.B <_SD_Takeoff           ; _Sfx_Takeoff
    DC.B <_SD_Landing           ; _Sfx_Landing
    DC.B <_SD_Game_Over_Bass    ; _Sfx_Game_Over_Bass
-_Sfx_Addr_Hi
+_Sfx_to_SD_Addr_Hi
+   DC.B >_SD_Enemy_Destroyed_1
    DC.B >_SD_Shoot
    DC.B >_SD_Large_Enemy_Hit
-   DC.B >_SD_Enemy_Destroyed
+   DC.B >_SD_Enemy_Destroyed_0
    DC.B >_SD_Power_Up
    DC.B >_SD_Bonus_Life
-   DC.B >_SD_Takeoff
+   DC.B >_SD_Looping_0
+   DC.B >_SD_Looping_1
    DC.B >_SD_Death
    DC.B >_SD_Respawn_Bass
    DC.B >_SD_Takeoff
    DC.B >_SD_Landing
    DC.B >_SD_Game_Over_Bass
-end
 
-_game_over_music_check_and_return
-   if _Ch0_Sound <> _Sfx_Game_Over_Bass then AUDV1 = 0
-_game_over_music_return
-   goto _return_from_game_over_music bank4
+_Sfx_to_Next_Sfx
+   DC.B _Sfx_Mute              ; _Sfx_Enemy_Down_1
+   DC.B _Sfx_Mute              ; _Sfx_Player_Shot
+   DC.B _Sfx_Mute              ; _Sfx_Enemy_Hit
+   DC.B _Sfx_Enemy_Down_1      ; _Sfx_Enemy_Down
+   DC.B _Sfx_Mute              ; _Sfx_Power_Up
+   DC.B _Sfx_Mute              ; _Sfx_Bonus_Life
+   DC.B _Sfx_Looping_1         ; _Sfx_Looping
+   DC.B _Sfx_Mute              ; _Sfx_Looping_1
+   DC.B _Sfx_Mute              ; _Sfx_Player_Explosion
+   DC.B _Sfx_Mute              ; _Sfx_Respawn_Bass
+   DC.B _Sfx_Mute              ; _Sfx_Takeoff
+   DC.B _Sfx_Mute              ; _Sfx_Landing
+   DC.B _Sfx_Mute              ; _Sfx_Game_Over_Bass
+
+_end_sfx
+   sta AUDV0 ; silence channel 0
+end
+   goto __Skip_Ch_0
 
 _play_game_over_music
    ; check joystick here to free up space in bank 4
@@ -3605,26 +3627,31 @@ _Play_In_Game_Music
    ;  Channel 0 sound effect check.
    ;
    asm
-   ldy _Ch0_Sound
-   sty temp1
+   ldx _Ch0_Sound
+   stx temp1
    beq __Skip_Ch_0_asm ; assume _Sfx_Mute == 0
 
    dec _Ch0_Duration
    bne __Skip_Ch_0_asm ; branch if current note is not over
 
-   lda _Sfx_Addr_Lo-1,Y ; -1: 0 (mute) bypasses this code
+   ldy _Ch0_Counter
+
+_load_sd_addr
+   lda _Sfx_to_SD_Addr_Lo-1,X ; -1: 0 (mute) bypasses this code
    sta temp2
-   lda _Sfx_Addr_Hi-1,Y
+   lda _Sfx_to_SD_Addr_Hi-1,X
    sta temp3
 
-   ldy _Ch0_Counter
    lda (temp2),Y
    sta temp4
    cmp #255
    bne __Ch0_Not_End
-   lda #0
-   sta AUDV0 ; silence channel 0
-   sta _Ch0_Sound ; assume _Sfx_Mute == 0
+   lda _Sfx_to_Next_Sfx-1,X
+   sta _Ch0_Sound
+   beq _end_sfx
+   tax
+   ldy #0
+   jmp _load_sd_addr ; start follow-up sfx
 end
 
    goto __Skip_Ch_0
@@ -3770,10 +3797,11 @@ __Mute_Ch_1
    2,3,15,1
    6,3,15,2
    4,3,15,4
-   4,3,14,15
-   3,3,13,12
-   2,3,13,12
-   1,3,13,12
+   4,3,14,36
+   3,3,13,44
+   2,3,13,52
+   1,3,13,60
+   1,6,12,2
    255
 end
 
@@ -3807,9 +3835,11 @@ end
    ;***************************************************************
    ;
    ;  Sound data for shot hitting enemy.
+   ;  Split into two segments, first (explosion) loud and medium-priority,
+   ;  second (falling) quiet and low-priority
    ;
 
-   data _SD_Enemy_Destroyed
+   data _SD_Enemy_Destroyed_0
    4,8,2,1
    2,8,2,1
    8,2,3,1
@@ -3817,6 +3847,10 @@ end
    8,2,3,1
    2,2,3,1
    8,2,3,1
+   255
+end
+
+   data _SD_Enemy_Destroyed_1
    3,8,5,2
    2,8,6,3
    1,8,7,4
@@ -3919,6 +3953,59 @@ end
   $6,$C,$0E, 5
   $6,$C,$0B, 8
   $FF ; end
+end
+
+
+  ; looping: 10 frames forward-horizontal, 10 frames vertical, 32 frames inverted (hit max volume for distortion 3 and pitch $19 for distortion 4 at start of inversion), 30 frames vertical and forward
+  ; alternate between 3:0C and C:1x
+  ; split into 2 tables: bBasic data tables must be <=256 bytes
+  data _SD_Looping_0
+  $1,$3,$0C, 1, $C,$C,$17, 1
+  $3,$3,$0C, 1, $C,$C,$17, 1
+  $5,$3,$0C, 1, $C,$C,$17, 1
+  $7,$3,$0C, 1, $C,$C,$17, 1
+  $9,$3,$0C, 1, $C,$C,$17, 1
+  $A,$3,$0C, 1, $C,$C,$17, 1
+  $B,$3,$0C, 1, $C,$C,$18, 1
+  $C,$3,$0C, 1, $C,$C,$18, 1
+  $D,$3,$0C, 1, $C,$C,$18, 1
+  $E,$3,$0C, 1, $C,$C,$18, 1
+  $FF
+end
+
+  data _SD_Looping_1
+  $F,$3,$0C, 1, $B,$C,$19, 1
+  $F,$3,$0C, 1, $B,$C,$19, 1
+  $F,$3,$0C, 1, $A,$C,$19, 1
+  $F,$3,$0C, 1, $A,$C,$19, 1
+  $F,$3,$0C, 1, $9,$C,$1A, 1
+  $F,$3,$0C, 1, $9,$C,$1A, 1
+  $F,$3,$0C, 1, $8,$C,$1A, 1
+  $F,$3,$0C, 1, $8,$C,$1A, 1
+  $E,$3,$0C, 1, $8,$C,$1B, 1
+  $E,$3,$0C, 1, $8,$C,$1B, 1
+  $E,$3,$0C, 1, $7,$C,$1B, 1
+  $E,$3,$0C, 1, $7,$C,$1B, 1
+  $E,$3,$0C, 1, $7,$C,$1C, 1
+  $D,$3,$0C, 1, $7,$C,$1C, 1
+  $D,$3,$0C, 1, $7,$C,$1C, 1
+  $D,$3,$0C, 1, $7,$C,$1C, 1
+  $C,$3,$0C, 1, $7,$C,$1D, 1
+  $C,$3,$0C, 1, $7,$C,$1D, 1
+  $B,$3,$0C, 1, $7,$C,$1D, 1
+  $B,$3,$0C, 1, $7,$C,$1D, 1
+  $A,$3,$0C, 1, $7,$C,$1E, 1
+  $A,$3,$0C, 1, $7,$C,$1E, 1
+  $9,$3,$0C, 1, $7,$C,$1E, 1
+  $8,$3,$0C, 1, $7,$C,$1E, 1
+  $7,$3,$0C, 1, $7,$C,$1F, 1
+  $6,$3,$0C, 1, $7,$C,$1F, 1
+  $5,$3,$0C, 1, $7,$C,$1F, 1
+  $4,$3,$0C, 1, $7,$C,$1F, 1
+  $3,$3,$0C, 1, $7,$C,$1F, 1
+  $2,$3,$0C, 1, $7,$C,$1F, 1
+  $1,$3,$0C, 1, $7,$C,$1F, 1
+  $FF
 end
 
 
@@ -4085,7 +4172,7 @@ __Game_Over_Music_Setup_01
   $2,$C,$0A,10
   $8,$C,$0B, 2
   $2,$C,$0B,10
-  $4,$1,$04, 2
+  $5,$1,$04, 2
   $1,$1,$04,10
 
   $C,$C,$0C, 2
@@ -4101,7 +4188,7 @@ __Game_Over_Music_Setup_01
   $2,$C,$0A,10
   $8,$C,$0B, 2
   $2,$C,$0B,10
-  $4,$1,$04, 2
+  $5,$1,$04, 2
   $1,$1,$04,10
 
   $0,$0,$00, 8
@@ -4209,6 +4296,8 @@ end
    bank 7
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Bank 7 Titlescreen"
+   inline song.h
+   inline songplay.h
 
 titlescreen_start
    COLUBK = _00
@@ -4219,7 +4308,7 @@ titlescreen
    framecounter = framecounter + 1
    if framecounter{0} then bmp_96x2_2_index = 25 else  bmp_96x2_2_index = 0
 
-   gosub songPlayer bank6
+   gosub songPlayer
 
    gosub titledrawscreen
 
