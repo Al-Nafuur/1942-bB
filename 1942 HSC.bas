@@ -2019,8 +2019,8 @@ _swap_b_c_hits
    w_playerhits_b[temp1] = r_playerhits_c[temp1]
 
 _determine_collision_score
-   if playertype[temp1] < 3 then temp6 = _Bonus_Points_50 : goto _add_collision_score
-   if playertype[temp1] < 6 then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
+   if playertype[temp1] < 12 then temp6 = _Bonus_Points_50 : goto _add_collision_score
+   if playertype[temp1] < 24 then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
 _add_collision_score
    gosub add_scores
 
