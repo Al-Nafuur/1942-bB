@@ -576,7 +576,12 @@ end
    dim r_COLUP0              = r124
    dim w_CTRLPF              = w123
    dim r_CTRLPF              = r123
+   dim r_total_enemies_BCD1  = r122
+   dim w_total_enemies_BCD1  = w122
+   dim r_total_enemies_BCD   = r121
+   dim w_total_enemies_BCD   = w121
 
+   ; The variables from here on can be overwritten by the text screens.
    dim w_player5hits_c      = w119
    dim r_player5hits_c      = r119
    dim w_player4hits_c      = w118
@@ -635,10 +640,10 @@ end
 start
 
    rem initial variables setup
-   missile0y = 0 : framecounter = 0 : attack_position = 0 : enemies_in_park_pos = 0 : w_stage_bonus_counter = 0
+   missile0y = 0 : framecounter = 0 : attack_position = 0 : enemies_in_park_pos = 0 : w_stage_bonus_counter = 0 : enemies_shoot_down = 0 : w_total_enemies_BCD = 0 : w_total_enemies_BCD1 = 0 : _sc1 = 0 : _sc2 = 0 : _sc3 = 0
    map_section = _Map_Carrier
    player0x = _Player0_X_Start : player0y = _Player0_Y_Start
-   lives = 64 : score = 0 : stage = $20
+   lives = 64 : stage = $20
    game_flags = game_flags & %00110000  ; Reset all except genesis controller and PlusROM detection
    game_flags = game_flags | %00001001  ; Set intro and mute bg music
    pfheight = 3
@@ -1629,10 +1634,7 @@ stage_intro
    player1height = 9 : player2height = 9
    COLUP2 = _0E : _COLUP1 = _0E
    player1pointerhi = _Score_Table_High : player2pointerhi = _Score_Table_High
-   temp4 = stage
-   if stage > 29 then temp4 = temp4 + 6
-   if stage > 19 then temp4 = temp4 + 6
-   if stage > 9 then temp4 = temp4 + 6
+   temp4 = hex_to_bcd[stage]
    temp5 = (temp4 & $0f ) * 8
    player2pointerlo = temp5 + _Score_Table_Low
    temp5 = (temp4 & $f0 ) / 2
@@ -1644,6 +1646,19 @@ stage_intro
 build_attack_position
    if stage > 15 then temp2 = _attack_position_sequence_1[attack_position] else temp2 = _attack_position_sequence_2[attack_position]
    attack_position = attack_position + 1
+   asm
+   LDX enemies_shoot_down
+	SED
+	CLC
+	LDA r_total_enemies_BCD1
+	ADC hex_to_bcd,x
+   STA w_total_enemies_BCD1
+	LDA r_total_enemies_BCD
+	ADC #0
+	STA w_total_enemies_BCD
+	CLD
+end
+
    enemies_shoot_down = 0
    if temp2 < 226 then goto _read_attack_data
    if temp2 = 226 then map_section = _Map_Boss_down : w_player5hits_a = 25 : temp3 = 0 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D8 : goto set_game_state_boss
@@ -1651,7 +1666,7 @@ build_attack_position
    if temp2 = 228 then map_section = _Map_Boss_up   : w_player5hits_a = 55 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D6 : goto set_game_state_boss
    if temp2 = 229 then map_section = _Map_Boss_up   : w_player5hits_a = 70 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D4 : goto set_game_state_boss
    if temp2 = 254 then goto set_game_state_landing
-   if temp2 = 255 then  WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _bB_Endscreen_entry_bank4 bank4
+   if temp2 = 255 then  WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _prepare_Endscreen_bank5 bank5
 _read_attack_data
    for temp1 = 0 to 4
       temp3             = _attack_position_data[temp2] : temp2 = temp2 + 1
@@ -1729,6 +1744,14 @@ carrier_superstructures_init
    5, 5
 end
 
+   ; we might need more values here, because we don't reset "enemies_shoot_down"
+   ; when the player gets hit and the attack wave restarts.
+   data hex_to_bcd
+   $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $10, $11, $12, $13, $14, $15
+   $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+   $32
+end
+
    data _player_pointer_lo
    <_Small_Plane_down,  ( <_Small_Plane_up  + _Small_Plane_up_length  ), <_Small_Plane_lr
    <_Middle_Plane_down, ( <_Middle_Plane_up + _Middle_Plane_up_length ), <_Middle_Plane_lr
@@ -1762,7 +1785,6 @@ end
    const p5p = _Player5_Parking_Point
 
   ;  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
-  ;225,175,180,185,190,195,200, 50,225,254                         ; test stage 
    data _attack_position_sequence_1
      0, 25, 225, 50,  0,25, 75, 50,225,254                         ; stage 32
      0,125,225,150, 75, 75,125,  0,225, 50,254                     ; stage 31
@@ -2219,15 +2241,16 @@ _9      = (63 * TEXTHEIGHT)
 ;_COLON  = (67 * TEXTHEIGHT)
 
 
-CYCLE=$80
-TEMP=$81
-LOOP=$82
-TPTR0=$83
-TPTR1=$85
 
-TEXT=$86
-BUFF1=$9e
-BUFF2=$C8
+TEXT=$80   ; 24
+BUFF1=$98  ; 42
+
+CYCLE=$CB  ;  1
+TEMP=$CC   ;  1
+LOOP=$CD   ;  1
+TPTR0=$CE  ;  2
+TPTR1=$CF  ;  2
+BUFF2=$D0  ; 42
 
 
 RAM_Messages=r000
@@ -2240,19 +2263,17 @@ Message1
 Message2
   DC.B  __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __
 Message3
-  DC.B  __, __, __, __, __, __, __, _W, _E, __, _G, _I, _V, _E, __, _U, _P, __, __, __, __, __, __, __
-Message4
-  DC.B  __, __, __, __, __, __, _S, _P, _E, _C, _I, _A, _L, __, _B, _O, _N, _U, _S, __, __, __, __, __
-Message5
-  DC.B  __, __, __, __, __, _1, _0, _COMMA, _0, _0, _0, _COMMA, _0, _0, _0, __, _P, _T, _S, __, __, __, __, __
-Message6
   DC.B  __, __, __, __, __, __, __, __, _G, _A, _M, _E, __, _O, _V, _E, _R, __, __, __, __, __, __, __
+
+  ; The rows below are not accessible on SC-RAM/ROM mixed Screens
+Message4
+  DC.B  __, __, __, __, __, __, __, _W, _E, __, _G, _I, _V, _E, __, _U, _P, __, __, __, __, __, __, __
+Message5
+  DC.B  __, __, __, __, __, __, _S, _P, _E, _C, _I, _A, _L, __, _B, _O, _N, _U, _S, __, __, __, __, __
+Message6
+  DC.B  __, __, __, __, __, _1, _0, _COMMA, _0, _0, _0, _COMMA, _0, _0, _0, __, _P, _T, _S, __, __, __, __, __
 Message7
-  DC.B  __, __, __, __, __, _P, _R, _E, _S, _E, _N, _T, _E, _D, __, _B, _Y, __, _A, _A, __, __, __, __
-Loading_Messages
-  DC.B  _L, _o, _a, _d, _i, _n, _g
-Shooting_Down_Messages
-  DC.B  _S, _H, _O, _O, _T, _I, _N, _G, __, _D, _O, _W, _N
+  DC.B  __, __, __, __, __, _P, _R, _E, _S, _E, _N, _T, _E, _D, __, _B, _Y, __, _N, _N, __, __, __, __
 
 EndMessages
 end
@@ -2264,58 +2285,10 @@ end
 _bB_HSC_entry_bank4
    asm
 
-Start_HSC
-  ; Wipe Registers & Memory
-  ; CLEAN_START
 
-  ; Send request for 1942 HSC table
-  lda #0
-  sta WriteToBuffer
-  lda #HighScoreDB_ID
-  sta WriteSendBuffer 
-
-  ; Copy loading message to SC-RAM
-  lda #__
-  ldx #120
-clear_zp_ram_loop
-  sta w000-1,x
-  DEX
-  bne clear_zp_ram_loop
-
-  ldx #7
-loading_msg_copy_loop
-  lda Loading_Messages-1,x
-  sta w033-1,x
-  DEX
-  bne loading_msg_copy_loop
-
-  ; Set 3 sprite copies
-  lda #%00000110
-  sta NUSIZ0
-  sta NUSIZ1
-
-  ; Delay P0 & P1
-  lda #%00000001
-  sta VDELP0
-  sta VDELP1
-  
-  ; Set P0/P1 Colours
-  lda #_0E
-  sta COLUP0
-  sta COLUP1
-
-  ; Reflect PF
-  lda #1
-  sta CTRLPF
-  
-  ; Set Background _96
-  lda #_00
-  sta COLUPF
-  lda #$C0
-  sta PF0
-  lda #$FF
-  sta PF1
-  sta PF2
+  lda #_0E   ; text color first row
+  ldx #_00   ; background color
+  jsr _Prepare_Text_Screen
 
 MainHSCLoop
   ; Do Vertical Sync (VSync Routine by Manuel Polik)
@@ -2346,9 +2319,9 @@ MainHSCLoop
   lda #9
   sta LOOP
   
-  ; Set Pointer for Forst Message
-  lda #176
-  jsr LoadText
+  ; Set Pointer for First Message
+  lda #48
+  jsr LoadTextROM
   
   ; Set Sprite Positions and Preload First Text Line
   jsr TextPosition
@@ -2412,7 +2385,7 @@ end
    LDX #0
 .copy_loop
    LDA	ReceiveBuffer   		; 4
-   STA	w000,x		   ; 5   
+   STA	w000,x		         ; 5   
    INX					         ; 2   
    LDA	ReceiveBufferSize		; 4
    BNE	.copy_loop			   ; 2/3 
@@ -2440,14 +2413,14 @@ OffsetHSC
   DC.B  176, 176, 96, 72, 48, 24, 0, 176, 152, 128
 
 OffsetEndscreen
-  DC.B  48, 48, 168, 144, 48, 120, 96, 48, 72, 48
+  DC.B  48, 48, 168, 72, 48, 144, 120, 48, 96, 48
 FontColorsEndscreen
   DC.B  _0E, _08, _8A, _44, _0E, _58, _EA, _0E, _44, _0E, _0E
 
 OffsetGameOver
-  DC.B  48, 48, 48, 144, 48, 48, 48, 48, 48, 48
+  DC.B  176, 176, 176, 200, 176, 176, 48, 24, 176, 176
 FontColorsGameOver
-  DC.B  _0E, _08, _8A, _EA, _0E, _58, _EA, _0E, _44, _0E, _0E
+  DC.B  _0E, _0E, _0E, _44, _0E, _0E, _0E, _0E, _0E, _0E, _0E
 
 
   ALIGN 256
@@ -3225,45 +3198,11 @@ end
    ;batariBasic entry point to asm code
 _bB_Endscreen_entry_bank4
 
-
    asm
-  ; Load Score + Bonus to first SC-RAM line 
-  lda #_1
-  sta w000
-  lda #_0
-  sta w001
 
-
-  ldx #5
-  jsr _Copy_Score_To_SC_RAM
-
-  ; Set 3 sprite copies
-  lda #%00000110
-  sta NUSIZ0
-  sta NUSIZ1
-
-  ; Delay P0 & P1
-  lda #%00000001
-  sta VDELP0
-  sta VDELP1
-  
-  ; Set P0/P1 Colours
-  lda #_0E
-  sta COLUP0
-  sta COLUP1
-
-  ; Reflect PF
-  lda #1
-  sta CTRLPF
-  
-  ; Set Background _96
-  lda #_00
-  sta COLUPF
-  lda #$F0
-  sta PF0
-  lda #$FF
-  sta PF1
-  sta PF2
+  lda #_0E   ; text color first row
+  ldx #_00   ; background color
+  jsr _Prepare_Text_Screen
 
 MainEndscreenLoop
   ; Do Vertical Sync (VSync Routine by Manuel Polik)
@@ -3366,56 +3305,16 @@ WaitOverscanEndscreenEnd
 
 ;#endregion
 
-_Copy_Score_To_SC_RAM
-  ldy #3
-  clc
-copy_score_to_text_loop
-  lda score-1,y
-  and #%00001111
-  adc #54
-  rol
-  rol
-  sta w002,X
-  dex
-  lda score-1,y
-  and #%11110000
-  lsr
-  lsr
-  adc #216
-  sta w002,x
-  dex
-  dey
-  bne copy_score_to_text_loop
 
 
-  lda #__
-  ldx #16
-clear_zp_ram_loop_bonus
-  sta w008-1,x
-  DEX
-  bne clear_zp_ram_loop_bonus
-  rts
+_Prepare_Text_Screen
 
+  ; Set P0/P1 Colours
+  sta COLUP0
+  sta COLUP1
 
-  ; Include Font Data
-  INCLUDE "font.h"
-end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region rem "Game Over Text Screen"
-
-   ;batariBasic entry point to asm code
-_bB_Game_Over_entry_bank4
-
-
-   asm
-  ; Load Score to first SC-RAM line 
-  lda #__
-  sta w000
-  sta w001
-
-  ldx #5
-  jsr _Copy_Score_To_SC_RAM
+  ; Set Background
+  stx COLUBK
 
   ; Set 3 sprite copies
   lda #%00000110
@@ -3427,24 +3326,33 @@ _bB_Game_Over_entry_bank4
   sta VDELP0
   sta VDELP1
   
-  ; Set P0/P1 Colours
-  lda #_0E
-  sta COLUP0
-  sta COLUP1
 
   ; Reflect PF
   lda #1
   sta CTRLPF
   
-  ; Set Background _96
-  lda #_96
-  sta COLUBK
   lda #_00
   sta COLUPF
   sta PF1
   sta PF2
   lda #$30
   sta PF0
+  rts
+
+  ; Include Font Data
+  INCLUDE "font.h"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Game Over Text Screen"
+
+   ;batariBasic entry point to asm code
+_bB_Game_Over_entry_bank4
+
+   asm
+  lda #_0E   ; text color first row
+  ldx #_96   ; background color
+  jsr _Prepare_Text_Screen
 
 MainGameOverLoop
   ; Do Vertical Sync (VSync Routine by Manuel Polik)
@@ -3506,8 +3414,8 @@ GameOverTextLoop
   sta COLUP0
   sta COLUP1
   lda OffsetGameOver,X
-  jsr LoadTextROM
-  
+  jsr LoadText
+
   ; Copy and Display Message
   jsr TextCopy
   jsr TextKernel
@@ -3555,6 +3463,205 @@ end
 ;#endregion
 
    bank 5
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Bank 5 prepare SC-RAM for textscreens"
+
+_prepare_HSC_bank5
+  asm
+  ; Send request for 1942 HSC table
+  lda #0
+  sta WriteToBuffer
+  lda #HighScoreDB_ID
+  sta WriteSendBuffer 
+
+  ; Copy loading message to SC-RAM
+  lda #__
+  ldx #120
+clear_zp_ram_loop
+  sta w000-1,x
+  DEX
+  bne clear_zp_ram_loop
+
+  ldx #7
+loading_msg_copy_loop
+  lda loading_message-1,x
+  sta w033-1,x
+  DEX
+  bne loading_msg_copy_loop
+end
+   goto _bB_HSC_entry_bank4 bank4
+
+_prepare_Game_Over_bank5
+  asm
+  ; Load Score to first SC-RAM line 
+  lda #__
+  sta w000
+  sta w001
+
+  ldx #5
+  jsr _Copy_Score_To_SC_RAM
+  
+  ; fill two lines of SC-RAM text with space
+  lda #__
+  ldx #48
+clear_zp_ram_loop_game_over
+  sta w024-1,x
+  DEX
+  bne clear_zp_ram_loop_game_over
+
+  ; copy stage as BCD to first SC-RAM text line 
+  ldx stage
+  lda hex_to_bcd_bank5,x
+  sta temp4
+
+_Copy_Stage_To_SC_RAM
+  clc
+  and #%00001111
+  adc #54
+  rol
+  rol
+  sta w046
+  lda temp4
+  and #%11110000
+  lsr
+  lsr
+  adc #216
+  sta w045
+
+  lda #_S
+  sta w026
+  lda #_T
+  sta w027
+  lda #_A
+  sta w028
+  lda #_G
+  sta w029
+  lda #_E
+  sta w030
+
+
+_Copy_Shooting_Down_To_SC_RAM
+  lda r_total_enemies_BCD1
+  clc
+  and #%00001111
+  adc #54
+  rol
+  rol
+  sta w070
+  lda r_total_enemies_BCD1
+  and #%11110000
+  lsr
+  lsr
+  adc #216
+  sta w069
+
+  lda r_total_enemies_BCD
+  beq .skip_hundred
+  clc
+  and #%00001111
+  adc #54
+  rol
+  rol
+  sta w068
+  lda r_total_enemies_BCD
+  and #%11110000
+  lsr
+  lsr
+  adc #216
+  sta w067
+.skip_hundred
+
+  lda #_S
+  sta w050
+  lda #_H
+  sta w051
+  lda #_O
+  sta w052
+  lda #_O
+  sta w053
+  lda #_T
+  sta w054
+  lda #_I
+  sta w055
+  lda #_N
+  sta w056
+  lda #_G
+  sta w057
+  lda #_D
+  sta w059
+  lda #_O
+  sta w060
+  lda #_W
+  sta w061
+  lda #_N
+  sta w062
+
+
+end
+
+
+   goto _bB_Game_Over_entry_bank4 bank4
+
+_prepare_Endscreen_bank5
+  asm
+  ; Load Score + Bonus to first SC-RAM line 
+  lda #_1
+  sta w000
+  lda #_0
+  sta w001
+
+  ldx #5
+  jsr _Copy_Score_To_SC_RAM
+end
+   goto _bB_Endscreen_entry_bank4 bank4
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Subroutine and data bank 5"
+  asm
+_Copy_Score_To_SC_RAM
+  ldy #3
+  clc
+copy_score_to_text_loop
+  lda score-1,y
+  and #%00001111
+  adc #54
+  rol
+  rol
+  sta w002,X
+  dex
+  lda score-1,y
+  and #%11110000
+  lsr
+  lsr
+  adc #216
+  sta w002,x
+  dex
+  dey
+  bne copy_score_to_text_loop
+
+
+  lda #__
+  ldx #16
+clear_zp_ram_loop_bonus
+  sta w008-1,x
+  DEX
+  bne clear_zp_ram_loop_bonus
+  rts
+end
+
+   data hex_to_bcd_bank5
+   $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $10, $11, $12, $13, $14, $15
+   $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+   $32
+end
+
+   data loading_message
+   _L, _o, _a, _d, _i, _n, _g
+end
+
+;#endregion
+;#endregion
+
    bank 6
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Bank 6 Music and Sound effects"
@@ -4226,7 +4333,7 @@ end
    rem handle bass line as sfx for simplicity
    _Ch0_Duration = 1 : _Ch0_Counter = 0 : _Ch0_Sound = _Sfx_Game_Over_Bass
    _Ch1_Duration = 1
-   goto _bB_Game_Over_entry_bank4 bank4
+   goto _prepare_Game_Over_bank5 bank5
 
 __BG_Music_Setup_01
 
@@ -4312,7 +4419,7 @@ titlescreen
 
    gosub titledrawscreen
 
-   if joy0left && _Bit5_PlusROM{5} then AUDV0 = 0 : AUDV1 = 0 : goto _bB_HSC_entry_bank4 bank4
+   if joy0left && _Bit5_PlusROM{5} then AUDV0 = 0 : AUDV1 = 0 : goto _prepare_HSC_bank5 bank5
 
    if !joy0fire then _Bit1_reset_restrainer{1} = 0
    if joy0fire && !_Bit1_reset_restrainer{1} then AUDV0 = 0 : AUDV1 = 0 : goto start bank1
@@ -4335,7 +4442,11 @@ end
 
 restart_bB
    asm
-   jmp start
+   sei
+   cld
+   lda #0
+   ldx #$CE
+   jmp clearmem
 end
 
    asm
