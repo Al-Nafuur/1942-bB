@@ -1227,7 +1227,7 @@ main
 
 _player0_animation_end
    player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0
-   if lives < 32 then WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto __Game_Over_Music_Setup_01 bank6
+   if lives < 32 then WriteToBuffer = 0 : WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto __Game_Over_Music_Setup_01 bank6
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
@@ -1666,7 +1666,7 @@ end
    if temp2 = 228 then map_section = _Map_Boss_up   : w_player5hits_a = 55 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D6 : goto set_game_state_boss
    if temp2 = 229 then map_section = _Map_Boss_up   : w_player5hits_a = 70 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D4 : goto set_game_state_boss
    if temp2 = 254 then goto set_game_state_landing
-   if temp2 = 255 then  WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _prepare_Endscreen_bank5 bank5
+   if temp2 = 255 then WriteToBuffer = $10 : WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _prepare_Endscreen_bank5 bank5
 _read_attack_data
    for temp1 = 0 to 4
       temp3             = _attack_position_data[temp2] : temp2 = temp2 + 1
@@ -1986,6 +1986,8 @@ _enemy_explosion
    enemies_shoot_down = enemies_shoot_down + 1
    if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
 
+   temp6 = NewNUSIZ[temp1] & %00001000
+
    on temp2 goto _del_one_copy _del_two_copies_close _del_two_copies_medium _del_three_copies_close _del_two_copies_wide _del_one_copy _del_three_copies_medium _del_one_copy
 
 _del_one_copy
@@ -1993,25 +1995,25 @@ _del_one_copy
    goto _determine_collision_score
 
 _del_two_copies_close
-   NewNUSIZ[temp1] = 0
+   NewNUSIZ[temp1] = 0 | temp6
    if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits
    goto _determine_collision_score
 _del_two_copies_medium
-   NewNUSIZ[temp1] = 0
+   NewNUSIZ[temp1] = 0 | temp6
    if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits
    goto _determine_collision_score
 _del_three_copies_close
-   if temp3 = 1 then NewNUSIZ[temp1] = 2 : goto _swap_b_c_hits
-   NewNUSIZ[temp1] = 1
+   if temp3 = 1 then NewNUSIZ[temp1] = 2 | temp6 : goto _swap_b_c_hits
+   NewNUSIZ[temp1] = 1 | temp6
    if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits : goto _swap_b_c_hits
    goto _determine_collision_score
 _del_two_copies_wide 
-   NewNUSIZ[temp1] = 0
+   NewNUSIZ[temp1] = 0 | temp6
    if temp3 = 0 then player1x[temp1] = player1x[temp1] + 64 : gosub swap_a_b_hits
    goto _determine_collision_score
 _del_three_copies_medium
-   if temp3 = 1 then NewNUSIZ[temp1] = 4 : goto _swap_b_c_hits
-   NewNUSIZ[temp1] = 2
+   if temp3 = 1 then NewNUSIZ[temp1] = 4 | temp6 : goto _swap_b_c_hits
+   NewNUSIZ[temp1] = 2 | temp6
    if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits : goto _swap_b_c_hits
    goto _determine_collision_score   
 
@@ -2244,7 +2246,7 @@ _9      = (63 * TEXTHEIGHT)
 
 TEXT=$80   ; 24
 BUFF1=$98  ; 42
-
+RESETR=$CA ;  1
 CYCLE=$CB  ;  1
 TEMP=$CC   ;  1
 LOOP=$CD   ;  1
@@ -2392,8 +2394,9 @@ end
 end
 
 _skip_copy_response_to_SC_RAM
+   ; we don't need RESETR here, because HSC table is 
+   ; accessed via joy0left.
    if joy0right then goto restart_bB bank8
-
 
    asm
   ; Finish Overscan
@@ -3292,7 +3295,8 @@ EndEndscreenKernel
   sty TIM64T
 end
 
-   if joy0right then goto restart_bB bank8
+   if joy0right && RESETR then goto restart_bB bank8
+   if !joy0right then RESETR = 1
 
    asm
   ; Finish Overscan
@@ -3441,6 +3445,9 @@ EndGameOverKernel
   sty TIM64T
 end
 
+   if joy0right && RESETR then goto restart_bB bank8
+   if !joy0right then RESETR = 1
+
    goto _play_game_over_music bank6
 _return_from_game_over_music
 
@@ -3493,6 +3500,10 @@ end
 
 _prepare_Game_Over_bank5
   asm
+  ; right reset restrainer
+  lda #0
+  sta $CA   
+
   ; Load Score to first SC-RAM line 
   lda #__
   sta w000
@@ -3595,16 +3606,15 @@ _Copy_Shooting_Down_To_SC_RAM
   sta w061
   lda #_N
   sta w062
-
-
 end
-
-
    goto _bB_Game_Over_entry_bank4 bank4
 
 _prepare_Endscreen_bank5
   asm
-  ; Load Score + Bonus to first SC-RAM line 
+  ; right reset restrainer
+  lda #0
+  sta $CA   
+  ; Load Score + Bonus to first SC-RAM line
   lda #_1
   sta w000
   lda #_0
@@ -3722,8 +3732,6 @@ end
    goto __Skip_Ch_0
 
 _play_game_over_music
-   ; check joystick here to free up space in bank 4
-   if joy0right then goto restart_bB bank8
 
    if _Ch0_Sound <> _Sfx_Game_Over_Bass then goto _game_over_music_return
 
