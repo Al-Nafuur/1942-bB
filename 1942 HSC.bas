@@ -353,12 +353,14 @@ end
    const _Plane_X1_Speed = 1
    const _Plane_X2_Speed = 2
 
-   const _Player0_X_Start =  76
-   const _Player0_Y_Start =  25
-   const _Player0_X_Max   = 152
-   const _Player0_Y_Max   =  55
-   const _Player0_X_Min   =   0
-   const _Player0_Y_Min   =  10
+   const _Player0_X_Start     =  76
+   const _Player0_X_Start_WSF =  60
+   const _Player0_Y_Start     =  25
+   const _Player0_X_Max       = 152
+   const _Player0_X_Max_WSF   = 120
+   const _Player0_Y_Max       =  55
+   const _Player0_X_Min       =   0
+   const _Player0_Y_Min       =  10
 
    const _Bonus_Points_50    = 2
    const _Bonus_Points_100   = 5
@@ -568,6 +570,8 @@ end
 ;#region "SC RAM Variables"
    dim w_NUSIZ0              = w127
    dim r_NUSIZ0              = r127
+   dim w_Bit7_Left_Plane_is_SF = w127
+   dim r_Bit7_Left_Plane_is_SF = r127
    dim w_COLUPF              = w126
    dim r_COLUPF              = r126
    dim w_stage_bonus_counter = w125
@@ -649,7 +653,7 @@ start
    pfheight = 3
    statusbarlength = %10101000
 
-   missile1y = 100 : missile1x = 100 : ballx = 100 : bally = 100
+   missile1y = 100 : missile1x = 100 : _Ch0_Sound = _Sfx_Mute
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Playfield Pacific"
@@ -1175,7 +1179,7 @@ end
 
    w_COLUPF = _Color_Carrier
    w_COLUP0 = _EA
-   w_CTRLPF = 1
+   w_CTRLPF = %00100001
    w_NUSIZ0 = 0
 
    lives:
@@ -1203,9 +1207,6 @@ main
    COLUP0 = _40 
    Player0SwitchColor = r_COLUP0
    
-   lifecolor = _EA : COLUPF = r_COLUPF
-   if PF1pointerhi = _PF1_Pacific_high then CTRLPF = r_CTRLPF : NUSIZ0 = r_NUSIZ0
-
    if _Bit0_intro{0} then goto stage_intro bank2
 
    ;if _Ch0_Sound = _Sfx_Respawn_Bass then goto _skip_game_action
@@ -1226,7 +1227,7 @@ main
    goto _skip_player0_collision
 
 _player0_animation_end
-   player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0
+   player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0 : w_NUSIZ0 = 0
    if lives < 32 then WriteToBuffer = 0 : WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto __Game_Over_Music_Setup_01 bank6
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
@@ -1256,9 +1257,10 @@ _skip_missile0_collision
    if _Bit6_map_PF_collision{6} && collision(player0, playfield) then _player0_collision
    if !_Bit7_map_E_collsion{7} || !collision(player0, player1) then goto _skip_player0_collision
    if _Bit7_powerup{7} then goto power_up_bonus
+   if r_NUSIZ0{0} then goto check_sidefighter_collision bank3
 _player0_collision
    _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
-   _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0 : w_NUSIZ0 = 0
+   _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0
    _Bit6_p0_explosion{6} = 1
    goto _skip_game_action
 
@@ -1304,7 +1306,7 @@ _skip_carrier_superstructures_scrolling
 
    if PF1pointer = _Map_Takeoff_Point_1 then _Bit0_intro{0} = 1 : framecounter = 0 : goto _skip_game_action
    if PF1pointer = _Map_Takeoff_Sound_Start then _Ch0_Sound = _Sfx_Takeoff : _Ch0_Duration = 1 : _Ch0_Counter = 0 : goto _skip_playfield_restart
-   if PF1pointer = _Map_Attackzone_Start then map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high : goto _next_playfield_variation
+   if PF1pointer = _Map_Attackzone_Start then goto set_game_state_attack_start
 
 _skip_carrier_superstructures
 
@@ -1367,7 +1369,9 @@ _player_horizontal_movement
    if joy0down && player0y > _Player0_Y_Min then player0y = player0y - 1
 _player_vertical_movement
    if joy0left && player0x > _Player0_X_Min then player0x = player0x - 1 : goto _skip_player_movement
-   if joy0right && player0x < _Player0_X_Max then player0x = player0x + 1
+   if !joy0right then _skip_player_movement 
+   if player0x < _Player0_X_Max_WSF then player0x = player0x + 1 : goto _skip_player_movement
+   if !r_NUSIZ0{1} && player0x < _Player0_X_Max then player0x = player0x + 1
 _skip_player_movement
 ;#endregion
 
@@ -1529,14 +1533,27 @@ power_up_bonus
    _Ch0_Sound = _Sfx_Power_Up : _Ch0_Duration = 1 : _Ch0_Counter = 0
    if NewCOLUP1 = _Power_Up_Black_Extra_Life && lives < 224 then lives = lives + 32 : goto _end_power_up_bonus
    if NewCOLUP1 = _Power_Up_Yellow_Extra_Loop && statusbarlength < 170 then statusbarlength = ( statusbarlength / 4 ) + %10000000 : goto _end_power_up_bonus
-   if NewCOLUP1 = _Power_Up_Dark_Gray_Quad_Gun then w_NUSIZ0 = r_NUSIZ0 | %00100000 : goto _end_power_up_bonus
-   if NewCOLUP1 = _Power_Up_Light_Gray_Side_Fighters then w_NUSIZ0 = r_NUSIZ0 | %00000011 : goto _end_power_up_bonus 
+   if NewCOLUP1 = _Power_Up_Dark_Gray_Quad_Gun && !r_NUSIZ0{5} then w_NUSIZ0 = r_NUSIZ0 | %00100000 : goto _end_power_up_bonus
+   if NewCOLUP1 = _Power_Up_Light_Gray_Side_Fighters && !r_NUSIZ0{1} then gosub switch_on_side_fighters : goto _end_power_up_bonus
    ; default bonus
    temp6 = _Bonus_Points_1000 : gosub add_scores_bank1
 
 _end_power_up_bonus
    goto park_all_planes
- 
+
+switch_on_side_fighters 
+   w_NUSIZ0 = r_NUSIZ0 | %10000011
+   if player0x > 16 then player0x = player0x - 16 else player0x = 0
+   if player0x > _Player0_X_Max_WSF then player0x = _Player0_X_Max_WSF
+   asm
+   rts
+end
+
+set_game_state_attack_start
+   map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high
+   if r_Bit7_Left_Plane_is_SF{7} then player0x = _Player0_X_Start_WSF
+   goto _next_playfield_variation
+
 
 set_game_state_looping
    statusbarlength = statusbarlength * 4
@@ -1703,6 +1720,7 @@ set_game_state_landing
    map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier : NUSIZ0 = 0
    _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
    stage = stage - 1
+   if r_Bit7_Left_Plane_is_SF{7} then player0x = player0x + 16 
    if stage = 15 then attack_position = 0
    player1y = _Player1_Parking_Point
    player2y = _Player2_Parking_Point
@@ -1714,6 +1732,8 @@ set_game_state_landing
 set_game_state_boss
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    pfheight = 0
+   if r_Bit7_Left_Plane_is_SF{7} then player0x = player0x + 16 
+   NUSIZ0 = r_NUSIZ0 & %11110000
    for temp1 = 0 to 4
       NewSpriteY[temp1] = _plane_parking_point[temp1] + 5
       NewNUSIZ[temp1]   = temp3
@@ -1786,7 +1806,7 @@ end
 
   ;  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
    data _attack_position_sequence_1
-     0, 25, 225, 50,  0,25, 75, 50,225,254                         ; stage 32
+     0, 25, 225, 50,  0,25, 75,225, 50,254                         ; stage 32
      0,125,225,150, 75, 75,125,  0,225, 50,254                     ; stage 31
     25, 25, 75,225, 50,100,  0,125,225,150, 75,254                 ; stage 30
      0,125,225,150, 75, 75,125,  0, 25,225,150,175,200,254         ; stage 29
@@ -1892,7 +1912,7 @@ end
 
    bank 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Bank 3 Collsision detection for missile 0"
+;#region "Bank 3 Collsision detection for missile0 and player0 side figther "
 
 _collision_detection
    ; temp3 = bit_shift_table[SpriteGfxIndex1] | bit_shift_table[SpriteGfxIndex2] | bit_shift_table[SpriteGfxIndex3] | bit_shift_table[SpriteGfxIndex4] | bit_shift_table[SpriteGfxIndex5]
@@ -2033,6 +2053,108 @@ _bank_3_code_end
    goto _Play_In_Game_Music bank6
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region rem "Side Figther collision"
+
+check_sidefighter_collision
+  ; basically the same code as for the missile0 detection
+
+   asm
+ 	LDX SpriteGfxIndex
+	LDA bit_shift_table,x
+	LDX SpriteGfxIndex+1
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+2
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+3
+	ORA bit_shift_table,x
+	LDX SpriteGfxIndex+4
+	ORA bit_shift_table,x
+	STA temp3
+end
+
+   if temp3{0} then temp1 = player1y + 1 : temp2 = player1y - player1height : if player0y > temp2 && player0y < temp1 then temp1 = 0 : goto multi_collision_check_sf
+   
+   if temp3{1} then temp1 = player2y + 1 : temp2 = player2y - player2height : if player0y > temp2 && player0y < temp1 then temp1 = 1 : goto multi_collision_check_sf
+   
+   if temp3{2} then temp1 = player3y + 1 : temp2 = player3y - player3height : if player0y > temp2 && player0y < temp1 then temp1 = 2 : goto multi_collision_check_sf
+
+   if temp3{3} then temp1 = player4y + 1 : temp2 = player4y - player4height : if player0y > temp2 && player0y < temp1 then temp1 = 3 : goto multi_collision_check_sf
+ 
+   temp1 = 4
+
+multi_collision_check_sf
+   temp2 = NewNUSIZ[temp1] & %00000111
+   temp4 = NewSpriteX[temp1]
+   temp5 = temp4 - 8
+   temp3 = 0
+   on temp2 goto _end_collision_check_sf _two_copies_close_sf _two_copies_medium_sf _three_copies_close_sf _two_copies_wide_sf _one_copy_double_width_sf _three_copies_medium_sf _one_copy_quad_width_sf
+
+_two_copies_close_sf
+   rem X.X
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
+   temp4 = temp4 + 16 : temp5 = temp5 + 16
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 1
+   goto _end_collision_check_sf
+_two_copies_medium_sf
+   rem X...X
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 1
+   goto _end_collision_check_sf
+_three_copies_close_sf
+   rem X.X.X
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
+   temp4 = temp4 + 16 : temp5 = temp4 - 8
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 1 : goto _end_collision_check_sf 
+   temp4 = temp4 + 16 : temp5 = temp4 - 8
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 2
+   goto _end_collision_check_sf
+_two_copies_wide_sf
+   rem X.......X
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
+   temp4 = temp4 + 64 : temp5 = temp4 - 8
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 1
+   goto _end_collision_check_sf
+_three_copies_medium_sf
+   rem X...X...X
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 1 : goto _end_collision_check_sf 
+   temp4 = temp4 + 32 : temp5 = temp4 - 8
+   if player0x <= temp4 && player0x >= temp5 then temp3 = 2
+   goto _end_collision_check_sf
+_one_copy_double_width_sf
+   temp5 = temp5 - 8
+   goto _end_collision_check_sf
+_one_copy_quad_width_sf
+   temp5 = temp5 - 24
+
+_end_collision_check_sf
+  ; temp4 = temp1 + ( temp3 * 5 )
+  ; temp5 = r_playerhits_a[temp4] - 1
+  ; w_playerhits_a[temp4] = temp5
+
+   ; temp1 = id of player1 that has been hit (0 - 4)
+   ; temp2 = NUSIZ of the player1
+   ; temp3 = NUSIZ copy thats been hit (0 - 2)
+   ; no need for hitcounter, a enemy hit by a side fighter will always be deleted.
+
+   if player0x + 24 < temp5 then temp5 = %11110000 : goto _remove_a_side_fighter
+   if player0x + 16 > temp4 && r_Bit7_Left_Plane_is_SF{7} then player0x = player0x + 16 : temp5 = %01110000 : goto _remove_a_side_fighter
+
+_player0_collision_bank3
+   _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
+   _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0
+   _Bit6_p0_explosion{6} = 1
+   goto _bank_3_code_end
+
+_remove_a_side_fighter
+   temp6 = (r_NUSIZ0 & %00001111 ) / 2
+   w_NUSIZ0 = (r_NUSIZ0 & temp5 ) | temp6
+   goto _enemy_explosion
+
+;#endregion
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region rem "Subroutines and Functions Bank 3"
@@ -2085,6 +2207,7 @@ set_game_state_landing_bank3
    map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier : NUSIZ0 = 0
    _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
    stage = stage - 1
+   if r_Bit7_Left_Plane_is_SF{7} then player0x = player0x + 16 
    if stage = 15 then attack_position = 0
 
    player1y = _Player1_Parking_Point
@@ -4820,6 +4943,23 @@ end
    asm
    ; HSC PlusROM API definition.
    SET_PLUSROM_API "a", "h.firmaplus.de"
+end
+
+   vblank
+   lifecolor = _EA : COLUPF = r_COLUPF
+   ballx = player0x + 2  : bally = player0y - 4
+   if framecounter{0} then ballx = ballx + 2
+   if PF1pointerhi <> _PF1_Pacific_high then _landing_takeoff
+   CTRLPF = r_CTRLPF : NUSIZ0 = r_NUSIZ0
+   if r_Bit7_Left_Plane_is_SF{7} then ballx = ballx + 16
+   asm
+   rts    ; rts is to same bank, so no need for bB return overhead
+end
+
+_landing_takeoff
+   CTRLPF = %00100001
+   asm
+   rts    ; rts is to same bank, so no need for bB return overhead
 end
 
 ;#endregion
