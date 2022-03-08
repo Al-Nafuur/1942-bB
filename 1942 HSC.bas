@@ -384,6 +384,12 @@ end
    const _Sfx_Takeoff           = 11
    const _Sfx_Landing           = 12
    const _Sfx_Game_Over_Bass    = 13
+   const _Sfx_Victory_Bass      = 14
+   const _Sfx_Victory_Bass_1    = 15
+   const _Sfx_Boss_Entry_Bass   = 16
+   const _Sfx_Boss_Entry_Bass_1 = 17
+   const _Sfx_Boss_Entry_Bass_2 = 18
+   const _Sfx_Boss_Entry_Bass_3 = 19
 
    const _Screen_Vertical_Resolution = 24
    const _Pf_Pixel_Height            = 4
@@ -3843,6 +3849,12 @@ _Sfx_to_SD_Addr_Lo
    DC.B <_SD_Takeoff           ; _Sfx_Takeoff
    DC.B <_SD_Landing           ; _Sfx_Landing
    DC.B <_SD_Game_Over_Bass    ; _Sfx_Game_Over_Bass
+   DC.B <_SD_Victory_Bass      ; _Sfx_Victory_Bass
+   DC.B <_SD_Victory_Bass_1    ; _Sfx_Victory_Bass_1
+   DC.B <_SD_Boss_Entry_Bass   ; _Sfx_Boss_Entry_Bass
+   DC.B <_SD_Boss_Entry_Bass   ; _Sfx_Boss_Entry_Bass_1
+   DC.B <_SD_Boss_Entry_Bass   ; _Sfx_Boss_Entry_Bass_2
+   DC.B <_SD_Boss_Entry_Bass   ; _Sfx_Boss_Entry_Bass_3
 _Sfx_to_SD_Addr_Hi
    DC.B >_SD_Enemy_Destroyed_1
    DC.B >_SD_Shoot
@@ -3857,6 +3869,12 @@ _Sfx_to_SD_Addr_Hi
    DC.B >_SD_Takeoff
    DC.B >_SD_Landing
    DC.B >_SD_Game_Over_Bass
+   DC.B >_SD_Victory_Bass
+   DC.B >_SD_Victory_Bass_1
+   DC.B >_SD_Boss_Entry_Bass
+   DC.B >_SD_Boss_Entry_Bass
+   DC.B >_SD_Boss_Entry_Bass
+   DC.B >_SD_Boss_Entry_Bass
 
 _Sfx_to_Next_Sfx
    DC.B _Sfx_Mute              ; _Sfx_Enemy_Down_1
@@ -3872,6 +3890,12 @@ _Sfx_to_Next_Sfx
    DC.B _Sfx_Mute              ; _Sfx_Takeoff
    DC.B _Sfx_Mute              ; _Sfx_Landing
    DC.B _Sfx_Mute              ; _Sfx_Game_Over_Bass
+   DC.B _Sfx_Victory_Bass_1    ; _Sfx_Victory_Bass
+   DC.B _Sfx_Mute              ; _Sfx_Victory_Bass_1
+   DC.B _Sfx_Boss_Entry_Bass_1 ; _Sfx_Boss_Entry_Bass
+   DC.B _Sfx_Boss_Entry_Bass_2 ; _Sfx_Boss_Entry_Bass_1
+   DC.B _Sfx_Boss_Entry_Bass_3 ; _Sfx_Boss_Entry_Bass_2
+   DC.B _Sfx_Mute              ; _Sfx_Boss_Entry_Bass_3
 
 _end_sfx
    sta AUDV0 ; silence channel 0
@@ -3977,25 +4001,41 @@ __Skip_Ch_0
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves first part of channel 1 data.
    ;
-   temp4 = sread(_SD_Music01)
+   temp4 = sread(_Ch1_Read_Pos_Lo)
 
    ;```````````````````````````````````````````````````````````````
    ;  Checks for end of data.
    ;
+   ; TODO: boss entry should repeat 3x (can check _Ch0_Sound which will automatically go from _Sfx_Boss_Entry_Bass progressively to _Sfx_Boss_Entry_Bass_3) then go to boss BG; boss BG should repeat; maybe can check _Ch1_Read_Pos_Lo, but checking game state might be easier
    if temp4 = 255 then goto __BG_Music_Setup_01
 
+__Ch1_Get_Note
    ;```````````````````````````````````````````````````````````````
    ;  Retrieves more channel 1 data.
    ;  Plays channel 1.
    ;
-   AUDV1 = temp4
-   AUDC1 = sread(_SD_Music01)
-   AUDF1 = sread(_SD_Music01)
+   asm
+   ; read note index (similar to bB-generated code for sread) then translate
+   ; that to AUDC and AUDF values
+   ldx #_Ch1_Read_Pos_Lo
+   lda (0,x)
+   inc _Ch1_Read_Pos_Lo
+   bne __Ch1_Translate_Note
+   inc _Ch1_Read_Pos_Lo+1
+__Ch1_Translate_Note
+   tax
+   lda temp4
+   sta AUDV1
+   lda _Note_Index_to_AUDC,X
+   sta AUDC1
+   lda _Note_Index_to_AUDF,X
+   sta AUDF1
+end
 
    ;```````````````````````````````````````````````````````````````
    ;  Sets duration.
    ;
-   _Ch1_Duration = sread(_SD_Music01)
+   _Ch1_Duration = sread(_Ch1_Read_Pos_Lo)
 
 
 
@@ -4270,6 +4310,23 @@ end
   $FF
 end
 
+  rem TODO: use this
+  data _SD_Level_Complete
+  $F,$4,$04,2
+  $7,$4,$04,2
+  $3,$4,$04,4
+  $2,$4,$04,6
+  $1,$4,$04,14
+  $FF
+end
+
+  rem TODO: use this
+  data _SD_Bonus_Typewriter
+  $4,$3,$6,1
+  $1,$3,$6,1
+  $FF
+end
+
 
   data _SD_Respawn_Bass
   $6,$C,$18, 4
@@ -4357,59 +4414,171 @@ end
   $FF
 end
 
+  data _SD_Victory_Bass
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+  $2,$6,$0B,16
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+  $2,$6,$0B,16
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+  $3,$1,$13, 2
+  $1,$1,$13, 6
+  $8,$6,$07, 2
+  $3,$6,$07, 6
+
+  $4,$1,$1D, 2
+  $2,$1,$1D, 6
+  $1,$1,$1D,16
+  $4,$1,$1D, 2
+  $2,$1,$1D, 6
+  $8,$6,$0B, 2
+  $3,$6,$0B, 6
+  $3,$1,$13, 2
+  $1,$1,$13, 6
+
+  $4,$1,$15, 2
+  $2,$1,$15, 6
+  $1,$1,$15,16
+  $4,$1,$15, 2
+  $2,$1,$15, 6
+  $4,$1,$15, 2
+  $2,$1,$15, 6
+  $3,$1,$13, 2
+  $1,$1,$13, 6
+
+  $8,$6,$08, 2
+  $3,$6,$08, 6
+  $2,$6,$08,16
+  $8,$6,$08, 2
+  $3,$6,$08, 6
+  $8,$6,$08, 2
+  $3,$6,$08, 6
+  $8,$6,$08, 2
+  $3,$6,$08, 6
+
+  $8,$6,$0F, 2
+  $3,$6,$0F, 6
+  $2,$6,$0F,16
+  $8,$6,$0F, 2
+  $3,$6,$0F, 6
+  $8,$6,$0C, 2
+  $3,$6,$0C, 6
+  $4,$1,$15, 2
+  $2,$1,$15, 6
+
+  $FF
+end
+
+  data _SD_Boss_Entry_Bass
+  $8,$C,$16,2
+  $1,$C,$16,7
+  $8,$C,$16,2
+  $1,$C,$16,7
+  $8,$C,$14,2
+  $1,$C,$14,7
+  $8,$C,$13,2
+  $1,$C,$13,7
+  $8,$C,$12,2
+  $1,$C,$12,7
+  $8,$C,$11,2
+  $1,$C,$11,7
+  $FF
+end
+
+  data _SD_Victory_Bass_1
+  $8,$6,$09, 2
+  $3,$6,$09, 6
+  $2,$6,$09,16
+  $3,$2,$00, 2
+  $2,$2,$00, 4
+  $1,$2,$00,18
+
+  $8,$6,$07, 2
+  $3,$6,$07, 6
+  $2,$6,$07,16
+  $3,$1,$0D, 2
+  $1,$1,$0D, 6
+  $3,$1,$0D, 2
+  $1,$1,$0D, 6
+  $3,$1,$0D, 2
+  $1,$1,$0D, 6
+
+  $8,$6,$08, 2
+  $3,$6,$08, 6
+  $2,$6,$08,16
+  $4,$1,$13, 2
+  $2,$1,$13, 6
+  $1,$1,$13,16
+
+  $8,$6,$07, 2
+  $3,$6,$07, 6
+  $2,$6,$07,40
+
+  $FF
+end
+
 __Respawn_Music_Setup
-  sdata _SD_Respawn_Music01 = e
-  $C,$4,$18, 2
-  $9,$4,$18, 4
-  $5,$4,$18, 6
-  $3,$4,$18, 8
-  $1,$4,$18,10
-  $0,$0,$00,20
-  $C,$4,$18, 2
-  $9,$4,$18, 4
-  $5,$4,$18, 4
-  $C,$4,$18, 2
-  $9,$4,$18, 4
-  $5,$4,$18, 4
-  $C,$4,$18, 2
-  $9,$4,$18, 4
-  $5,$4,$18, 4
+  sdata _SD_Respawn_Music01 = _Ch1_Read_Pos_Lo
+  $C,NOTE_418, 2
+  $9,NOTE_418, 4
+  $5,NOTE_418, 6
+  $3,NOTE_418, 8
+  $1,NOTE_418,10
+  $0,NOTE_000,20
+  $C,NOTE_418, 2
+  $9,NOTE_418, 4
+  $5,NOTE_418, 4
+  $C,NOTE_418, 2
+  $9,NOTE_418, 4
+  $5,NOTE_418, 4
+  $C,NOTE_418, 2
+  $9,NOTE_418, 4
+  $5,NOTE_418, 4
 
-  $C,$4,$17, 2
-  $9,$4,$17, 3
-  $5,$4,$17, 4
-  $3,$4,$17, 5
-  $1,$4,$17, 8
-  $0,$0,$00, 8
-  $C,$4,$18, 2
-  $9,$4,$18, 3
-  $5,$4,$18, 4
-  $3,$4,$18, 5
-  $1,$4,$18, 8
-  $0,$0,$00,28
+  $C,NOTE_417, 2
+  $9,NOTE_417, 3
+  $5,NOTE_417, 4
+  $3,NOTE_417, 5
+  $1,NOTE_417, 8
+  $0,NOTE_000, 8
+  $C,NOTE_418, 2
+  $9,NOTE_418, 3
+  $5,NOTE_418, 4
+  $3,NOTE_418, 5
+  $1,NOTE_418, 8
+  $0,NOTE_000,28
 
-  $C,$4,$13, 2
-  $9,$4,$13, 3
-  $5,$4,$13, 4
-  $3,$4,$13, 5
-  $1,$4,$13, 8
-  $0,$0,$00, 8
-  $C,$4,$14, 2
-  $9,$4,$14, 3
-  $5,$4,$14, 4
-  $3,$4,$14, 5
-  $1,$4,$14, 8
-  $0,$0,$00, 8
-  $9,$4,$10, 2
-  $6,$4,$10, 3
-  $3,$4,$10, 4
-  $2,$4,$10, 5
-  $1,$4,$10, 6
+  $C,NOTE_413, 2
+  $9,NOTE_413, 3
+  $5,NOTE_413, 4
+  $3,NOTE_413, 5
+  $1,NOTE_413, 8
+  $0,NOTE_000, 8
+  $C,NOTE_414, 2
+  $9,NOTE_414, 3
+  $5,NOTE_414, 4
+  $3,NOTE_414, 5
+  $1,NOTE_414, 8
+  $0,NOTE_000, 8
+  $9,NOTE_410, 2
+  $6,NOTE_410, 3
+  $3,NOTE_410, 4
+  $2,NOTE_410, 5
+  $1,NOTE_410, 6
 
-  $C,$4,$0D, 2
-  $9,$4,$0D, 3
-  $6,$4,$0D, 4
-  $3,$4,$0D,71
+  $C,NOTE_40D, 2
+  $9,NOTE_40D, 3
+  $6,NOTE_40D, 4
+  $3,NOTE_40D,71
 
   255
 end
@@ -4420,69 +4589,69 @@ end
 
 __Game_Over_Music_Setup_01
 
-  sdata _SD_Game_Over_Music01 = e
-  $C,$C,$0C, 2
-  $6,$C,$0C, 4
-  $2,$C,$0C,12
-  $C,$C,$0C, 2
-  $6,$C,$0C, 4
-  $C,$4,$1E, 2
-  $6,$4,$1E, 4
-  $2,$4,$1E, 8
-  $1,$4,$1E,22
-  $8,$C,$0A, 2
-  $2,$C,$0A,10
-  $8,$C,$0B, 2
-  $2,$C,$0B,10
-  $5,$1,$04, 2
-  $1,$1,$04,10
+  sdata _SD_Game_Over_Music01 = _Ch1_Read_Pos_Lo
+  $C,NOTE_C0C, 2
+  $6,NOTE_C0C, 4
+  $2,NOTE_C0C,12
+  $C,NOTE_C0C, 2
+  $6,NOTE_C0C, 4
+  $C,NOTE_41E, 2
+  $6,NOTE_41E, 4
+  $2,NOTE_41E, 8
+  $1,NOTE_41E,22
+  $8,NOTE_C0A, 2
+  $2,NOTE_C0A,10
+  $8,NOTE_C0B, 2
+  $2,NOTE_C0B,10
+  $5,NOTE_104, 2
+  $1,NOTE_104,10
 
-  $C,$C,$0C, 2
-  $6,$C,$0C, 4
-  $2,$C,$0C,12
-  $C,$C,$0C, 2
-  $6,$C,$0C, 4
-  $C,$4,$1E, 2
-  $6,$4,$1E, 4
-  $2,$4,$1E, 8
-  $1,$4,$1E,22
-  $8,$C,$0A, 2
-  $2,$C,$0A,10
-  $8,$C,$0B, 2
-  $2,$C,$0B,10
-  $5,$1,$04, 2
-  $1,$1,$04,10
+  $C,NOTE_C0C, 2
+  $6,NOTE_C0C, 4
+  $2,NOTE_C0C,12
+  $C,NOTE_C0C, 2
+  $6,NOTE_C0C, 4
+  $C,NOTE_41E, 2
+  $6,NOTE_41E, 4
+  $2,NOTE_41E, 8
+  $1,NOTE_41E,22
+  $8,NOTE_C0A, 2
+  $2,NOTE_C0A,10
+  $8,NOTE_C0B, 2
+  $2,NOTE_C0B,10
+  $5,NOTE_104, 2
+  $1,NOTE_104,10
 
-  $0,$0,$00, 8
-  $8,$4,$1E, 2
-  $2,$4,$1E, 6
-  $8,$4,$1E, 2
-  $2,$4,$1E, 6
-  $0,$0,$00, 8
-  $8,$4,$1C, 2
-  $2,$4,$1C, 6
-  $8,$4,$1C, 2
-  $2,$4,$1C, 6
-  $0,$0,$00, 8
-  $8,$4,$18, 2
-  $2,$4,$18, 6
-  $8,$4,$18, 2
-  $2,$4,$18, 6
-  $0,$0,$00, 8
-  $8,$4,$16, 2
-  $2,$4,$16, 6
-  $8,$4,$16, 2
-  $2,$4,$16, 6
+  $0,NOTE_000, 8
+  $8,NOTE_41E, 2
+  $2,NOTE_41E, 6
+  $8,NOTE_41E, 2
+  $2,NOTE_41E, 6
+  $0,NOTE_000, 8
+  $8,NOTE_41C, 2
+  $2,NOTE_41C, 6
+  $8,NOTE_41C, 2
+  $2,NOTE_41C, 6
+  $0,NOTE_000, 8
+  $8,NOTE_418, 2
+  $2,NOTE_418, 6
+  $8,NOTE_418, 2
+  $2,NOTE_418, 6
+  $0,NOTE_000, 8
+  $8,NOTE_416, 2
+  $2,NOTE_416, 6
+  $8,NOTE_416, 2
+  $2,NOTE_416, 6
 
-  $8,$4,$18, 2
-  $4,$4,$18, 4
-  $2,$4,$18, 8
-  $1,$4,$18,82
+  $8,NOTE_418, 2
+  $4,NOTE_418, 4
+  $2,NOTE_418, 8
+  $1,NOTE_418,82
 
-  $8,$4,$19, 2
-  $4,$4,$19, 4
-  $2,$4,$19, 8
-  $1,$4,$19,82
+  $8,NOTE_419, 2
+  $4,NOTE_419, 4
+  $2,NOTE_419, 8
+  $1,NOTE_419,82
   255
 end
    rem handle bass line as sfx for simplicity
@@ -4490,68 +4659,438 @@ end
    _Ch1_Duration = 1
    goto _prepare_Game_Over_bank5 bank5
 
+  rem TODO: use this, update goto target if necessary
+__Boss_Entry_Music_Setup
+  rem unlike other music with channel-0 bass part, caller must set _Ch0_Sound,
+  rem  _Ch0_Duration, and _Ch0_Counter, since this must be called multiple
+  rem times, each corresponding to a different ch0 state
+  rem last note is 1 frame short: sfx player (used for bass line) starts next
+  rem sound immediately, music player (used for this) does not
+  sdata _SD_Boss_Entry_Music01 = _Ch1_Read_Pos_Lo
+  $C,NOTE_C0C,2
+  $2,NOTE_C0C,7
+  $C,NOTE_413,2
+  $2,NOTE_413,7
+  $C,NOTE_412,2
+  $2,NOTE_412,7
+  $C,NOTE_411,2
+  $2,NOTE_411,7
+  $C,NOTE_410,2
+  $2,NOTE_410,7
+  $C,NOTE_40F,2
+  $2,NOTE_40F,6
+  $FF
+end
+   _Ch1_Duration = 1
+   goto _Play_In_Game_Music
+
+__Boss_BG_Music_Setup
+  sdata _SD_Boss_BG_Music01 = _Ch1_Read_Pos_Lo
+  $C,NOTE_C1D, 2
+  $5,NOTE_C1D, 6
+  $3,NOTE_C1D,18
+  $2,NOTE_C1D,10
+  $C,NOTE_C1D, 2
+  $3,NOTE_C1D,25
+  $A,NOTE_C1F, 2
+  $3,NOTE_C1F, 7
+
+  $C,NOTE_C1D, 2
+  $5,NOTE_C1D,61
+  $C,NOTE_C1A, 2
+  $3,NOTE_C1A, 7
+
+  $C,NOTE_C1F, 2
+  $4,NOTE_C1F, 6
+  $2,NOTE_C1F,64
+
+  $5,NOTE_706, 2
+  $1,NOTE_706, 7
+  $3,NOTE_200, 2
+  $1,NOTE_200, 7
+  $3,NOTE_10F, 2
+  $1,NOTE_10F, 7
+  $3,NOTE_110, 2
+  $1,NOTE_110, 7
+  $5,NOTE_706, 2
+  $1,NOTE_706, 7
+  $3,NOTE_200, 2
+  $1,NOTE_200, 7
+  $3,NOTE_10F, 2
+  $1,NOTE_10F, 7
+  $3,NOTE_110, 2
+  $1,NOTE_110, 7
+
+  $C,NOTE_604, 2
+  $5,NOTE_604, 6
+  $3,NOTE_604,18
+  $2,NOTE_604,10
+  $C,NOTE_604, 2
+  $3,NOTE_604,25
+  $C,NOTE_C1A, 2
+  $3,NOTE_C1A, 7
+
+  $C,NOTE_604, 2
+  $5,NOTE_604,61
+  $C,NOTE_C16, 2
+  $3,NOTE_C16, 7
+
+  $C,NOTE_C1A, 2
+  $4,NOTE_C1A, 6
+  $2,NOTE_C1A,64
+
+  $A,NOTE_C1B, 2
+  $3,NOTE_C1B, 7
+  $3,NOTE_10B, 2
+  $1,NOTE_10B, 7
+  $3,NOTE_10C, 2
+  $1,NOTE_10C, 7
+  $3,NOTE_10D, 2
+  $1,NOTE_10D, 7
+  $A,NOTE_C1B, 2
+  $3,NOTE_C1B, 7
+  $3,NOTE_10B, 2
+  $1,NOTE_10B, 7
+  $3,NOTE_10C, 2
+  $1,NOTE_10C, 7
+  $3,NOTE_10D, 2
+  $1,NOTE_10D, 7
+
+  $FF
+end
+   _Ch1_Duration = 1
+
+   goto __Skip_Ch_1
+
+  rem TODO: use this, update goto target if necessary
+__Victory_Music_Setup_01
+
+  rem TODO (Pat Brady) try to do the $C:$0B then $C:$0A oscillation within single frame
+  sdata _SD_Victory_Music01 = _Ch1_Read_Pos_Lo
+  $C,NOTE_603, 2
+  $3,NOTE_603, 6
+  $A,NOTE_C12, 2
+  $3,NOTE_C12, 6
+  $A,NOTE_603, 2
+  $3,NOTE_603, 6
+  $C,NOTE_603, 2
+  $3,NOTE_603, 6
+  $1,NOTE_603,10
+  $C,NOTE_603, 2
+  $3,NOTE_603, 4
+
+  $C,NOTE_602, 2
+  $5,NOTE_602, 6
+  $3,NOTE_602,18
+  $2,NOTE_602,46
+
+  $C,NOTE_602, 2
+  $3,NOTE_602, 6
+  $A,NOTE_C0D, 2
+  $3,NOTE_C0D, 6
+  $3,NOTE_104, 2
+  $1,NOTE_104, 6
+
+  $C,NOTE_C0B, 2
+  $3,NOTE_C0A, 1
+  $3,NOTE_C0B, 2
+  $2,NOTE_C0A, 1
+  $2,NOTE_C0B, 2
+  $2,NOTE_C0A, 1
+  $2,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $4,NOTE_104, 2
+  $1,NOTE_104,22
+
+  $C,NOTE_C0B, 2
+  $3,NOTE_C0A, 1
+  $3,NOTE_C0B, 2
+  $2,NOTE_C0A, 1
+  $2,NOTE_C0B, 2
+  $2,NOTE_C0A, 1
+  $2,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $1,NOTE_C0B, 2
+  $1,NOTE_C0A, 1
+  $C,NOTE_41B, 2
+  $3,NOTE_41B, 6
+  $2,NOTE_41B,16
+
+  $C,NOTE_41E, 2
+  $3,NOTE_41E, 6
+  $2,NOTE_41E,18
+  $1,NOTE_41E,22
+
+  $C,NOTE_41E, 2
+  $3,NOTE_41E, 6
+  $A,NOTE_C0B, 2
+  $3,NOTE_C0B, 6
+  $3,NOTE_104, 2
+  $1,NOTE_104, 6
+  $C,NOTE_C0D, 2
+  $3,NOTE_C0D, 6
+  $3,NOTE_104, 2
+  $1,NOTE_104, 6
+  $A,NOTE_C0D, 2
+  $3,NOTE_C0D, 6
+
+  $C,NOTE_C0C, 2
+  $5,NOTE_C0C, 6
+  $3,NOTE_C0C,18
+  $2,NOTE_C0C,22
+
+  $5,NOTE_104, 2
+  $1,NOTE_104, 6
+  $A,NOTE_C0B, 2
+  $3,NOTE_C0B, 6
+  $3,NOTE_104, 2
+  $1,NOTE_104, 6
+  $C,NOTE_C0D, 2
+  $3,NOTE_C0D, 6
+  $3,NOTE_104, 2
+  $1,NOTE_104, 6
+  $A,NOTE_C0D, 2
+  $3,NOTE_C0D, 6
+
+  $C,NOTE_602, 2
+  $5,NOTE_602, 6
+  $3,NOTE_602,18
+  $2,NOTE_602,22
+
+  $FF
+end
+   rem handle bass line as sfx for simplicity
+   _Ch0_Duration = 1 : _Ch0_Counter = 0 : _Ch0_Sound = _Sfx_Victory_Bass
+   _Ch1_Duration = 1
+   goto _Play_In_Game_Music
+
 __BG_Music_Setup_01
 
-  sdata _SD_Music01 = e
-  6,3,0,4,  0,0,0,16
-  6,3,0,4,  0,0,0,16
-  6,3,0,4,  0,0,0,6,  6,3,0,4,  0,0,0,16
-                      5,3,0,4,  0,0,0,6
-  6,3,0,4,  0,0,0,6,  5,3,0,4,  0,0,0,6
-  6,3,0,4,  0,0,0,6,  5,3,0,4,  0,0,0,6
-  6,3,0,4,  0,0,0,36
+  sdata _SD_Music01 = _Ch1_Read_Pos_Lo
+  6,NOTE_300,4,  0,NOTE_000,16
+  6,NOTE_300,4,  0,NOTE_000,16
+  6,NOTE_300,4,  0,NOTE_000,6,  6,NOTE_300,4,  0,NOTE_000,16
+                                5,NOTE_300,4,  0,NOTE_000,6
+  6,NOTE_300,4,  0,NOTE_000,6,  5,NOTE_300,4,  0,NOTE_000,6
+  6,NOTE_300,4,  0,NOTE_000,6,  5,NOTE_300,4,  0,NOTE_000,6
+  6,NOTE_300,4,  0,NOTE_000,36
 
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,26
-                      4,8,4,2,  0,0,0,8
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  5,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5 ; 1 frame slow
-  5,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5 ; 1 frame slow
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5 ; 1 frame slow
-  5,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5,  4,8,4,2,  0,0,0,5 ; 1 frame slow
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,6,  4,8,4,2,  0,0,0,8
-  5,8,4,2,  0,0,0,8,  6,3, 0,4, 0,0,0,6
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  4,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,8
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3,  4,8,4,2,  0,0,0,3
-  5,8,4,2,  0,0,0,8,  5,8,4,2,  0,0,0,8
-  6,3,0,4,  0,0,0,16
-  5,8,4,2,  0,0,0,18
-  5,8,4,2,  0,0,0,18
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,18
-                      4,8,4,2,  0,0,0,8
-  5,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,8
-  4,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,8
-  5,8,4,2,  0,0,0,18
-  4,8,4,2,  0,0,0,8,  4,8,4,2,  0,0,0,8
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,26
+                                4,NOTE_804,2,  0,NOTE_000,8
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  5,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5 ; 1 frame slow
+  5,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5 ; 1 frame slow
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5 ; 1 frame slow
+  5,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5,  4,NOTE_804,2,  0,NOTE_000,5 ; 1 frame slow
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,6,  4,NOTE_804,2,  0,NOTE_000,8
+  5,NOTE_804,2,  0,NOTE_000,8,  6,NOTE_300,4,  0,NOTE_000,6
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  4,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,8
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3,  4,NOTE_804,2,  0,NOTE_000,3
+  5,NOTE_804,2,  0,NOTE_000,8,  5,NOTE_804,2,  0,NOTE_000,8
+  6,NOTE_300,4,  0,NOTE_000,16
+  5,NOTE_804,2,  0,NOTE_000,18
+  5,NOTE_804,2,  0,NOTE_000,18
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,18
+                                4,NOTE_804,2,  0,NOTE_000,8
+  5,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,8
+  4,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,8
+  5,NOTE_804,2,  0,NOTE_000,18
+  4,NOTE_804,2,  0,NOTE_000,8,  4,NOTE_804,2,  0,NOTE_000,8
   255
 end
    _Ch1_Duration = 1
 
    goto __Skip_Ch_1
+
+   asm
+NUM_NOTES = 44
+
+   ; align to page boundary unless both tables fit on current page anyway
+   if [<.]>256-2*NUM_NOTES
+   align $100
+   endif
+
+_Note_Index_to_AUDC
+   .byte $0
+   .byte $8
+   .byte $1
+   .byte $1
+   .byte $2
+   .byte $7
+   .byte $1
+   .byte $1
+   .byte $C
+   .byte $C
+   .byte $1
+   .byte $C
+   .byte $C
+   .byte $6
+   .byte $C
+   .byte $6
+   .byte $C
+   .byte $6
+   .byte $C
+   .byte $C
+   .byte $1
+   .byte $C
+   .byte $C
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $3
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   .byte $4
+   if .-_Note_Index_to_AUDC != NUM_NOTES
+     echo "ERROR: _Note_Index_to_AUDC (", _Note_Index_to_AUDC, ") does not match NUM_NOTES (", NUM_NOTES, ")"
+   endif
+
+_Note_Index_to_AUDF
+NOTE_000 = .-_Note_Index_to_AUDF
+   .byte $00
+NOTE_804 = .-_Note_Index_to_AUDF ; snare noise
+   .byte $04
+NOTE_110 = .-_Note_Index_to_AUDF ; 123.14
+   .byte $10
+NOTE_10F = .-_Note_Index_to_AUDF ; 130.83
+   .byte $0F
+NOTE_200 = .-_Note_Index_to_AUDF ; 135.05
+   .byte $00
+NOTE_706 = .-_Note_Index_to_AUDF ; 144.70
+   .byte $06
+NOTE_10D = .-_Note_Index_to_AUDF ; 149.52
+   .byte $0D
+NOTE_10C = .-_Note_Index_to_AUDF ; 161.02
+   .byte $0C
+NOTE_C1F = .-_Note_Index_to_AUDF ; 163.54
+   .byte $1F
+NOTE_C1D = .-_Note_Index_to_AUDF ; 174.44
+   .byte $1D
+NOTE_10B = .-_Note_Index_to_AUDF ; 174.44
+   .byte $0B
+NOTE_C1B = .-_Note_Index_to_AUDF ; 186.90
+   .byte $1B
+NOTE_C1A = .-_Note_Index_to_AUDF ; 193.83
+   .byte $1A
+NOTE_604 = .-_Note_Index_to_AUDF ; 202.58
+   .byte $04
+NOTE_C16 = .-_Note_Index_to_AUDF ; 227.53
+   .byte $16
+NOTE_603 = .-_Note_Index_to_AUDF ; 253.22
+   .byte $03
+NOTE_C12 = .-_Note_Index_to_AUDF ; 275.44
+   .byte $12
+NOTE_602 = .-_Note_Index_to_AUDF ; 337.63
+   .byte $02
+NOTE_C0D = .-_Note_Index_to_AUDF ; 373.81
+   .byte $0D
+NOTE_C0C = .-_Note_Index_to_AUDF ; 402.56
+   .byte $0C
+NOTE_104 = .-_Note_Index_to_AUDF ; 418.66
+   .byte $04
+NOTE_C0B = .-_Note_Index_to_AUDF ; 436.11
+   .byte $0B
+NOTE_C0A = .-_Note_Index_to_AUDF ; 475.75
+   .byte $0A
+NOTE_41E = .-_Note_Index_to_AUDF ; 506.45
+   .byte $1E
+NOTE_41C = .-_Note_Index_to_AUDF ; 541.38
+   .byte $1C
+NOTE_41B = .-_Note_Index_to_AUDF ; 560.71
+   .byte $1B
+NOTE_419 = .-_Note_Index_to_AUDF ; 603.84
+   .byte $19
+NOTE_418 = .-_Note_Index_to_AUDF ; 628.00
+   .byte $18
+NOTE_417 = .-_Note_Index_to_AUDF ; 654.16
+   .byte $17
+NOTE_416 = .-_Note_Index_to_AUDF ; 682.60
+   .byte $16
+NOTE_414 = .-_Note_Index_to_AUDF ; 747.61
+   .byte $14
+NOTE_413 = .-_Note_Index_to_AUDF ; 785.00
+   .byte $13
+NOTE_412 = .-_Note_Index_to_AUDF ; 826.31
+   .byte $12
+NOTE_411 = .-_Note_Index_to_AUDF ; 872.22
+   .byte $11
+NOTE_410 = .-_Note_Index_to_AUDF ; 923.52
+   .byte $10
+NOTE_40F = .-_Note_Index_to_AUDF ; 981.24
+   .byte $0F
+NOTE_40E = .-_Note_Index_to_AUDF ; 1046.66
+   .byte $0E
+NOTE_300 = .-_Note_Index_to_AUDF ; 1080.42
+   .byte $00
+NOTE_40D = .-_Note_Index_to_AUDF ; 1121.42
+   .byte $0D
+NOTE_40C = .-_Note_Index_to_AUDF ; 1207.69
+   .byte $0C
+NOTE_40B = .-_Note_Index_to_AUDF ; 1308.33
+   .byte $0B
+NOTE_409 = .-_Note_Index_to_AUDF ; 1569.99
+   .byte $09
+NOTE_408 = .-_Note_Index_to_AUDF ; 1744.43
+   .byte $08
+NOTE_407 = .-_Note_Index_to_AUDF ; 1962.49
+   .byte $07
+   if .-_Note_Index_to_AUDF != NUM_NOTES
+     echo "ERROR: _Note_Index_to_AUDF (", _Note_Index_to_AUDF, ") does not match NUM_NOTES (", NUM_NOTES, ")"
+   endif
+end
 
 ;#endregion
 
