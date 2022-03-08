@@ -1806,105 +1806,129 @@ end
 
   ;  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
    data _attack_position_sequence_1
-     0, 25, 225, 50,  0,25, 75,225, 50,254                         ; stage 32
-     0,125,225,150, 75, 75,125,  0,225, 50,254                     ; stage 31
-    25, 25, 75,225, 50,100,  0,125,225,150, 75,254                 ; stage 30
-     0,125,225,150, 75, 75,125,  0, 25,225,150,175,200,254         ; stage 29
-    50,100,225,125, 25,150, 75, 75,125,  0,225,125,125,100,254     ; stage 28
-    25, 75, 50, 50,225,  0,125, 25,150, 75, 75,225, 75,125,254     ; stage 27
-     0,  0, 25, 50,100,225,150, 75, 75,125, 75, 75,225,125,100,226 ; stage 26 Boss 1
-    25, 75, 50,225,100,  0,125, 25,150, 50,225, 25,  0,100,100,254 ; stage 25
-     0,  0, 25,225,  0,125, 75, 50, 50,100,225, 75,150,175,200,254 ; stage 24
-    50,100,  0,125,225,150,125, 75,150,175,200,225, 75,125,  0,254 ; stage 23
-     0,  0, 25, 50,  0,225, 75, 50, 50,  0, 25, 75,225,200,100,254 ; stage 22
-    25, 75, 50,  0,225, 75, 50,125, 50,100,  0,125,225,150,  0,254 ; stage 21
-     0,  0, 25,225,125, 25,150, 75, 75,  0, 25, 75,225, 50,100,254 ; stage 20
-    50,100,225, 25, 75,150,175,200,125, 25,150, 75,225,125,  0,254 ; stage 19
-   225,  0,  0, 25, 50,100,100,150,200,125, 75, 75,225,125,  0,227 ; stage 18 Boss 2
-    50,100,  0,225, 25,150, 75, 75,125, 25,150,225, 75,125,  0,254 ; stage 17
-     0,  0, 25, 50,125, 25,150,225, 75,  0, 25,225, 50, 50,100,254 ; stage 16
+   0, 25, 225, 155, 160, 165, 170, 205, 50, 254 
+   0, 125, 200, 150, 75, 75, 125, 0, 205, 50, 254
+   25, 25, 75, 205, 50, 100, 0, 125, 200, 150, 75, 254 
+   0, 125, 200, 150, 75, 75, 125, 0, 25, 210, 150, 175, 160, 254
+   50, 100, 205, 125, 25, 150, 75, 75, 125, 0, 215, 125, 125, 100, 254
+   25, 75, 50, 50, 215, 0, 125, 25, 150, 75, 75, 220, 75, 125, 254
+   0, 0, 25, 50, 100, 225, 150, 75, 75, 125, 75, 75, 220, 125, 100, 226
+   25, 75, 50, 200, 100, 0, 125, 25, 150, 50, 200, 25, 0, 100, 100, 254
+   0, 0, 25, 200, 0, 125, 75, 50, 50, 100, 200, 75, 150, 175, 160, 254
+   50, 100, 0, 125, 200, 150, 125, 75, 150, 175, 160, 200, 75, 125, 0, 254
+   0, 0, 25, 50, 0, 200, 75, 50, 50, 0, 25, 75, 200, 160, 100, 254
+   25, 75, 50, 0, 200, 75, 50, 125, 50, 100, 0, 125, 200, 150, 0, 254
+   0, 0, 25, 200, 125, 25, 150, 75, 75, 0, 25, 75, 200, 50, 100, 254
+   50, 100, 200, 25, 75, 150, 175, 160, 125, 25, 150, 75, 200, 125, 0, 254
+   200, 0, 0, 25, 50, 100, 100, 150, 160, 125, 75, 75, 200, 125, 0, 227 
+   50, 100, 0, 200, 25, 150, 75, 75, 125, 25, 150, 200, 75, 125, 0, 254
+   0, 0, 25, 50, 125, 25, 150, 200, 75, 0, 25, 200, 50, 50, 100, 254
 end
 
    ; 1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16 17
    data _attack_position_sequence_2
-    25, 75,225, 50,100,  0,125, 25,150, 50,  0, 25,  0,100,225,100,254 ; stage 15
-     0,  0, 25,225,  0, 25, 75, 50, 50,100, 25, 75,225,175,175,200,254 ; stage 14
-    50,100,  0,125,225,150, 25, 75,150,175,200, 75, 75,225,125,  0,254 ; stage 13
-     0,  0,225, 50,  0, 25, 75, 50, 50,  0, 25, 75,225,200,200,100,254 ; stage 12
-    25, 75,225,  0, 25, 75, 50,125, 50,100,  0,125, 25,150,225,  0,254 ; stage 11
-     0,  0,225, 50,100,100,150, 75, 75,125, 75, 75,125,225,125,100,228 ; stage 10 Boss 3
-    25, 75, 50, 50,225,  0,125, 25,150, 50,  0, 25,  0,100,225,100,254 ; stage 09
-     0,  0, 25, 50,225, 25, 75, 50, 50,100, 25, 75,225,175,175,200,254 ; stage 08
-    50,100,  0,225, 25,150, 25, 75,150,175,200, 75,225,125,125,  0,254 ; stage 07
-     0,  0,225, 50,  0, 25, 75, 50, 50,  0, 25, 75, 50,225,200,100,254 ; stage 06
-    25, 75, 50,225, 25, 75, 50,125, 50,100,  0,125, 25,150,225,  0,254 ; stage 05
-     0,  0,225, 50,125, 25,150, 75, 75,  0, 25, 75,225, 50, 50,100,254 ; stage 04
-    50,225,  0, 25, 75,150,175,200,125, 25,150, 75, 75,125,225,  0,254 ; stage 03
-   225,  0,  0, 25, 50,100,100,150,200,125, 75, 75,125,225,125,  0,229 ; stage 02 Boss 4
-    50,100,  0,125, 25,150, 75, 75,225, 25,150, 75, 75,125,225,  0,255 ; stage 01
+   25, 75, 200, 50, 100, 0, 125, 25, 150, 50, 0, 25, 0, 100, 200, 100, 254
+   0, 0, 25, 200, 0, 25, 75, 50, 50, 100, 25, 75, 200, 175, 175, 160, 254
+   50, 100, 0, 125, 200, 150, 25, 75, 150, 175, 160, 75, 75, 200, 125, 0, 254
+   0, 0, 200, 50, 0, 25, 75, 50, 50, 0, 25, 75, 200, 160, 160, 100, 254
+   25, 75, 200, 0, 25, 75, 50, 125, 50, 100, 0, 125, 25, 150, 200, 0, 254
+   0, 0, 200, 50, 100, 100, 150, 75, 75, 125, 75, 75, 125, 200, 125, 100, 228
+   25, 75, 50, 50, 200, 0, 125, 25, 150, 50, 0, 25, 0, 100, 200, 100, 254
+   0, 0, 25, 50, 200, 25, 75, 50, 50, 100, 25, 75, 200, 175, 175, 160, 254
+   50, 100, 0, 200, 25, 150, 25, 75, 150, 175, 160, 75, 200, 125, 125, 0, 254
+   0, 0, 200, 50, 0, 25, 75, 50, 50, 0, 25, 75, 50, 200, 160, 100, 254
+   25, 75, 50, 200, 25, 75, 50, 125, 50, 100, 0, 125, 25, 150, 200, 0, 254
+   0, 0, 200, 50, 125, 25, 150, 75, 75, 0, 25, 75, 200, 50, 50, 100, 254
+   50, 200, 0, 25, 75, 150, 175, 160, 125, 25, 150, 75, 75, 125, 200, 0, 254
+   200, 0, 0, 25, 50, 100, 100, 150, 160, 125, 75, 75, 125, 200, 125, 0, 229
+   50, 100, 0, 125, 25, 150, 75, 75, 200, 25, 150, 75, 75, 125, 200, 0, 255
 end
 
  rem playertype, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
+   const mLeft  = %00
+   const mRight = %01
+   const mDown  = %10
+   const mUp    = %11
+   const planeSmallD   = %00000
+   const planeSmallU   = %00100
+   const planeSmallLR  = %01000
+   const planeMiddleD  = %01100
+   const planeMiddleU  = %10000
+   const planeMiddleLR = %10100
+   const planeBigD     = %11000
+   const planeBigU     = %11100
+
+   const OnePlane          = 0
+   const TwoPlanesClose    = 1
+   const TwoPlanesMedium   = 2
+   const ThreePlanesClose  = 3
+   const TwoPlanesWide     = 4
+   const WidthPlane        = 5
+   const ThreePlanesMedium = 6
+   const QuadPlane         = 7
+
+   const mirroredR         = 8
+
    data _attack_position_data
-      %00000010,         40,         88,       0, _D6  ; (0) 5 small planes from top
-      %00000010,        110,         98,       0, _D6
-      %00000010,        110,        108,       0, _D6
-      %00000010,         20,        118,       0, _D6
-      %00000010,         50,        128,       0, _D6
+   planeSmallD + mDown, 40, 88, OnePlane, _D6
+   planeSmallD + mDown, 110, 98, OnePlane, _D6
+   planeSmallD + mDown, 110, 108, OnePlane, _D6
+   planeSmallD + mDown, 20, 118, OnePlane, _D6
+   planeSmallD + mDown, 50, 128, OnePlane, _D6
 
-      %00001110,         40,         88,       0, _D4  ; (25) 1 middle + 4 small planes from top
-      %00000010,         30,         98,       0, _D6
-      %00000010,        110,        108,       0, _D6
-      %00000010,         20,        118,       0, _D6
-      %00000010,         50,        128,       0, _D6
+   planeMiddleD + mDown, 40, 88, OnePlane, _D4
+   planeSmallD + mDown, 30, 98, OnePlane, _D6
+   planeSmallD + mDown, 110, 108, OnePlane, _D6
+   planeSmallD + mDown, 20, 118, OnePlane, _D6
+   planeSmallD + mDown, 50, 128, OnePlane, _D6
 
-      %00001001,          0,         84,       9, _D6  ; (50) 2x2 small planes from left 
-      %00001001,          0,         74,       9, _D6 
-      %00001000,        158,         64,       1, _D6  ; 2x2 small planes from right
-      %00001000,        158,         54,       1, _D6
-      %00011111,         50,        p5p,       0, _D4
+   planeSmallLR + mRight, 0, 84, TwoPlanesClose + mirroredR, _D6
+   planeSmallLR + mRight, 0, 74, TwoPlanesClose + mirroredR, _D6
+   planeSmallLR + mLeft, 158, 64, TwoPlanesClose, _D6
+   planeSmallLR + mLeft, 158, 54, TwoPlanesClose, _D6
+   planeMiddleU + mUp, 30, 1, OnePlane, _D4
 
-      %00001001,          0,         84,       9, _D6  ; (75)
-      %00001001,          0,         74,       9, _D6
-      %00001000,        158,         64,       1, _D6
-      %00001000,        158,         54,       1, _D6
-      %00011111,         50,        p5p,       0, _D4
+   planeSmallD + mDown, 20, 88, TwoPlanesClose, _D4
+   planeSmallD + mDown, 110, 98, TwoPlanesClose, _D6
+   planeSmallD + mDown, 20, 108, TwoPlanesClose, _D6
+   planeBigU + mUp, 125, 247, QuadPlane, _D4
+   planeBigU + mUp, 75, 1, QuadPlane, _D4
 
-      %00000010,         20,         88,       1, _D4  ; (100)
-      %00000010,        110,         98,       1, _D6
-      %00000010,         20,        108,       1, _D6
-      %00011111,        125,        247,       7, _D4
-      %00011111,         75,          1,       7, _D4
+   planeSmallD + mDown, 75, 88, ThreePlanesClose, _D4
+   planeSmallD + mDown, 20, 98, ThreePlanesClose, _D6
+   planeSmallD + mDown, 110, 108, OnePlane, _D6
+   planeSmallD + mDown, 90, 118, OnePlane, _D6
+   planeBigU + mUp, 30, 1, QuadPlane, _D4
 
-      %00000010,         75,         88,      11, _D4
-      %00000010,         20,         98,      11, _D6
-      %00000010,        110,        108,       0, _D6
-      %00000010,         90,        118,       0, _D6
-      %00011111,         30,          1,       7, _D4
+   planeSmallD + mDown, 40, 88, ThreePlanesMedium, _D6
+   planeSmallD + mDown, 72, 98, ThreePlanesMedium, _D6
+   planeSmallD + mDown, 40, 108, ThreePlanesMedium, _D6
+   planeSmallD + mDown, 72, 118, ThreePlanesMedium, _D6
+   planeSmallD + mDown, 40, 128, ThreePlanesMedium, _D6
 
-      %00000010,         40,         88,       6, _D6  ; (150) 5x 3 Small planes distance medium from top
-      %00000010,         72,         98,       6, _D6
-      %00000010,         40,        108,       6, _D6
-      %00000010,         72,        118,       6, _D6
-      %00000010,         40,        128,       6, _D6
+   planeSmallD + mDown, 20, 88, ThreePlanesClose, _D6
+   planeSmallD + mDown, 40, 98, ThreePlanesClose, _D6
+   planeSmallD + mDown, 60, 108, ThreePlanesClose, _D6
+   planeSmallD + mDown, 80, 118, ThreePlanesClose, _D6
+   planeSmallD + mDown, 100, 128, ThreePlanesClose, _D6
 
-      %00000010,         20,         88,       3, _D6  ; (175)
-      %00000010,         40,         98,       3, _D6
-      %00000010,         60,        108,       3, _D6
-      %00000010,         80,        118,       3, _D6
-      %00000010,        100,        128,       3, _D6
+   planeBigU + mUp, 8, 1, QuadPlane, _D4
+   planeBigU + mUp, 40, 244, QuadPlane, _D4
+   planeBigU + mUp, 72, 231, QuadPlane, _D4
+   planeBigU + mUp, 104, 218, QuadPlane, _D4
+   planeBigU + mUp, 136, 205, QuadPlane, _D4
 
-      %00011111,          8,          1,       7, _D4  ; (200)
-      %00011111,         40,        244,       7, _D4
-      %00011111,         72,        231,       7, _D4
-      %00011111,        104,        218,       7, _D4
-      %00011111,        136,        205,       7, _D4
+   planeSmallD + mDown, 40, 88, OnePlane, _42
+   planeSmallD + mDown, 50, 98, OnePlane, _42
+   planeSmallD + mDown, 60, 108, OnePlane, _42
+   planeSmallD + mDown, 70, 118, OnePlane, _42
+   planeSmallD + mDown, 80, 128, OnePlane, _42
 
-      %00000010,         40,         88,       0, _42  ; (225) 5 small red planes (power up) from top
-      %00000010,         50,         98,       0, _42
-      %00000010,         60,        108,       0, _42
-      %00000010,         70,        118,       0, _42
-      %00000010,         80,        128,       0, _42
+   planeSmallU + mUp, 60, 1, OnePlane, _42
+   planeSmallU + mUp, 70, 246, OnePlane, _42
+   planeSmallU + mUp, 80, 236, OnePlane, _42
+   planeSmallU + mUp, 90, 226, OnePlane, _42
+   planeSmallU + mUp, 100, 216, OnePlane, _42
 end
 ;#endregion
 
@@ -2002,8 +2026,8 @@ _end_collision_check
    goto _add_collision_score
 _enemy_explosion
    callmacro _Set_SFX_By_Prio _Sfx_Enemy_Down
-   if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank3
    enemies_shoot_down = enemies_shoot_down + 1
+   if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_bank3
    if enemies_shoot_down = 5 && COLUP2 = _42 then goto set_game_state_powerup
 
    temp6 = NewNUSIZ[temp1] & %00001000
@@ -4947,8 +4971,8 @@ end
 
    vblank
    lifecolor = _EA : COLUPF = r_COLUPF
-   ballx = player0x + 2  : bally = player0y - 4
-   if framecounter{0} then ballx = ballx + 2
+   if _Bit6_p0_explosion{6} then bally = 100 else bally = player0y - 4
+   if framecounter{0} then ballx = player0x + 4 else ballx = player0x + 2
    if PF1pointerhi <> _PF1_Pacific_high then _landing_takeoff
    CTRLPF = r_CTRLPF : NUSIZ0 = r_NUSIZ0
    if r_Bit7_Left_Plane_is_SF{7} then ballx = ballx + 16
