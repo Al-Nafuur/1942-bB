@@ -352,6 +352,8 @@ end
    const _Plane_Y_Speed  = 1
    const _Plane_X1_Speed = 1
    const _Plane_X2_Speed = 2
+   const _Plane_Y_Turnpoint   = 40
+   const _Plane_Y_Shootpoint  = _Plane_Y_Turnpoint - 7
 
    const _Player0_X_Start     =  76
    const _Player0_X_Start_WSF =  60
@@ -429,6 +431,37 @@ end
    const _Map_Pacific    = %10111111
    const _Map_Boss_up    = %11110001
    const _Map_Boss_down  = %11111001
+
+   const movesLeft     = %000
+   const movesRight    = %001
+   const movesDown     = %010
+   const movesUp       = %011
+   const movesToPlayer = %100
+   const followsPlayer = %101
+   const noMove        = %110
+
+   const planeSmallD   = %000000
+   const planeSmallU   = %001000
+   const planeSmallLR  = %010000
+   const planeMiddleD  = %011000
+   const planeMiddleU  = %100000
+   const planeMiddleLR = %101000
+   const planeBigD     = %110000
+   const planeBigU     = %111000
+   const typePowerUp   = %01000000 + noMove
+   const typeMissile   = %10000000 + movesToPlayer
+   const typeAyMissile = %10000000 + followsPlayer
+
+   const OnePlane          = 0
+   const TwoPlanesClose    = 1
+   const TwoPlanesMedium   = 2
+   const ThreePlanesClose  = 3
+   const TwoPlanesWide     = 4
+   const WidthPlane        = 5
+   const ThreePlanesMedium = 6
+   const QuadPlane         = 7
+
+   const mirroredR         = 8
 
    rem Playfield pointers
    const _PF1_Carrier_Boss_high    = >PF1_data0
@@ -528,10 +561,11 @@ end
    dim player5fullheight = r
 
    dim Player0SwitchColor     = s
-   dim unused2        = t
+   dim unused                 = t
+   dim unused2                = playfieldpos  ; playfieldpos not used by the multisprite kernel?
 
    dim enemies_shoot_down     = u
-   dim enemies_in_park_pos    = v
+   dim active_multisprites    = v  ; bitmask (bit0 - bit4) for the 5 multisprites
    dim stage                  = w
    dim framecounter           = x
    dim map_section            = y
@@ -553,7 +587,7 @@ end
    dim _Bit4_genesispad       = z
    dim _Bit5_PlusROM          = z
    dim _Bit6_p0_explosion     = z
-   dim _Bit7_powerup          = z
+   dim _Bit7_unused           = z
 
    ; Slocum Player and titlescreen RAM variables (reuses game loop variables!)
    dim bmp_96x2_2_index = f
@@ -592,44 +626,27 @@ end
    dim w_total_enemies_BCD   = w121
 
    ; The variables from here on can be overwritten by the text screens.
-   dim w_player5hits_c      = w119
-   dim r_player5hits_c      = r119
-   dim w_player4hits_c      = w118
-   dim r_player4hits_c      = r118
-   dim w_player3hits_c      = w117
-   dim r_player3hits_c      = r117
-   dim w_player2hits_c      = w116
-   dim r_player2hits_c      = r116
-   dim w_player1hits_c      = w115
-   dim r_player1hits_c      = r115
+   ; arrays with status information of the 5 multisprites and their NUSIZ copies
    dim w_playerhits_c       = w115
    dim r_playerhits_c       = r115
 
-   dim w_player5hits_b      = w114
-   dim r_player5hits_b      = r114
-   dim w_player4hits_b      = w113
-   dim r_player4hits_b      = r113
-   dim w_player3hits_b      = w112
-   dim r_player3hits_b      = r112
-   dim w_player2hits_b      = w111
-   dim r_player2hits_b      = r111
-   dim w_player1hits_b      = w110
-   dim r_player1hits_b      = r110
    dim w_playerhits_b       = w110
    dim r_playerhits_b       = r110
 
-   dim w_player5hits_a      = w109
-   dim r_player5hits_a      = r109
-   dim w_player4hits_a      = w108
-   dim r_player4hits_a      = r108
-   dim w_player3hits_a      = w107
-   dim r_player3hits_a      = r107
-   dim w_player2hits_a      = w106
-   dim r_player2hits_a      = r106
-   dim w_player1hits_a      = w105
-   dim r_player1hits_a      = r105
    dim w_playerhits_a       = w105
    dim r_playerhits_a       = r105
+
+   dim w_error_accumulator  = w100
+   dim r_error_accumulator  = r100
+
+   dim w_delta_y            = w095
+   dim r_delta_y            = r095
+
+   dim w_delta_x            = w090
+   dim r_delta_x            = r090
+
+   dim w_octant             = w085
+   dim r_octant             = r085
 
 ;#endregion
 
@@ -650,7 +667,7 @@ end
 start
 
    rem initial variables setup
-   missile0y = 0 : framecounter = 0 : attack_position = 0 : enemies_in_park_pos = 0 : w_stage_bonus_counter = 0 : enemies_shoot_down = 0 : w_total_enemies_BCD = 0 : w_total_enemies_BCD1 = 0 : _sc1 = 0 : _sc2 = 0 : _sc3 = 0
+   missile0y = 0 : framecounter = 0 : attack_position = 0 : active_multisprites = 0 : w_stage_bonus_counter = 0 : enemies_shoot_down = 0 : w_total_enemies_BCD = 0 : w_total_enemies_BCD1 = 0 : _sc1 = 0 : _sc2 = 0 : _sc3 = 0
    map_section = _Map_Carrier
    player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    lives = 64 : stage = $20
@@ -1210,10 +1227,11 @@ main
 
    framecounter = framecounter + 1
    COLUBK = _96
-   COLUP0 = _40 
+   COLUP0 = _40
    Player0SwitchColor = r_COLUP0
    
    if _Bit0_intro{0} then goto stage_intro bank2
+   if map_section = _Map_Carrier then goto _Playfield_scrolling
 
    ;if _Ch0_Sound = _Sfx_Respawn_Bass then goto _skip_game_action
 
@@ -1238,43 +1256,35 @@ _player0_animation_end
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
-   enemies_in_park_pos = 1 : goto __Respawn_Music_Setup bank6
+   active_multisprites = 0
+   goto __Respawn_Music_Setup bank6
 _skip_player0_explosion
 ;#endregion
 
-   if enemies_in_park_pos then enemies_in_park_pos = 0 : goto build_attack_position bank2
+   if !active_multisprites then goto build_attack_position bank2
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Collision check for missile 0"
    if !_Bit7_map_E_collsion{7} || _Bit2_looping{2} then goto _skip_player0_collision
    if !_Bit6_map_PF_collision{6} then goto _skip_m0_pf_collision
-   if collision(missile0, playfield) then temp3 = 0 : temp1 = 4 : goto _end_collision_check bank3 else goto _skip_missile0_collision
+   if collision(missile0, playfield) then temp3 = 0 : temp1 = 0 : goto _end_collision_check bank3 else goto _skip_missile0_collision
 _skip_m0_pf_collision
-   if !collision(player1, missile0) then goto _skip_missile0_collision
-   if _Bit7_powerup{7} then goto _skip_missile0_collision
-
-   goto _collision_detection bank3
+   if collision(player1, missile0) then goto _collision_detection bank3
 
 _skip_missile0_collision
 ;#endregion
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Collision check for player 0"
-   if _Bit6_map_PF_collision{6} && collision(player0, playfield) then _player0_collision
-   if !_Bit7_map_E_collsion{7} || !collision(player0, player1) then goto _skip_player0_collision
-   if _Bit7_powerup{7} then goto power_up_bonus
-   if r_NUSIZ0{0} then goto check_sidefighter_collision bank3
-_player0_collision
-   _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
-   _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0
-   _Bit6_p0_explosion{6} = 1
-   goto _skip_game_action
+   if _Bit6_map_PF_collision{6} && collision(player0, playfield) then goto _player0_collision bank3
+   if _Bit7_map_E_collsion{7} && collision(player0, player1) then goto check_sidefighter_collision bank3
 
 _skip_player0_collision
 ;#endregion
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Playfield scrolling"
+_Playfield_scrolling
    temp1 = map_section & %00000011
 
    if temp1 = 1 && framecounter{0} then _Check_scrolling_direction
@@ -1310,7 +1320,13 @@ _next_superstructure
    next
 _skip_carrier_superstructures_scrolling
 
-   if PF1pointer = _Map_Takeoff_Point_1 then _Bit0_intro{0} = 1 : framecounter = 0 : goto _skip_game_action
+   if PF1pointer <> _Map_Takeoff_Point_1 then _skip_end_of_landing
+   if stage = 0 then goto _prepare_Endscreen_bank5 bank5
+   if statusbarlength < %10101000 then statusbarlength = %10101000
+
+   _Bit0_intro{0} = 1 : framecounter = 0 
+   goto _skip_game_action
+_skip_end_of_landing
    if PF1pointer = _Map_Takeoff_Sound_Start then _Ch0_Sound = _Sfx_Takeoff : _Ch0_Duration = 1 : _Ch0_Counter = 0 : goto _skip_playfield_restart
    if PF1pointer = _Map_Attackzone_Start then goto set_game_state_attack_start
 
@@ -1338,7 +1354,7 @@ _skip_scrolling
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Player 0 movement and looping animation"
 _check_player_movement
-   if _Bit6_p0_explosion{6} then goto _enemies_movement
+   if _Bit6_p0_explosion{6} then goto _multisprite_movement
    if map_section <> _Map_Carrier then _player_movement
 
    if player0y < _Player0_Y_Start then player0y = player0y + 1
@@ -1400,38 +1416,28 @@ _skip_missile0_movement
 ;#endregion
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Missile 1 movement and animation"
-_check_enemy_shot
-;  if player1x = player0x && n = 0 && player1y < 20 then missile1x = player1x + 5 : missile1y = player1y + 2 :  n = 1
-;#endregion
+;#region "Multisprite (Enemies, missiles and PowerUp) movement"
+_multisprite_movement
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Enemies and PowerUp movement"
-_enemies_movement
+   if !_Bit5_map_E_moving{5} || !active_multisprites then goto _skip_plane_movement
 
-   if !_Bit5_map_E_moving{5} then goto _skip_plane_movement
+   temp1 = ( framecounter & %00000001 ) * 2
 
-   if player1y = _Player1_Parking_Point && player2y = _Player2_Parking_Point && player3y = _Player3_Parking_Point && player4y = _Player4_Parking_Point && player5y = _Player5_Parking_Point then enemies_in_park_pos = 1 : goto _skip_plane_movement
-
-   if framecounter{1} then temp2 = 1 : temp1 = 2 else temp2 = 0 : temp1 = 0
-   if framecounter{0} then temp1 = 2 else temp1 = 0
-   
 _plane_movement_loop_start
 
-   if _Bit6_map_PF_collision{6} then temp3 = 4 else temp3 = playertype[temp1] & %00000011
-   if _Bit7_powerup{7} then temp3 = 5
+   temp3 = playertype[temp1] & %00000111
    temp4 = _plane_parking_point_bank1[temp1]
    temp5 = rand
 
-   on temp3 goto _plane_moves_left _plane_moves_right _plane_moves_down _plane_moves_up _plane_is_missile _plane_is_powerup
+   on temp3 goto _plane_moves_left _plane_moves_right _plane_moves_down _plane_moves_up _plane_is_missile _plane_is_ayoko_missile _plane_is_powerup
 
 _plane_moves_right
-   temp3 = NewSpriteX[temp1]
-   if NewSpriteX[temp1] > 153 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
+   temp3 = NewSpriteX[temp1]
+   if temp3 > 153 then goto park_multisprite
    NewSpriteX[temp1] = temp3 + _Plane_X2_Speed
 
-   if temp3 > player0x && temp5 < 128 then playertype[temp1] = ( playertype[temp1] - 8 ) ^ %00000011 : temp3 = playertype[temp1] / 4 : playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3] : playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3] : goto _check_next_plane
+   if temp3 > player0x && temp5 < 128 then playertype[temp1] = ( playertype[temp1] - 16 ) ^ %00000011 : temp3 = playertype[temp1] / 8 : playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3] : playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3] : goto _check_next_plane
 
    if NewSpriteX[temp1] < 121 then goto _check_next_plane
    if NewNUSIZ[temp1] = %00001011 && NewSpriteX[temp1] > 120 then NewNUSIZ[temp1] = %00001001
@@ -1439,12 +1445,12 @@ _plane_moves_right
    goto _check_next_plane
 
 _plane_moves_left
-   temp3 = NewSpriteX[temp1]
-   if !NewNUSIZ[temp1] && temp3 < 2 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then goto _check_next_plane
+   temp3 = NewSpriteX[temp1]
+   if !NewNUSIZ[temp1] && temp3 < 2 then goto park_multisprite
    NewSpriteX[temp1] = temp3 - _Plane_X2_Speed
    
-   if temp3 < player0x && temp5 < 128 then playertype[temp1] = ( playertype[temp1] - 8 ) ^ %00000010 : temp3 = playertype[temp1] / 4 : playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3] : playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3] : goto _check_next_plane
+   if temp3 < player0x && temp5 < 128 then playertype[temp1] = ( playertype[temp1] - 16 ) ^ %00000010 : temp3 = playertype[temp1] / 8 : playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3] : playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3] : goto _check_next_plane
 
    if temp3 < 254 then goto _check_next_plane
    if NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = temp3 + 16
@@ -1454,8 +1460,56 @@ _plane_moves_left
 _plane_moves_down
    temp3 = NewSpriteY[temp1]
    if temp3 = temp4 then goto _check_next_plane
-   if temp3 < 2 then NewSpriteY[temp1] = temp4 : goto _check_next_plane
-   if temp3 = 40 && temp5 < 128 then playertype[temp1] = playertype[temp1] + 5 : temp5 = playertype[temp1] / 4 : playerpointerlo[temp1] = _player_pointer_lo_bank1[temp5] + 1 - playerfullheight[temp1] : playerpointerhi[temp1] = _player_pointer_hi_bank1[temp5] :  goto _check_next_plane
+   if temp3 < 2 then goto park_multisprite
+   temp2 = stage * 4
+   if temp3 <> _Plane_Y_Turnpoint || temp5 > temp2 then _skip_plane_turns
+
+   if active_multisprites = 31 then goto _skip_new_missile
+
+   temp2 = 0
+   if !active_multisprites{0} then active_multisprites = active_multisprites + 1 : goto _free_multisprite_found
+   temp5 = active_multisprites / 2 : temp2 = temp2 + 1
+   if !temp5{0} then active_multisprites = active_multisprites | %10 : goto _free_multisprite_found
+   temp5 = temp5 / 2 : temp2 = temp2 + 1
+   if !temp5{0} then active_multisprites = active_multisprites | %100 : goto _free_multisprite_found
+   temp5 = temp5 / 2 : temp2 = temp2 + 1
+   if !temp5{0} then active_multisprites = active_multisprites | %1000 : goto _free_multisprite_found
+   active_multisprites = active_multisprites | %10000 : temp2 = temp2 + 1
+_free_multisprite_found
+
+   NewSpriteY[temp2] = _Plane_Y_Shootpoint : NewSpriteX[temp2] = NewSpriteX[temp1]
+   NewNUSIZ[temp2] = 0
+   NewCOLUP1[temp2] = _44
+   playertype[temp2] = typeMissile
+   playerpointerlo[temp2]  = _Ayako_Missile_low
+   playerpointerhi[temp2]  = _Ayako_Missile_high
+   playerfullheight[temp2] = _Ayako_Missile_height
+   spriteheight[temp2]     = _Ayako_Missile_height
+
+   if NewSpriteX[temp2] < player0x then w_octant[temp2] = 4 : w_delta_x[temp2] = player0x - NewSpriteX[temp2] else w_octant[temp2] = 0 : w_delta_x[temp2] = NewSpriteX[temp2] - player0x
+   if _Plane_Y_Shootpoint < player0y then w_octant[temp2] = r_octant[temp2] | %10 : w_delta_y[temp2] = player0y - _Plane_Y_Shootpoint else w_octant[temp2] = r_octant[temp2] & %11111101 : w_delta_y[temp2] = _Plane_Y_Shootpoint - player0y
+
+   if r_delta_x[temp2] < $80 then w_delta_y[temp2] = r_delta_y[temp2] * 2 : w_delta_x[temp2] = r_delta_x[temp2] * 2
+
+   if r_delta_x[temp2] > r_delta_y[temp2] then goto __dx_gt
+   w_octant[temp2] = r_octant[temp2] & %11111110
+   if r_error_accumulator[temp2] > r_delta_y[temp2] then w_error_accumulator[temp2] = r_delta_y[temp2] / 2
+   goto __set_ea
+
+__dx_gt
+   w_octant[temp2] = r_octant[temp2] | %00000001
+   if r_error_accumulator[temp2] > r_delta_x[temp2] then w_error_accumulator[temp2] = r_delta_x[temp2] / 2
+
+__set_ea
+   if (r_octant[temp1] & %1) then w_error_accumulator[temp2] = r_delta_x[temp2] / 2 else w_error_accumulator[temp2] = r_delta_y[temp2] / 2
+
+_skip_new_missile
+
+   playertype[temp1] = playertype[temp1] + 9
+   temp5 = playertype[temp1] / 8 : playerpointerlo[temp1] = _player_pointer_lo_bank1[temp5] + 1 - playerfullheight[temp1]
+   playerpointerhi[temp1] = _player_pointer_hi_bank1[temp5]
+   goto _check_next_plane
+_skip_plane_turns
    NewSpriteY[temp1] = temp3 - _Plane_Y_Speed 
    if temp3 > 70 || temp5 < 128 then goto _check_next_plane
    temp3 = player0x + 8
@@ -1466,8 +1520,8 @@ _plane_moves_down
    goto _check_next_plane
 
 _plane_moves_up
-   if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 140 then NewSpriteY[temp1] = temp4
    if NewSpriteY[temp1] = temp4 then _check_next_plane
+   if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 140 then goto park_multisprite
    NewSpriteY[temp1] = NewSpriteY[temp1] + _Plane_Y_Speed 
    if NewSpriteY[temp1] > 1 && NewSpriteY[temp1] <= playerfullheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] - _Plane_Y_Speed : spriteheight[temp1] = NewSpriteY[temp1]
 ;   if NewSpriteY[temp1] > 84 && spriteheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] + spriteheight[temp1] - NewSpriteY[temp1] : spriteheight[temp1] = NewSpriteY[temp1]
@@ -1475,7 +1529,34 @@ _plane_moves_up
    goto _check_next_plane
 
 _plane_is_missile
-   if (framecounter & %00000110 ) then _check_next_plane
+;   if ( framecounter & %00000010 ) then goto _check_next_plane
+   if NewSpriteY[temp1] = temp4 then _check_next_plane
+
+   if NewSpriteY[temp1] > 1 && NewSpriteY[temp1] < 80 && NewSpriteX[temp1] > 1 && NewSpriteX[temp1] < 154 then _skip_remove_missile
+   goto park_multisprite
+_skip_remove_missile
+
+   temp3 = r_error_accumulator[temp1]
+   temp5 = r_octant[temp1]
+
+   if temp5{0} then goto __Skip_Chase1
+   NewSpriteY[temp1] = NewSpriteY[temp1] + _Data_yinc[temp5]
+   w_error_accumulator[temp1] = temp3 - r_delta_x[temp1]
+   if temp3 < r_error_accumulator[temp1] then w_error_accumulator[temp1] = r_error_accumulator[temp1] + r_delta_y[temp1] : NewSpriteX[temp1] = NewSpriteX[temp1]  + _Data_xinc[temp5]
+
+   goto _check_next_plane
+
+__Skip_Chase1
+
+   NewSpriteX[temp1]  = NewSpriteX[temp1] + _Data_xinc[temp5]
+   w_error_accumulator[temp1] = temp3 - r_delta_y[temp1]
+   if temp3 < r_error_accumulator[temp1] then w_error_accumulator[temp1] = r_error_accumulator[temp1] + r_delta_x[temp1] : NewSpriteY[temp1] = NewSpriteY[temp1] + _Data_yinc[temp5] 
+
+   goto _check_next_plane
+
+
+_plane_is_ayoko_missile
+   if (framecounter & %00000010 ) then _check_next_plane
    if PF1pointer > _Map_Boss_End_dw || PF1pointer < _Map_Boss_End_up then _check_next_plane
    if NewSpriteY[temp1] > temp4 then NewSpriteY[temp1] = PF1pointer - 50 : NewSpriteX[temp1] = temp5 / 2 : goto _check_next_plane
    if NewSpriteY[temp1] > ( player0y + temp1 ) then NewSpriteY[temp1] = NewSpriteY[temp1] - 1
@@ -1487,8 +1568,9 @@ _plane_is_missile
 
 _plane_is_powerup
    if (framecounter & %00000110 ) then _check_next_plane
+   if NewSpriteY[temp1] = temp4 then _check_next_plane
    temp3 = NewSpriteY[temp1]
-   if temp3 < 2 then _Bit7_powerup{7} = 0 : goto park_all_planes
+   if temp3 < 2 then goto park_multisprite
    NewSpriteY[temp1] = temp3 - _Plane_Y_Speed 
 
 _check_next_plane
@@ -1510,50 +1592,22 @@ _skip_game_action
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region rem "Subroutines and Functions Bank 1"
 
-add_scores_bank1
-   temp5 = _sc1
+park_multisprite
+   NewSpriteY[temp1] = temp4
    asm
-   LDX temp6
-	SED
-	CLC
-	LDA score+2
-	ADC _bonus_points,X
-	STA score+2
-   DEX
-	LDA score+1
-	ADC _bonus_points,X
-	STA score+1
-   DEX
-	LDA score
-	ADC _bonus_points,X
-	STA score
-	CLD
+; bB code:   active_multisprites = active_multisprites & inverse_bit_shift_table_bank1[temp1]
+; LDX temp1 ; the bB line before this ASM block has already set x to temp1
+	LDA active_multisprites
+	AND inverse_bit_shift_table_bank1,x
+	STA active_multisprites
 end
-   if _sc1 < $10 && _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   asm
-   rts   ; we are not using bB "return" here, because we are using this subroutine only in this bank!
-end
-
-power_up_bonus
-   _Bit7_powerup{7} = 0
-   _Ch0_Sound = _Sfx_Power_Up : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   if NewCOLUP1 = _Power_Up_Black_Extra_Life && lives < 224 then lives = lives + 32 : goto _end_power_up_bonus
-   if NewCOLUP1 = _Power_Up_Yellow_Extra_Loop && statusbarlength < 170 then statusbarlength = ( statusbarlength / 4 ) + %10000000 : goto _end_power_up_bonus
-   if NewCOLUP1 = _Power_Up_Dark_Gray_Quad_Gun && !r_NUSIZ0{5} then w_NUSIZ0 = r_NUSIZ0 | %00100000 : goto _end_power_up_bonus
-   if NewCOLUP1 = _Power_Up_Light_Gray_Side_Fighters && !r_NUSIZ0{1} then gosub switch_on_side_fighters : goto _end_power_up_bonus
-   ; default bonus
-   temp6 = _Bonus_Points_1000 : gosub add_scores_bank1
-
-_end_power_up_bonus
-   goto park_all_planes
+   goto _check_next_plane
 
 switch_on_side_fighters 
    w_NUSIZ0 = r_NUSIZ0 | %10000011
    if player0x > 16 then player0x = player0x - 16 else player0x = 0
    if player0x > _Player0_X_Max_WSF then player0x = _Player0_X_Max_WSF
-   asm
-   rts
-end
+   return thisbank
 
 set_game_state_attack_start
    map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high
@@ -1566,22 +1620,6 @@ set_game_state_looping
    callmacro _Set_SFX_By_Prio _Sfx_Looping
    player_animation_state = 0 : _Bit2_looping{2} = 1
    goto _skip_new_looping
-
-set_game_state_landing_bank1
-   PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
-   PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
-   map_section = _Map_Carrier : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier : NUSIZ0 = 0
-   _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : _Ch0_Counter = 0 : missile0y = 0 : w_stage_bonus_counter = 0 : pfheight = 3
-   stage = stage - 1
-   if stage = 15 then attack_position = 0
-
-park_all_planes
-   player1y = _Player1_Parking_Point
-   player2y = _Player2_Parking_Point
-   player3y = _Player3_Parking_Point
-   player4y = _Player4_Parking_Point
-   player5y = _Player5_Parking_Point
-   goto _skip_game_action 
 
 ;#endregion
 
@@ -1638,6 +1676,22 @@ end
    _Color_Gras_Island, _Color_Sand_Island, _Color_Jungle_Island, _Color_Gras_Island
 end
 
+   ;***************************************************************
+   ;
+   ;  Bresenham-like data.
+   ;
+   data _Data_yinc
+   $FF, $FF, $01, $01, $FF, $FF,$01, $01
+end
+
+   data _Data_xinc
+   $FF, $FF, $FF, $FF, $01, $01, $01, $01
+end
+
+   data inverse_bit_shift_table_bank1
+   %11111110, %11111101, %11111011, %11110111, %11101111, %11011111
+end
+
 ;#endregion
 
 ;#endregion
@@ -1682,14 +1736,13 @@ build_attack_position
 	CLD
 end
 
-   enemies_shoot_down = 0
+   enemies_shoot_down = 0 : active_multisprites = 31 ; assumes that all sprites are used in every wave !
    if temp2 < 226 then goto _read_attack_data
-   if temp2 = 226 then map_section = _Map_Boss_down : w_player5hits_a = 25 : temp3 = 0 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D8 : goto set_game_state_boss
-   if temp2 = 227 then map_section = _Map_Boss_down : w_player5hits_a = 35 : temp3 = 1 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D6 : goto set_game_state_boss
-   if temp2 = 228 then map_section = _Map_Boss_up   : w_player5hits_a = 55 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D6 : goto set_game_state_boss
-   if temp2 = 229 then map_section = _Map_Boss_up   : w_player5hits_a = 70 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D4 : goto set_game_state_boss
-   if temp2 = 254 then goto set_game_state_landing
-   if temp2 = 255 then WriteToBuffer = $10 : WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto _prepare_Endscreen_bank5 bank5
+   if temp2 = 226 then map_section = _Map_Boss_down : w_playerhits_a =  75 : temp3 = 0 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D8 : goto set_game_state_boss
+   if temp2 = 227 then map_section = _Map_Boss_down : w_playerhits_a = 125 : temp3 = 1 : PF1pointer = _Map_Boss_Start_dw : PF2pointer = _Map_Boss_Start_dw : w_COLUPF = _D6 : goto set_game_state_boss
+   if temp2 = 228 then map_section = _Map_Boss_up   : w_playerhits_a = 175 : temp3 = 2 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D6 : goto set_game_state_boss
+   if temp2 = 229 then map_section = _Map_Boss_up   : w_playerhits_a = 250 : temp3 = 3 : PF1pointer = _Map_Boss_Start_up : PF2pointer = _Map_Boss_Start_up : w_COLUPF = _D4 : goto set_game_state_boss
+   if temp2 > 253 then goto set_game_state_landing
 _read_attack_data
    for temp1 = 0 to 4
       temp3             = _attack_position_data[temp2] : temp2 = temp2 + 1
@@ -1699,7 +1752,7 @@ _read_attack_data
       NewCOLUP1[temp1]  = _attack_position_data[temp2] : temp2 = temp2 + 1
 
       playertype[temp1] = temp3
-      temp3 = temp3 / 4
+      temp3 = temp3 / 8
 
       playerpointerlo[temp1]  = _player_pointer_lo[temp3]
       playerpointerhi[temp1]  = _player_pointer_hi[temp3]
@@ -1733,6 +1786,7 @@ set_game_state_landing
    player3y = _Player3_Parking_Point
    player4y = _Player4_Parking_Point
    player5y = _Player5_Parking_Point
+   active_multisprites = 0
    goto _bank_2_code_end
 
 set_game_state_boss
@@ -1744,6 +1798,7 @@ set_game_state_boss
       NewSpriteY[temp1] = _plane_parking_point[temp1] + 5
       NewNUSIZ[temp1]   = temp3
       NewCOLUP1[temp1]  = _36
+      playertype[temp1] = typeAyMissile
 
       playerpointerlo[temp1]  = _Ayako_Missile_low
       playerpointerhi[temp1]  = _Ayako_Missile_high
@@ -1804,137 +1859,107 @@ end
    _Player5_Parking_Point
 end
 
-   const p1p = _Player1_Parking_Point
-   const p2p = _Player2_Parking_Point
-   const p3p = _Player3_Parking_Point
-   const p4p = _Player4_Parking_Point
-   const p5p = _Player5_Parking_Point
-
   ;  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
    data _attack_position_sequence_1
-   0, 25, 225, 155, 160, 165, 170, 205, 50, 254 
+   0, 25, 200, 50, 0, 25, 75, 200, 50, 254
    0, 125, 200, 150, 75, 75, 125, 0, 205, 50, 254
-   25, 25, 75, 205, 50, 100, 0, 125, 200, 150, 75, 254 
-   0, 125, 200, 150, 75, 75, 125, 0, 25, 210, 150, 175, 160, 254
+   25, 25, 75, 205, 50, 100, 0, 125, 200, 150, 75, 254
+   0, 125, 200, 150, 75, 75, 125, 0, 25, 210, 150, 160, 165, 254
    50, 100, 205, 125, 25, 150, 75, 75, 125, 0, 215, 125, 125, 100, 254
-   25, 75, 50, 50, 215, 0, 125, 25, 150, 75, 75, 220, 75, 125, 254
+   25, 75, 50, 50, 205, 0, 125, 25, 150, 75, 75, 200, 75, 125, 254
    0, 0, 25, 50, 100, 225, 150, 75, 75, 125, 75, 75, 220, 125, 100, 226
-   25, 75, 50, 200, 100, 0, 125, 25, 150, 50, 200, 25, 0, 100, 100, 254
-   0, 0, 25, 200, 0, 125, 75, 50, 50, 100, 200, 75, 150, 175, 160, 254
-   50, 100, 0, 125, 200, 150, 125, 75, 150, 175, 160, 200, 75, 125, 0, 254
-   0, 0, 25, 50, 0, 200, 75, 50, 50, 0, 25, 75, 200, 160, 100, 254
-   25, 75, 50, 0, 200, 75, 50, 125, 50, 100, 0, 125, 200, 150, 0, 254
-   0, 0, 25, 200, 125, 25, 150, 75, 75, 0, 25, 75, 200, 50, 100, 254
-   50, 100, 200, 25, 75, 150, 175, 160, 125, 25, 150, 75, 200, 125, 0, 254
-   200, 0, 0, 25, 50, 100, 100, 150, 160, 125, 75, 75, 200, 125, 0, 227 
-   50, 100, 0, 200, 25, 150, 75, 75, 125, 25, 150, 200, 75, 125, 0, 254
-   0, 0, 25, 50, 125, 25, 150, 200, 75, 0, 25, 200, 50, 50, 100, 254
+   25, 75, 50, 210, 100, 0, 125, 25, 150, 50, 210, 25, 0, 100, 100, 254
+   0, 0, 25, 210, 0, 125, 75, 50, 50, 100, 200, 75, 150, 160, 175, 254
+   50, 100, 0, 125, 215, 150, 125, 75, 150, 160, 175, 215, 75, 125, 0, 254
+   0, 0, 25, 50, 0, 215, 75, 50, 50, 0, 25, 75, 205, 175, 100, 254
+   25, 75, 50, 0, 215, 75, 50, 125, 50, 100, 0, 125, 215, 150, 0, 254
+   0, 0, 25, 215, 125, 25, 150, 75, 75, 0, 25, 75, 200, 50, 100, 254
+   50, 100, 205, 25, 75, 150, 160, 175, 125, 25, 150, 75, 225, 125, 0, 254
+   215, 0, 0, 25, 50, 100, 100, 150, 175, 125, 75, 75, 215, 125, 0, 227
+   50, 100, 0, 200, 25, 150, 75, 75, 125, 25, 150, 215, 75, 125, 0, 254
+   0, 0, 25, 50, 125, 25, 150, 215, 75, 0, 25, 220, 50, 50, 100, 254
 end
 
    ; 1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16 17
    data _attack_position_sequence_2
-   25, 75, 200, 50, 100, 0, 125, 25, 150, 50, 0, 25, 0, 100, 200, 100, 254
-   0, 0, 25, 200, 0, 25, 75, 50, 50, 100, 25, 75, 200, 175, 175, 160, 254
-   50, 100, 0, 125, 200, 150, 25, 75, 150, 175, 160, 75, 75, 200, 125, 0, 254
-   0, 0, 200, 50, 0, 25, 75, 50, 50, 0, 25, 75, 200, 160, 160, 100, 254
-   25, 75, 200, 0, 25, 75, 50, 125, 50, 100, 0, 125, 25, 150, 200, 0, 254
-   0, 0, 200, 50, 100, 100, 150, 75, 75, 125, 75, 75, 125, 200, 125, 100, 228
-   25, 75, 50, 50, 200, 0, 125, 25, 150, 50, 0, 25, 0, 100, 200, 100, 254
-   0, 0, 25, 50, 200, 25, 75, 50, 50, 100, 25, 75, 200, 175, 175, 160, 254
-   50, 100, 0, 200, 25, 150, 25, 75, 150, 175, 160, 75, 200, 125, 125, 0, 254
-   0, 0, 200, 50, 0, 25, 75, 50, 50, 0, 25, 75, 50, 200, 160, 100, 254
-   25, 75, 50, 200, 25, 75, 50, 125, 50, 100, 0, 125, 25, 150, 200, 0, 254
-   0, 0, 200, 50, 125, 25, 150, 75, 75, 0, 25, 75, 200, 50, 50, 100, 254
-   50, 200, 0, 25, 75, 150, 175, 160, 125, 25, 150, 75, 75, 125, 200, 0, 254
-   200, 0, 0, 25, 50, 100, 100, 150, 160, 125, 75, 75, 125, 200, 125, 0, 229
-   50, 100, 0, 125, 25, 150, 75, 75, 200, 25, 150, 75, 75, 125, 200, 0, 255
+   25, 75, 225, 50, 100, 0, 125, 25, 150, 50, 0, 25, 0, 100, 225, 100, 254
+   0, 0, 25, 225, 0, 25, 75, 50, 50, 100, 25, 75, 225, 160, 160, 175, 254
+   50, 100, 0, 125, 225, 150, 25, 75, 150, 160, 175, 75, 75, 220, 125, 0, 254
+   0, 0, 200, 50, 0, 25, 75, 50, 50, 0, 25, 75, 225, 175, 175, 100, 254
+   25, 75, 225, 0, 25, 75, 50, 125, 50, 100, 0, 125, 25, 150, 205, 0, 254
+   0, 0, 215, 50, 100, 100, 150, 75, 75, 125, 75, 75, 125, 225, 125, 100, 228
+   25, 75, 50, 50, 225, 0, 125, 25, 150, 50, 0, 25, 0, 100, 215, 100, 254
+   0, 0, 25, 50, 220, 25, 75, 50, 50, 100, 25, 75, 200, 160, 160, 175, 254
+   50, 100, 0, 225, 25, 150, 25, 75, 150, 160, 175, 75, 225, 125, 125, 0, 254
+   0, 0, 225, 50, 0, 25, 75, 50, 50, 0, 25, 75, 50, 205, 175, 100, 254
+   25, 75, 50, 225, 25, 75, 50, 125, 50, 100, 0, 125, 25, 150, 225, 0, 254
+   0, 0, 200, 50, 125, 25, 150, 75, 75, 0, 25, 75, 220, 50, 50, 100, 254
+   50, 215, 0, 25, 75, 150, 160, 175, 125, 25, 150, 75, 75, 125, 225, 0, 254
+   210, 0, 0, 25, 50, 100, 100, 150, 175, 125, 75, 75, 125, 225, 125, 0, 229
+   50, 100, 0, 125, 25, 150, 75, 75, 220, 25, 150, 75, 75, 125, 225, 0, 255
 end
 
  rem playertype, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
-   const mLeft  = %00
-   const mRight = %01
-   const mDown  = %10
-   const mUp    = %11
-   const planeSmallD   = %00000
-   const planeSmallU   = %00100
-   const planeSmallLR  = %01000
-   const planeMiddleD  = %01100
-   const planeMiddleU  = %10000
-   const planeMiddleLR = %10100
-   const planeBigD     = %11000
-   const planeBigU     = %11100
-
-   const OnePlane          = 0
-   const TwoPlanesClose    = 1
-   const TwoPlanesMedium   = 2
-   const ThreePlanesClose  = 3
-   const TwoPlanesWide     = 4
-   const WidthPlane        = 5
-   const ThreePlanesMedium = 6
-   const QuadPlane         = 7
-
-   const mirroredR         = 8
-
    data _attack_position_data
-   planeSmallD + mDown, 40, 88, OnePlane, _D6
-   planeSmallD + mDown, 110, 98, OnePlane, _D6
-   planeSmallD + mDown, 110, 108, OnePlane, _D6
-   planeSmallD + mDown, 20, 118, OnePlane, _D6
-   planeSmallD + mDown, 50, 128, OnePlane, _D6
+   planeSmallD + movesDown, 40, 88, OnePlane, _D6
+   planeSmallD + movesDown, 110, 98, OnePlane, _D6
+   planeSmallD + movesDown, 110, 108, OnePlane, _D6
+   planeSmallD + movesDown, 20, 118, OnePlane, _D6
+   planeSmallD + movesDown, 50, 128, OnePlane, _D6
 
-   planeMiddleD + mDown, 40, 88, OnePlane, _D4
-   planeSmallD + mDown, 30, 98, OnePlane, _D6
-   planeSmallD + mDown, 110, 108, OnePlane, _D6
-   planeSmallD + mDown, 20, 118, OnePlane, _D6
-   planeSmallD + mDown, 50, 128, OnePlane, _D6
+   planeMiddleD + movesDown, 40, 88, OnePlane, _D4
+   planeSmallD + movesDown, 30, 98, OnePlane, _D6
+   planeSmallD + movesDown, 110, 108, OnePlane, _D6
+   planeSmallD + movesDown, 20, 118, OnePlane, _D6
+   planeSmallD + movesDown, 50, 128, OnePlane, _D6
 
-   planeSmallLR + mRight, 0, 84, TwoPlanesClose + mirroredR, _D6
-   planeSmallLR + mRight, 0, 74, TwoPlanesClose + mirroredR, _D6
-   planeSmallLR + mLeft, 158, 64, TwoPlanesClose, _D6
-   planeSmallLR + mLeft, 158, 54, TwoPlanesClose, _D6
-   planeMiddleU + mUp, 30, 1, OnePlane, _D4
+   planeSmallLR + movesRight, 0, 84, TwoPlanesClose + mirroredR, _D6
+   planeSmallLR + movesRight, 0, 74, TwoPlanesClose + mirroredR, _D6
+   planeSmallLR + movesLeft, 158, 64, TwoPlanesClose, _D6
+   planeSmallLR + movesLeft, 158, 54, TwoPlanesClose, _D6
+   planeMiddleU + movesUp, 30, 1, OnePlane, _D4
 
-   planeSmallD + mDown, 20, 88, TwoPlanesClose, _D4
-   planeSmallD + mDown, 110, 98, TwoPlanesClose, _D6
-   planeSmallD + mDown, 20, 108, TwoPlanesClose, _D6
-   planeBigU + mUp, 125, 247, QuadPlane, _D4
-   planeBigU + mUp, 75, 1, QuadPlane, _D4
+   planeSmallD + movesDown, 20, 88, TwoPlanesClose, _D4
+   planeSmallD + movesDown, 110, 98, TwoPlanesClose, _D6
+   planeSmallD + movesDown, 20, 108, TwoPlanesClose, _D6
+   planeBigU + movesUp, 125, 247, QuadPlane, _D4
+   planeBigU + movesUp, 75, 1, QuadPlane, _D4
 
-   planeSmallD + mDown, 75, 88, ThreePlanesClose, _D4
-   planeSmallD + mDown, 20, 98, ThreePlanesClose, _D6
-   planeSmallD + mDown, 110, 108, OnePlane, _D6
-   planeSmallD + mDown, 90, 118, OnePlane, _D6
-   planeBigU + mUp, 30, 1, QuadPlane, _D4
+   planeSmallD + movesDown, 75, 88, ThreePlanesClose, _D4
+   planeSmallD + movesDown, 20, 98, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 110, 108, OnePlane, _D6
+   planeSmallD + movesDown, 90, 118, OnePlane, _D6
+   planeBigU + movesUp, 30, 1, QuadPlane, _D4
 
-   planeSmallD + mDown, 40, 88, ThreePlanesMedium, _D6
-   planeSmallD + mDown, 72, 98, ThreePlanesMedium, _D6
-   planeSmallD + mDown, 40, 108, ThreePlanesMedium, _D6
-   planeSmallD + mDown, 72, 118, ThreePlanesMedium, _D6
-   planeSmallD + mDown, 40, 128, ThreePlanesMedium, _D6
+   planeSmallD + movesDown, 40, 88, ThreePlanesMedium, _D6
+   planeSmallD + movesDown, 72, 98, ThreePlanesMedium, _D6
+   planeSmallD + movesDown, 40, 108, ThreePlanesMedium, _D6
+   planeSmallD + movesDown, 72, 118, ThreePlanesMedium, _D6
+   planeSmallD + movesDown, 40, 128, ThreePlanesMedium, _D6
 
-   planeSmallD + mDown, 20, 88, ThreePlanesClose, _D6
-   planeSmallD + mDown, 40, 98, ThreePlanesClose, _D6
-   planeSmallD + mDown, 60, 108, ThreePlanesClose, _D6
-   planeSmallD + mDown, 80, 118, ThreePlanesClose, _D6
-   planeSmallD + mDown, 100, 128, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 20, 88, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 40, 98, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 60, 108, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 80, 118, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 100, 128, ThreePlanesClose, _D6
 
-   planeBigU + mUp, 8, 1, QuadPlane, _D4
-   planeBigU + mUp, 40, 244, QuadPlane, _D4
-   planeBigU + mUp, 72, 231, QuadPlane, _D4
-   planeBigU + mUp, 104, 218, QuadPlane, _D4
-   planeBigU + mUp, 136, 205, QuadPlane, _D4
+   planeBigU + movesUp, 8, 1, QuadPlane, _D4
+   planeBigU + movesUp, 40, 244, QuadPlane, _D4
+   planeBigU + movesUp, 72, 231, QuadPlane, _D4
+   planeBigU + movesUp, 104, 218, QuadPlane, _D4
+   planeBigU + movesUp, 136, 205, QuadPlane, _D4
 
-   planeSmallD + mDown, 40, 88, OnePlane, _42
-   planeSmallD + mDown, 50, 98, OnePlane, _42
-   planeSmallD + mDown, 60, 108, OnePlane, _42
-   planeSmallD + mDown, 70, 118, OnePlane, _42
-   planeSmallD + mDown, 80, 128, OnePlane, _42
+   planeSmallD + movesDown, 40, 88, OnePlane, _42
+   planeSmallD + movesDown, 50, 98, OnePlane, _42
+   planeSmallD + movesDown, 60, 108, OnePlane, _42
+   planeSmallD + movesDown, 70, 118, OnePlane, _42
+   planeSmallD + movesDown, 80, 128, OnePlane, _42
 
-   planeSmallU + mUp, 60, 1, OnePlane, _42
-   planeSmallU + mUp, 70, 246, OnePlane, _42
-   planeSmallU + mUp, 80, 236, OnePlane, _42
-   planeSmallU + mUp, 90, 226, OnePlane, _42
-   planeSmallU + mUp, 100, 216, OnePlane, _42
+   planeSmallU + movesUp, 60, 1, OnePlane, _42
+   planeSmallU + movesUp, 70, 246, OnePlane, _42
+   planeSmallU + movesUp, 80, 236, OnePlane, _42
+   planeSmallU + movesUp, 90, 226, OnePlane, _42
+   planeSmallU + movesUp, 100, 216, OnePlane, _42
 end
 ;#endregion
 
@@ -1975,6 +2000,9 @@ end
    temp1 = 4
 
 multi_collision_check
+   rem ignore hits on powerUps and enemy missiles
+   if playertype[temp1] > %111111 then missile0y = missile0y + 5 : goto _bank_3_code_end
+
    temp2 = NewNUSIZ[temp1] & %00000111
    temp4 = NewSpriteX[temp1]
    temp5 = temp4 - 8
@@ -2016,7 +2044,7 @@ _three_copies_medium
    if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
 
 _end_collision_check
-   temp4 = temp1 + ( temp3 * 5 )
+   temp4 = ( temp3 * 5 ) + temp1
    temp5 = r_playerhits_a[temp4] - 1
    w_playerhits_a[temp4] = temp5
 
@@ -2041,38 +2069,44 @@ _enemy_explosion
    on temp2 goto _del_one_copy _del_two_copies_close _del_two_copies_medium _del_three_copies_close _del_two_copies_wide _del_one_copy _del_three_copies_medium _del_one_copy
 
 _del_one_copy
-   player1y[temp1] = _plane_parking_point_bank3[temp1]
+   NewSpriteY[temp1] = _plane_parking_point_bank3[temp1]
+   asm
+; LDX temp1 ; the bB line before this ASM block has already set x to temp1
+	LDA active_multisprites
+	AND inverse_bit_shift_table_bank3,x
+	STA active_multisprites
+end
    goto _determine_collision_score
 
 _del_two_copies_close
    NewNUSIZ[temp1] = 0 | temp6
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits
+   if temp3 = 0 then NewSpriteX[temp1] = NewSpriteX[temp1] + 16 : gosub swap_a_b_hits
    goto _determine_collision_score
 _del_two_copies_medium
    NewNUSIZ[temp1] = 0 | temp6
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits
+   if temp3 = 0 then NewSpriteX[temp1] = NewSpriteX[temp1] + 32 : gosub swap_a_b_hits
    goto _determine_collision_score
 _del_three_copies_close
    if temp3 = 1 then NewNUSIZ[temp1] = 2 | temp6 : goto _swap_b_c_hits
    NewNUSIZ[temp1] = 1 | temp6
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 16 : gosub swap_a_b_hits : goto _swap_b_c_hits
+   if temp3 = 0 then NewSpriteX[temp1] = NewSpriteX[temp1] + 16 : gosub swap_a_b_hits : goto _swap_b_c_hits
    goto _determine_collision_score
 _del_two_copies_wide 
    NewNUSIZ[temp1] = 0 | temp6
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 64 : gosub swap_a_b_hits
+   if temp3 = 0 then NewSpriteX[temp1] = NewSpriteX[temp1] + 64 : gosub swap_a_b_hits
    goto _determine_collision_score
 _del_three_copies_medium
    if temp3 = 1 then NewNUSIZ[temp1] = 4 | temp6 : goto _swap_b_c_hits
    NewNUSIZ[temp1] = 2 | temp6
-   if temp3 = 0 then player1x[temp1] = player1x[temp1] + 32 : gosub swap_a_b_hits : goto _swap_b_c_hits
+   if temp3 = 0 then NewSpriteX[temp1] = NewSpriteX[temp1] + 32 : gosub swap_a_b_hits : goto _swap_b_c_hits
    goto _determine_collision_score   
 
 _swap_b_c_hits
    w_playerhits_b[temp1] = r_playerhits_c[temp1]
 
 _determine_collision_score
-   if playertype[temp1] < 12 then temp6 = _Bonus_Points_50 : goto _add_collision_score
-   if playertype[temp1] < 24 then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
+   if playertype[temp1] < planeMiddleD then temp6 = _Bonus_Points_50 : goto _add_collision_score
+   if playertype[temp1] < planeBigD then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
 _add_collision_score
    gosub add_scores
 
@@ -2114,6 +2148,10 @@ end
    temp1 = 4
 
 multi_collision_check_sf
+   temp3 = playertype[temp1]
+   if temp3{6} then goto power_up_bonus
+   if !r_NUSIZ0{0} then goto _player0_collision
+
    temp2 = NewNUSIZ[temp1] & %00000111
    temp4 = NewSpriteX[temp1]
    temp5 = temp4 - 8
@@ -2168,12 +2206,12 @@ _end_collision_check_sf
    ; temp1 = id of player1 that has been hit (0 - 4)
    ; temp2 = NUSIZ of the player1
    ; temp3 = NUSIZ copy thats been hit (0 - 2)
-   ; no need for hitcounter, a enemy hit by a side fighter will always be deleted.
+   ; no need for hitcounter, an enemy hit by a side fighter will always be deleted.
 
    if player0x + 24 < temp5 then temp5 = %11110000 : goto _remove_a_side_fighter
    if player0x + 16 > temp4 && r_Bit7_Left_Plane_is_SF{7} then player0x = player0x + 16 : temp5 = %01110000 : goto _remove_a_side_fighter
 
-_player0_collision_bank3
+_player0_collision
    _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
    _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0
    _Bit6_p0_explosion{6} = 1
@@ -2209,15 +2247,11 @@ add_scores
 	CLD
 end
    if _sc1 < $10 && _sc1 > temp5 && lives < 224 then lives = lives + 32 : _Ch0_Sound = _Sfx_Bonus_Life : _Ch0_Duration = 1 : _Ch0_Counter = 0
-   asm
-   rts   ; we are not using bB "return" here, because we are using this subroutine only in this bank!
-end
+   return thisbank
 
 swap_a_b_hits
    w_playerhits_a[temp1] = r_playerhits_b[temp1]
-   asm
-   rts   ; we are not using bB "return" here, because we are using this subroutine only in this bank!
-end
+   return thisbank
 
 set_game_state_powerup
    temp2 = (stage - 1 ) * 2   +  r_stage_bonus_counter
@@ -2226,10 +2260,23 @@ set_game_state_powerup
    playerpointerhi[temp1] = _Power_Up_high
    player1height[temp1] = _Power_Up_height
    player1fullheight[temp1] = _Power_Up_height
-   _Bit7_powerup{7} = 1 :  w_stage_bonus_counter = r_stage_bonus_counter + 1
+   playertype[temp1] = typePowerUp
+   w_stage_bonus_counter = r_stage_bonus_counter + 1
    goto _determine_collision_score
 
+power_up_bonus
+   _Ch0_Sound = _Sfx_Power_Up : _Ch0_Duration = 1 : _Ch0_Counter = 0
+   if NewCOLUP1 = _Power_Up_Black_Extra_Life && lives < 224 then lives = lives + 32 : goto _end_power_up_bonus
+   if NewCOLUP1 = _Power_Up_Yellow_Extra_Loop && statusbarlength < 170 then statusbarlength = ( statusbarlength / 4 ) + %10000000 : goto _end_power_up_bonus
+   if NewCOLUP1 = _Power_Up_Dark_Gray_Quad_Gun && !r_NUSIZ0{5} then w_NUSIZ0 = r_NUSIZ0 | %00100000 : goto _end_power_up_bonus
+   if NewCOLUP1 = _Power_Up_Light_Gray_Side_Fighters && !r_NUSIZ0{1} then gosub switch_on_side_fighters : goto _end_power_up_bonus
+   ; default bonus
+   temp6 = _Bonus_Points_1000 : gosub add_scores
 
+_end_power_up_bonus
+   NewSpriteY[temp1] = _plane_parking_point_bank3[temp1]
+   active_multisprites = 0
+   goto _bank_3_code_end 
 
 set_game_state_landing_bank3
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
@@ -2245,6 +2292,7 @@ set_game_state_landing_bank3
    player3y = _Player3_Parking_Point
    player4y = _Player4_Parking_Point
    player5y = _Player5_Parking_Point
+   active_multisprites = 0
    goto _bank_3_code_end 
 
 ;#endregion
@@ -2263,7 +2311,11 @@ set_game_state_landing_bank3
 end
 
    data bit_shift_table
-   1, 2, 4, 8, 16
+   %00000001, %00000010, %00000100, %00001000, %00010000, %00100000
+end
+
+   data inverse_bit_shift_table_bank3
+   %11111110, %11111101, %11111011, %11110111, %11101111, %11011111
 end
 
    data _plane_parking_point_bank3
@@ -2563,10 +2615,10 @@ WaitOverscanEnd
 
 
 ; Colors and rows tables  
-FontColorsHSC
-  DC.B  _0E, _0E, _EA, _EA, _EA, _EA, _EA, _0E, _44, _D4, _0E
 OffsetHSC
   DC.B  176, 176, 96, 72, 48, 24, 0, 176, 152, 128
+FontColorsHSC
+  DC.B  _0E, _0E, _EA, _EA, _EA, _EA, _EA, _0E, _44, _D4, _0E
 
 OffsetEndscreen
   DC.B  48, 48, 168, 72, 48, 144, 120, 48, 96, 48
@@ -3763,6 +3815,13 @@ end
    goto _bB_Game_Over_entry_bank4 bank4
 
 _prepare_Endscreen_bank5
+  WriteToBuffer = $10
+  WriteToBuffer = _sc1
+  WriteToBuffer = _sc2
+  WriteToBuffer = _sc3
+  WriteToBuffer = stage
+  WriteSendBuffer = HighScoreDB_ID
+  AUDV0 = 0 : AUDV1 = 0
   asm
   ; right reset restrainer
   lda #0
@@ -5220,7 +5279,7 @@ end
    asm
    PAD_BB_SPRITE_DATA 7
 end
-  data _Middle_Plane_lr 
+  data _Middle_Plane_lr
    %01100000
    %01100000
    %01110001
@@ -5232,7 +5291,7 @@ end
 end
 
    asm
-   PAD_BB_SPRITE_DATA 27
+   PAD_BB_SPRITE_DATA 7
 end
   data _Big_Plane_down
    %01011010
@@ -5423,10 +5482,9 @@ end
 end
 
    asm
-   PAD_BB_SPRITE_DATA 8
+   PAD_BB_SPRITE_DATA 6
 end
   data _Power_Up
-   0
    %11010100
    %10111110
    %01101010
@@ -5515,14 +5573,10 @@ end
    if PF1pointerhi <> _PF1_Pacific_high then _landing_takeoff
    CTRLPF = r_CTRLPF : NUSIZ0 = r_NUSIZ0
    if r_Bit7_Left_Plane_is_SF{7} then ballx = ballx + 16
-   asm
-   rts    ; rts is to same bank, so no need for bB return overhead
-end
+   return thisbank
 
 _landing_takeoff
    CTRLPF = %00100001
-   asm
-   rts    ; rts is to same bank, so no need for bB return overhead
-end
+   return thisbank
 
 ;#endregion
