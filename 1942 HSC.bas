@@ -1,7 +1,8 @@
-; Orignial code by AtariAge user homerhomer (https://atariage.com/forums/profile/28656-homerhomer/)
-; AA topic: https://atariage.com/forums/topic/176639-1942-wip/
-; Titlescreen Music contributed by AtariAge user Pat Brady (https://atariage.com/forums/profile/24906-pat-brady/) 
-
+; Original code by AtariAge user homerhomer (https://atariage.com/forums/profile/28656-homerhomer/)
+; Additional code by AtariAge user Al_Nafuur (https://atariage.com/forums/profile/41465-al_nafuur/)
+; Music and SFX contributed by AtariAge user Pat Brady (https://atariage.com/forums/profile/24906-pat-brady/) 
+; AtariAge topic: https://atariage.com/forums/topic/176639-1942-wip/
+ 
    rem furture work ....
    rem need to add plane flip and counter. I was thinking that if the plane is maxed out on y axis up or down then holding joystick up or down with a fire button will cause flip
    rem my collisioin detect is horrid
@@ -407,11 +408,13 @@ end
    const _Player4_Parking_Point = 200
    const _Player5_Parking_Point = 150
 
+   const _Map_Landing_w  = %00101100
    const _Map_Landing    = %00101110
    const _Map_Takeoff    = %00001110
    const _Map_Pacific    = %10111111
    const _Map_Boss_up    = %11110001
    const _Map_Boss_down  = %11111001
+   const _Map_Boss_expl  = %11111000
 
    const movesLeft     = %000
    const movesRight    = %001
@@ -432,6 +435,7 @@ end
    const typePowerUp   = %01000000 + noMove
    const typeMissile   = %10000000 + movesToPlayer
    const typeAyMissile = %10000000 + followsPlayer
+   const typeMspExpl   = %11000000 + noMove
 
    const OnePlane          = 0
    const TwoPlanesClose    = 1
@@ -502,6 +506,9 @@ end
    const _Player0_Looping_2_low     = <_Player0_Looping_2
    const _Player0_Looping_2_height  = _Player0_Looping_2_length
 
+   const _Player0_Explosion_0_high   = >_Player0_Explosion_0
+   const _Player0_Explosion_0_low    = <_Player0_Explosion_0
+
 ;#endregion
 
 ;#region "Zeropage Variables"
@@ -528,7 +535,7 @@ end
    dim _Ch1_Read_Pos_Hi  = f
 
    dim attack_position   = g
-   dim player_animation_state = h
+   dim animation_state   = h
 
    dim playertype        = i
    dim player1type       = i
@@ -553,10 +560,10 @@ end
    dim stage                  = w
    dim framecounter           = x
    dim map_section            = y
-   dim _Bit0_map_speed        = y
-   dim _Bit1_map_speed        = y
-   dim _Bit2_map_pfheight     = y  ; Playfield pixel height
-   dim _Bit3_map_direction    = y  
+   dim _Bit0_map_speed        = y  ; 00: no scrolling                     01: scroll every second frame
+   dim _Bit1_map_speed        = y  ; 10: scroll every 8th frame           11: scroll every 16th frame
+   dim _Bit2_map_pfheight     = y  ;  0: pfheight=0 (1px -> 2 pf rows)     1: pfheight=3 (4px -> 8 pf rows)
+   dim _Bit3_map_direction    = y  ;  0: scroll up                         1: scroll down 
    dim _Bit4_map_P_moving     = y  ; Player can move
    dim _Bit5_map_E_moving     = y  ; Enemies moving
    dim _Bit6_map_PF_collision = y  ; Playfield collision active
@@ -632,6 +639,20 @@ end
    dim w_octant             = w085
    dim r_octant             = r085
 
+   dim w_msp5_animation_state = w084
+   dim r_msp5_animation_state = r084
+   dim w_msp4_animation_state = w083
+   dim r_msp4_animation_state = r083
+   dim w_msp3_animation_state = w082
+   dim r_msp3_animation_state = r082
+   dim w_msp2_animation_state = w081
+   dim r_msp2_animation_state = r081
+   dim w_msp1_animation_state = w080
+   dim r_msp1_animation_state = r080
+   dim w_msp_animation_state = w080
+   dim r_msp_animation_state = r080
+
+
 ;#endregion
 
 
@@ -663,527 +684,9 @@ start
 
    missile1y = 100 : missile1x = 100 : _Ch0_Sound = _Sfx_Mute
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;#region "Playfield Pacific"
-
-   playfield:
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ........XX......  ; 
-   ......XXX.......  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ..............XX  ; 
-   ..............XX  ; 
-   .............XXX  ; 
-   ...............X  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   .........XX.....  ; 
-   ........XXXX....  ; 
-   .........XX.....  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ............XX..  ; 
-   ...........XXXX.  ; 
-   .............X..  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ...............X  ; 
-   ..............XX  ; 
-   ..............XX  ; 
-   ...............X  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   .....XX.........  ; 
-   ....XXXXX.......  ; 
-   ....XXXX........  ; 
-   .....XXX........  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ....XX..........  ; 
-   ..XXXXXXXXXXXX..  ; 
-   XXXXXXXXXXXXXXXX  ; 
-   XXXXXXXXXXXXXX..  ; 
-   XXXXXXXXXXXXXX..  ; 
-   XXXXXXXXXXXXXXX.  ; 
-   XXXXXXXXXXXXXXXX  ; 
-   ..XXXXXXX.XXXXXX  ; 
-   ............XXXX  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 0 Start of landscape
-   ................  ; 255
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 248
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 240
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 232
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 224
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 216
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 208
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 200
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 192
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 184
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 
-   ................  ; 178 Start of boss plane (scrolling up)
-   ...............X  ; 
-   ................  ; 176
-   .........X.X.X.X  ; 
-   ...............X  ; 
-   .........X.X.X.X  ; 
-   .........X.X.X.X  ; 
-   .....XXXXXXXXXXX  ; 
-   .....XXXXXXXXXXX  ; 
-   ......XXXXXXXXX.  ; 
-   ........XXXXXXXX  ; 168
-   ..........XXXXX.  ; 
-   ............XXXX  ; 
-   .............XXX  ; 
-   ..............XX  ; 
-   ..............XX  ; 
-   ...............X  ; 
-   ...............X  ; 
-   ...............X  ; 160
-   ...............X  ; 
-   ...............X  ; 
-   ...............X  ; 
-   ...............X  ; 
-   ...............X  ; 
-   ...............X  ; 
-   ..............XX  ; 
-   .............XX.  ; 152
-   .............XXX  ; 151
-   ...............X  ; 150
-   ................  ; 149
-   ................  ; 148
-   ................  ; 147
-   ................  ; 146
-   ................  ; 145
-   ................  ; 144
-   ................  ; 143
-   ................  ; 142
-   ................  ; 141
-   ................  ; 140
-   ................  ; 139
-   ................  ; 138
-   ................  ; 137
-   ................  ; 136
-   ................  ; 135
-   ................  ; 134
-   ................  ; 133
-   ................  ; 132
-   ................  ; 131
-   ................  ; 130
-   ................  ; 129
-   ................  ; 128
-   ................  ; 127
-   ................  ; 126
-   ................  ; 125
-   ................  ; 124
-   ................  ; 123
-   ................  ; 122
-   ................  ; 121
-   ................  ; 120
-   ................  ; 119
-   ................  ; 118
-   ................  ; 117
-   ................  ; 116
-   ................  ; 115
-   ................  ; 114
-   ................  ; 113
-   ................  ; 112
-   ................  ; 111
-   ................  ; 110
-   ................  ; 109
-   ................  ; 108
-   ................  ; 107
-   ................  ; 106
-   ................  ; 105
-   ................  ; 104
-   ................  ; 103
-   ................  ; 102
-   ................  ; 101
-   ................  ; 100
-   ................  ; 99
-   ................  ; 98
-   ................  ; 97
-   ................  ; 96
-   ................  ; 95
-   ................  ; 94
-   ................  ; 93
-   ................  ; 92
-   ................  ; 91
-   ................  ; 90
-   ................  ; 89
-   ................  ; 88
-   ................  ; 87
-   ................  ; 86
-   ................  ; 85
-   ................  ; 84
-   ................  ; 83
-   ................  ; 82
-   ................  ; 81
-   ................  ; 80
-   ................  ; 79
-   ................  ; 78
-   ................  ; 77
-   ................  ; 76
-   ................  ; 75
-   ................  ; 74
-   ................  ; 73
-   ................  ; 72
-   ................  ; 71
-   ................  ; 70
-   ................  ; 69
-   ................  ; 68
-   ................  ; 67
-   ................  ; 66
-   ................  ; 65
-   ................  ; 64
-   ................  ; 63
-   ................  ; 62 Start of Boss scrolling down
-   ..............XX  ; 61 Carrier end
-   ...........XXXXX  ; 60
-   ..........XXXXXX  ; 59
-   .........XXXXXXX  ; 58
-   .........XXXXXXX  ; 57
-   .........XXXXXXX  ; 56
-   .........XXXXXXX  ; 55
-   ........XXXXXXXX  ; 54
-   ........XXXXXXXX  ; 53
-   ........XXXXXXXX  ; 52
-   ........XXXXXXXX  ; 51
-   ........XXXXXXXX  ; 50
-   .......XXXXXXXXX  ; 49
-   .......XXXXXXXXX  ; 48
-   .......XXXXXXXXX  ; 47
-   .......XXXXXXXXX  ; 46
-   .......XXXXXXXXX  ; 45
-   .......XXXXXXXXX  ; 44
-   .......XXXXXXXXX  ; 43
-   .......XXXXXXXXX  ; 42
-   .......XXXXXXXXX  ; 41
-   .......XXXXXXXXX  ; 40
-   .......XXXXXXXXX  ; 39
-   .......XXXXXXXXX  ; 38
-   .......XXXXXXXXX  ; 37
-   .......XXXXXXXXX  ; 36
-   .......XXXXXXXXX  ; 35
-   .......XXXXXXXXX  ; 34
-   .......XXXXXXXXX  ; 33
-   .......XXXXXXXXX  ; 32
-   .......XXXXXXXXX  ; 31
-   ........XXXXXXXX  ; 30
-   ........XXXXXXXX  ; 29
-   ........XXXXXXXX  ; 28
-   ........XXXXXXXX  ; 27
-   .........XXXXXXX  ; 26
-   .........XXXXXXX  ; 25
-   ..........XXXXXX  ; 24
-   ................  ; 23
-   ................  ; 22
-   ................  ; 21
-   ................  ; 20
-   ................  ; 19
-   ................  ; 18
-   ................  ; 17
-   ................  ; 16
-   ................  ; 15
-   ................  ; 14
-   ................  ; 13
-   ................  ; 12
-   ................  ; 11
-   ................  ; 10
-   ................  ; 9
-   ................  ; 8
-   ................  ; 7
-   ................  ; 6
-   ................  ; 5
-   ................  ; 4
-   ................  ; 3
-   ................  ; 2
-   ................  ; 1
-   ................  ; 0 Start landing zone
-end
-;#endregion
-
-   PF1pointer = _Map_Takeoff_Point
-   PF2pointer = _Map_Takeoff_Point
+   PF1pointerhi = _PF1_Carrier_Boss_high
+   PF2pointerhi = _PF2_Carrier_Boss_high
+   PF1pointer = _Map_Takeoff_Point : PF2pointer = _Map_Takeoff_Point
 
    w_COLUPF = _Color_Carrier
    w_COLUP0 = _EA
@@ -1221,15 +724,14 @@ main
 ;#region "Player 0 explosion animation"
    if !_Bit6_p0_explosion{6} then _skip_player0_explosion
 
-   if framecounter{0} then _skip_player0_collision
+   if framecounter & %1111 then _skip_player0_collision
 
-   player_animation_state = player_animation_state + 1
-   if player_animation_state = 48 then _player0_explosion_animation_end
-   temp1 = player_animation_state / 8
-   w_COLUP0 = _player0_explosion_color_table[temp1]
-   player0pointerlo = _player0_explosion_pointerlo_table[temp1]
-   player0pointerhi = _player0_explosion_pointerhi_table[temp1]
-   player0height = _player0_explosion_height_table[temp1]
+   animation_state = animation_state + 1
+   if animation_state > 5 then _player0_explosion_animation_end
+   w_COLUP0 = _player0_explosion_color_table[animation_state]
+   player0pointerlo = _player0_explosion_pointerlo_table[animation_state]
+   player0pointerhi = _player0_explosion_pointerhi_table[animation_state]
+   player0height = _player0_explosion_height_table[animation_state]
    goto _skip_player0_collision
 
 _player0_explosion_animation_end
@@ -1254,7 +756,8 @@ _skip_player0_explosion
 ;#region "Collision check for missile 0"
    if _Bit2_looping{2} then goto _skip_player0_collision
    if !_Bit6_map_PF_collision{6} then goto _skip_m0_pf_collision
-   if collision(missile0, playfield) then temp3 = 0 : temp1 = 0 : goto _end_collision_check bank3 else goto _skip_missile0_collision
+   if collision(missile0, playfield) then temp3 = 0 : temp1 = 0 : goto _end_collision_check bank3
+   goto _skip_missile0_collision
 _skip_m0_pf_collision
    if collision(player1, missile0) then goto _collision_detection bank3
 
@@ -1352,18 +855,18 @@ _check_player_movement
 
 _player_movement
    if !_Bit2_looping{2} then goto _check_for_new_looping
-   if framecounter{0} then _player_vertical_movement
-   player_animation_state = player_animation_state + 1
+   if framecounter{0} then _player_horizontal_movement
+   animation_state = animation_state + 1
    
-   if player_animation_state = 5 then player0pointerlo = _Player0_Looping_1_low : player0pointerhi = _Player0_Looping_1_high : player0height = _Player0_Looping_1_height
-   if player_animation_state < 10 && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto _player_vertical_movement
-   if player_animation_state = 10 then player0pointerlo = _Player0_Plane_down_low : player0pointerhi = _Player0_Plane_down_high : player0height = _Player0_Plane_down_height : goto _player_vertical_movement
-   if player_animation_state = 25 then player0pointerlo = _Player0_Looping_2_low : player0pointerhi = _Player0_Looping_2_high : player0height = _Player0_Looping_2_height
-   if player_animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _E6 : goto _player_vertical_movement
-   if player_animation_state = 30 then player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : goto _player_vertical_movement
-   if player_animation_state < 40 then player0y = player0y + 1 : goto _player_vertical_movement
-   if player_animation_state = 40 then _Bit2_looping{2} = 0
-   goto _player_vertical_movement
+   if animation_state = 5 then player0pointerlo = _Player0_Looping_1_low : player0pointerhi = _Player0_Looping_1_high : player0height = _Player0_Looping_1_height
+   if animation_state < 10 && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto _player_horizontal_movement
+   if animation_state = 10 then player0pointerlo = _Player0_Plane_down_low : player0pointerhi = _Player0_Plane_down_high : player0height = _Player0_Plane_down_height : goto _player_horizontal_movement
+   if animation_state = 25 then player0pointerlo = _Player0_Looping_2_low : player0pointerhi = _Player0_Looping_2_high : player0height = _Player0_Looping_2_height
+   if animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _E6 : goto _player_horizontal_movement
+   if animation_state = 30 then player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : goto _player_horizontal_movement
+   if animation_state < 40 then player0y = player0y + 1 : goto _player_horizontal_movement
+   if animation_state = 40 then _Bit2_looping{2} = 0
+   goto _player_horizontal_movement
 
 _check_for_new_looping
    if !statusbarlength then goto _skip_new_looping
@@ -1371,10 +874,10 @@ _check_for_new_looping
    if switchselect || joy1fire then goto set_game_state_looping
 _skip_new_looping
 
-_player_horizontal_movement
-   if joy0up && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto _player_vertical_movement
-   if joy0down && player0y > _Player0_Y_Min then player0y = player0y - 1
 _player_vertical_movement
+   if joy0up && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto _player_horizontal_movement
+   if joy0down && player0y > _Player0_Y_Min then player0y = player0y - 1
+_player_horizontal_movement
    if joy0left && player0x > _Player0_X_Min then player0x = player0x - 1 : goto _skip_player_movement
    if !joy0right then _skip_player_movement
    if _Bit7_hide_sidefighter{7} then _move_right_without_sidefighter
@@ -1565,11 +1068,36 @@ __skip_missile_init
    goto _check_next_multisprite
 
 _msp_pf_synced
-   if (framecounter & %00000110 ) then _check_next_multisprite
    if NewSpriteY[temp1] = temp4 then _check_next_multisprite
+   if playertype[temp1] <> typeMspExpl then _skip_explosion_animation
+   if ( framecounter & %1110 ) then _check_next_multisprite
+   temp2 = r_msp_animation_state[temp1]
+   NewCOLUP1[temp1] = _player0_explosion_color_table[temp2]
+   player1pointerhi[temp1] = _player0_explosion_pointerhi_table[temp2]
+   player1pointerlo[temp1] = _player0_explosion_pointerlo_table[temp2]
+   if temp2 > 5 then goto park_multisprite
+   w_msp_animation_state[temp1] = temp2 + 1
+_skip_explosion_animation
+
+   temp2 = map_section & %111
+   on temp2 goto _check_next_multisprite _move_4px _move_1px _move_0_25px _check_next_multisprite _move_1px _move_0_25px _move_0_125px
+
+_move_4px
+   temp2 = 4
+   goto _move_msp_pf_synced
+_move_1px
+   temp2 = 1
+   goto _move_msp_pf_synced
+_move_0_25px
+   temp2 = ( framecounter & %110 ) / 4
+   goto _move_msp_pf_synced
+_move_0_125px
+   temp2 = ( framecounter & %1110 ) / 8
+
+_move_msp_pf_synced
    temp3 = NewSpriteY[temp1]
-   if temp3 < 2 then goto park_multisprite
-   NewSpriteY[temp1] = temp3 - _Plane_Y_Speed 
+   if temp3 < temp2 then goto park_multisprite
+   NewSpriteY[temp1] = temp3 - temp2
 
 _check_next_multisprite
    temp1 = temp1 + 1
@@ -1616,7 +1144,7 @@ set_game_state_attack_start
 set_game_state_looping
    statusbarlength = statusbarlength * 4
    callmacro _Set_SFX_By_Prio _Sfx_Looping
-   player_animation_state = 0 : _Bit2_looping{2} = 1
+   animation_state = 0 : _Bit2_looping{2} = 1
    goto _skip_new_looping
 
 set_game_state_sidefighter_takoff
@@ -1743,6 +1271,7 @@ stage_intro
 
 build_attack_position
    if stage > 15 then temp2 = _attack_position_sequence_1[attack_position] else temp2 = _attack_position_sequence_2[attack_position]
+   if _Bit7_hide_sidefighter{7} && temp2 < 226 then goto set_game_state_landing_0_after_boss bank3
    attack_position = attack_position + 1
    asm
    LDX enemies_shoot_down
@@ -2116,7 +1645,7 @@ _end_collision_check
 _enemy_explosion
    callmacro _Set_SFX_By_Prio _Sfx_Enemy_Down
    enemies_shoot_down = enemies_shoot_down + 1
-   if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_landing_after_boss
+   if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_boss_explosion
    if enemies_shoot_down = 5 && NewCOLUP1[temp1] = _42 then goto set_game_state_powerup
 
    temp6 = NewNUSIZ[temp1] & %00001000
@@ -2203,8 +1732,7 @@ end
    temp1 = 4
 
 multi_collision_check_sf
-   temp3 = playertype[temp1]
-   if temp3{6} then goto power_up_bonus
+   if playertype[temp1] = typePowerUp then goto power_up_bonus
    if !r_NUSIZ0{0} || _Bit6_map_PF_collision{6} then goto _player0_collision
 
    temp2 = NewNUSIZ[temp1] & %00000111
@@ -2268,7 +1796,7 @@ _end_collision_check_sf
 
 _player0_collision
    _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
-   _Ch0_Counter = 0 : player_animation_state = 0 : missile0y = 0
+   _Ch0_Counter = 0 : animation_state = 0 : missile0y = 0
    _Bit6_p0_explosion{6} = 1
    goto _bank_3_code_end
 
@@ -2350,22 +1878,34 @@ switch_on_side_fighters
    if player0x > _Player0_X_Max_2SF then player0x = _Player0_X_Max_2SF
    goto _end_power_up_bonus
 
-set_game_state_landing_after_boss
+set_game_state_boss_explosion
+   w_msp1_animation_state = 0 : w_msp3_animation_state = 0 : w_msp3_animation_state = 0 : w_msp4_animation_state = 0
+   map_section = _Map_Boss_expl : active_multisprites = %00001111
+   player1height = 10 : player2height = 10 : player3height = 10 : player4height = 10
+   player1x = 52 : player2x = 80 : player3x = 80 : player4x = 84
+   _NUSIZ1 = 6
+   NUSIZ2 = 5 : NUSIZ3 = 5 : NUSIZ4 = 0
+
+   player1y = 174 - PF1pointer
+   player2y = 150 - PF1pointer
+   player3y = 162 - PF1pointer
+   player4y = 185 - PF1pointer
+   player5y = _Player5_Parking_Point
+
+   player1pointerhi = _Player0_Explosion_0_high : player2pointerhi = _Player0_Explosion_0_high : player3pointerhi = _Player0_Explosion_0_high : player4pointerhi = _Player0_Explosion_0_high
+   player1pointerlo = _Player0_Explosion_0_low : player2pointerlo = _Player0_Explosion_0_low : player3pointerlo = _Player0_Explosion_0_low : player4pointerlo = _Player0_Explosion_0_low
+
+   player1type = typeMspExpl : player2type = typeMspExpl : player3type = typeMspExpl : player4type = typeMspExpl : player5type = typeMspExpl
+
+   goto __Victory_Music_Setup_01 bank6
+
+set_game_state_landing_0_after_boss
    PF1pointerhi = _PF1_Carrier_Boss_high : PF2pointerhi = _PF2_Carrier_Boss_high
    PF1pointer = _Map_Landingzone_Start : PF2pointer = _Map_Landingzone_Start
-   map_section = _Map_Landing : _Bit3_mute_bg_music{3} = 1 : w_COLUPF = _Color_Carrier
-   framecounter = 0 : missile0y = 0 : _Ch0_Counter = 0
-   _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1 : pfheight = 3
+   map_section = _Map_Landing_w
+   w_COLUPF = _Color_Carrier : pfheight = 3
    stage = stage - 1
-   if stage = 15 then attack_position = 0
-
-   player1y = _Player1_Parking_Point
-   player2y = _Player2_Parking_Point
-   player3y = _Player3_Parking_Point
-   player4y = _Player4_Parking_Point
-   player5y = _Player5_Parking_Point
-   active_multisprites = 0
-   goto __BG_Music_Setup_01 bank6 
+   goto _bank_3_code_end 
 
 ;#endregion
 
@@ -3954,6 +3494,529 @@ end
 end
 
 ;#endregion
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;#region "Playfield Pacific"
+; bB playfield definition can be anywhere.
+; We are setting and changing the PF pointer manually in the game loop.
+; So the code generated here (16 bytes) don't needs to be execute.
+
+   playfield:
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ........XX......  ; 
+   ......XXX.......  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ..............XX  ; 
+   ..............XX  ; 
+   .............XXX  ; 
+   ...............X  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   .........XX.....  ; 
+   ........XXXX....  ; 
+   .........XX.....  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ............XX..  ; 
+   ...........XXXX.  ; 
+   .............X..  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ...............X  ; 
+   ..............XX  ; 
+   ..............XX  ; 
+   ...............X  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   .....XX.........  ; 
+   ....XXXXX.......  ; 
+   ....XXXX........  ; 
+   .....XXX........  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ....XX..........  ; 
+   ..XXXXXXXXXXXX..  ; 
+   XXXXXXXXXXXXXXXX  ; 
+   XXXXXXXXXXXXXX..  ; 
+   XXXXXXXXXXXXXX..  ; 
+   XXXXXXXXXXXXXXX.  ; 
+   XXXXXXXXXXXXXXXX  ; 
+   ..XXXXXXX.XXXXXX  ; 
+   ............XXXX  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 0 Start of landscape
+   ................  ; 255
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 248
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 240
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 232
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 224
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 216
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 208
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 200
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 192
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 184
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 178 Start of boss plane (scrolling up)
+   ...............X  ; 
+   ................  ; 176
+   .........X.X.X.X  ; 
+   ...............X  ; 
+   .........X.X.X.X  ; 
+   .........X.X.X.X  ; 
+   .....XXXXXXXXXXX  ; 
+   .....XXXXXXXXXXX  ; 
+   ......XXXXXXXXX.  ; 
+   ........XXXXXXXX  ; 168
+   ..........XXXXX.  ; 
+   ............XXXX  ; 
+   .............XXX  ; 
+   ..............XX  ; 
+   ..............XX  ; 
+   ...............X  ; 
+   ...............X  ; 
+   ...............X  ; 160
+   ...............X  ; 
+   ...............X  ; 
+   ...............X  ; 
+   ...............X  ; 
+   ...............X  ; 
+   ...............X  ; 
+   ..............XX  ; 
+   .............XX.  ; 152
+   .............XXX  ; 151
+   ...............X  ; 150
+   ................  ; 149
+   ................  ; 148
+   ................  ; 147
+   ................  ; 146
+   ................  ; 145
+   ................  ; 144
+   ................  ; 143
+   ................  ; 142
+   ................  ; 141
+   ................  ; 140
+   ................  ; 139
+   ................  ; 138
+   ................  ; 137
+   ................  ; 136
+   ................  ; 135
+   ................  ; 134
+   ................  ; 133
+   ................  ; 132
+   ................  ; 131
+   ................  ; 130
+   ................  ; 129
+   ................  ; 128
+   ................  ; 127
+   ................  ; 126
+   ................  ; 125
+   ................  ; 124
+   ................  ; 123
+   ................  ; 122
+   ................  ; 121
+   ................  ; 120
+   ................  ; 119
+   ................  ; 118
+   ................  ; 117
+   ................  ; 116
+   ................  ; 115
+   ................  ; 114
+   ................  ; 113
+   ................  ; 112
+   ................  ; 111
+   ................  ; 110
+   ................  ; 109
+   ................  ; 108
+   ................  ; 107
+   ................  ; 106
+   ................  ; 105
+   ................  ; 104
+   ................  ; 103
+   ................  ; 102
+   ................  ; 101
+   ................  ; 100
+   ................  ; 99
+   ................  ; 98
+   ................  ; 97
+   ................  ; 96
+   ................  ; 95
+   ................  ; 94
+   ................  ; 93
+   ................  ; 92
+   ................  ; 91
+   ................  ; 90
+   ................  ; 89
+   ................  ; 88
+   ................  ; 87
+   ................  ; 86
+   ................  ; 85
+   ................  ; 84
+   ................  ; 83
+   ................  ; 82
+   ................  ; 81
+   ................  ; 80
+   ................  ; 79
+   ................  ; 78
+   ................  ; 77
+   ................  ; 76
+   ................  ; 75
+   ................  ; 74
+   ................  ; 73
+   ................  ; 72
+   ................  ; 71
+   ................  ; 70
+   ................  ; 69
+   ................  ; 68
+   ................  ; 67
+   ................  ; 66
+   ................  ; 65
+   ................  ; 64
+   ................  ; 63
+   ................  ; 62 Start of Boss scrolling down
+   ..............XX  ; 61 Carrier end
+   ...........XXXXX  ; 60
+   ..........XXXXXX  ; 59
+   .........XXXXXXX  ; 58
+   .........XXXXXXX  ; 57
+   .........XXXXXXX  ; 56
+   .........XXXXXXX  ; 55
+   ........XXXXXXXX  ; 54
+   ........XXXXXXXX  ; 53
+   ........XXXXXXXX  ; 52
+   ........XXXXXXXX  ; 51
+   ........XXXXXXXX  ; 50
+   .......XXXXXXXXX  ; 49
+   .......XXXXXXXXX  ; 48
+   .......XXXXXXXXX  ; 47
+   .......XXXXXXXXX  ; 46
+   .......XXXXXXXXX  ; 45
+   .......XXXXXXXXX  ; 44
+   .......XXXXXXXXX  ; 43
+   .......XXXXXXXXX  ; 42
+   .......XXXXXXXXX  ; 41
+   .......XXXXXXXXX  ; 40
+   .......XXXXXXXXX  ; 39
+   .......XXXXXXXXX  ; 38
+   .......XXXXXXXXX  ; 37
+   .......XXXXXXXXX  ; 36
+   .......XXXXXXXXX  ; 35
+   .......XXXXXXXXX  ; 34
+   .......XXXXXXXXX  ; 33
+   .......XXXXXXXXX  ; 32
+   .......XXXXXXXXX  ; 31
+   ........XXXXXXXX  ; 30
+   ........XXXXXXXX  ; 29
+   ........XXXXXXXX  ; 28
+   ........XXXXXXXX  ; 27
+   .........XXXXXXX  ; 26
+   .........XXXXXXX  ; 25
+   ..........XXXXXX  ; 24
+   ................  ; 23
+   ................  ; 22
+   ................  ; 21
+   ................  ; 20
+   ................  ; 19
+   ................  ; 18
+   ................  ; 17
+   ................  ; 16
+   ................  ; 15
+   ................  ; 14
+   ................  ; 13
+   ................  ; 12
+   ................  ; 11
+   ................  ; 10
+   ................  ; 9
+   ................  ; 8
+   ................  ; 7
+   ................  ; 6
+   ................  ; 5
+   ................  ; 4
+   ................  ; 3
+   ................  ; 2
+   ................  ; 1
+   ................  ; 0 Start landing zone
+end
+;#endregion
+
 ;#endregion
 
    bank 6
@@ -4139,9 +4202,21 @@ __Skip_Ch_0
    ;
    ; TODO: boss entry should repeat 3x (can check _Ch0_Sound which will automatically go from _Sfx_Boss_Entry_Bass progressively to _Sfx_Boss_Entry_Bass_3) then go to boss BG; boss BG should repeat; maybe can check _Ch1_Read_Pos_Lo, but checking game state might be easier
    if temp4 <> 255 then __Ch1_Get_Note
-   if PF1pointerhi = _PF1_Carrier_Boss_high then goto __Boss_BG_Music_Setup
-
+   if PF1pointerhi <> _PF1_Carrier_Boss_high then goto __BG_Music_Setup_01
+   if map_section <> _Map_Landing_w then goto __Boss_BG_Music_Setup
+ 
+   map_section = _Map_Landing
+   _Bit3_mute_bg_music{3} = 1
+   framecounter = 0 : missile0y = 0 : _Ch0_Counter = 0
+   _Ch0_Sound = _Sfx_Landing : _Ch0_Duration = 1
+   
    goto __BG_Music_Setup_01
+
+
+
+  
+
+   
 
 __Ch1_Get_Note
    ;```````````````````````````````````````````````````````````````
