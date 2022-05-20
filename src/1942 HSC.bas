@@ -374,7 +374,7 @@ end
    const _Sfx_Boss_Entry_Bass_2 = 18
    const _Sfx_Boss_Entry_Bass_3 = 19
 
-   const _Screen_Vertical_Resolution = 24
+   const _Screen_Vertical_Resolution = 42
    const _Pf_Pixel_Height            = 4
    const _Map_Length                 = 256
    const _Map_End                    = _Map_Length - _Screen_Vertical_Resolution - 1
@@ -411,7 +411,7 @@ end
    const _Map_Landing_w  = %00101100
    const _Map_Landing    = %00101110
    const _Map_Takeoff    = %00001110
-   const _Map_Pacific    = %10111111
+   const _Map_Pacific    = %10111010
    const _Map_Boss_up    = %11110001
    const _Map_Boss_down  = %11111001
    const _Map_Boss_expl  = %11111000
@@ -454,10 +454,13 @@ end
    const _PF2_Carrier_Boss_high    = >PF2_data0
    const _PF2_Carrier_Boss_low     = <PF2_data0
 
-   const _PF1_Pacific_high         = _PF1_Carrier_Boss_high + 1
    const _PF1_Pacific_low          = <PF1_data0
-   const _PF2_Pacific_high         = _PF2_Carrier_Boss_high + 1
    const _PF2_Pacific_low          = <PF2_data0
+   const _PF1_Pacific_a_high       = _PF1_Carrier_Boss_high + 1
+   const _PF2_Pacific_a_high       = _PF2_Carrier_Boss_high + 1
+
+   const _PF1_Pacific_b_high       = _PF1_Carrier_Boss_high + 2
+   const _PF2_Pacific_b_high       = _PF2_Carrier_Boss_high + 2
 
    asm
 ; this asm section is to prevent a strange bB compiler error!
@@ -508,6 +511,9 @@ end
 
    const _Player0_Explosion_0_high   = >_Player0_Explosion_0
    const _Player0_Explosion_0_low    = <_Player0_Explosion_0
+
+   const _SD_Respawn_Music01_begin_high = >_SD_Respawn_Music01_begin
+   const _SD_Respawn_Music01_begin_low  = <_SD_Respawn_Music01_begin
 
 ;#endregion
 
@@ -686,7 +692,7 @@ start
 
    PF1pointerhi = _PF1_Carrier_Boss_high
    PF2pointerhi = _PF2_Carrier_Boss_high
-   PF1pointer = _Map_Takeoff_Point : PF2pointer = _Map_Takeoff_Point
+   PF1pointer = _Map_Takeoff_Point_1 : PF2pointer = _Map_Takeoff_Point_1
 
    w_COLUPF = _Color_Carrier
    w_COLUP0 = _EA
@@ -740,8 +746,8 @@ _player0_explosion_animation_end
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
-   if NewCOLUP1 = _42 then w_stage_bonus_counter = r_stage_bonus_counter - 1
-
+   if COLUP5 = _42 then w_stage_bonus_counter = r_stage_bonus_counter - 1
+;     ^^^^^^^^^^^^ this only works as long msp 5 hasn't been reused as missile !
    active_multisprites = 0
    if _Bit6_map_PF_collision{6} then goto _Play_In_Game_Music
    goto __Respawn_Music_Setup bank6
@@ -826,6 +832,9 @@ _skip_boss_moving_down
    if PF1pointer <> _Map_End then _skip_playfield_restart
 _next_playfield_variation
    PF1pointer = 0 : PF2pointer = 0
+   if PF1pointerhi = _PF1_Pacific_b_high then PF1pointerhi = _PF1_Pacific_a_high : PF2pointerhi = _PF2_Pacific_a_high : goto _skip_playfield_restart
+   PF1pointerhi = PF1pointerhi + 1
+   PF2pointerhi = PF2pointerhi + 1
    w_CTRLPF = r_CTRLPF ^ 1
    temp1 = stage & %00000011
    w_COLUPF = _playfield_color_table[temp1]
@@ -1083,16 +1092,16 @@ _skip_explosion_animation
    on temp2 goto _check_next_multisprite _move_4px _move_1px _move_0_25px _check_next_multisprite _move_1px _move_0_25px _move_0_125px
 
 _move_4px
-   temp2 = 4
+   temp2 = 2
    goto _move_msp_pf_synced
 _move_1px
-   temp2 = 1
+   temp2 = ( framecounter & %10 ) / 2
    goto _move_msp_pf_synced
 _move_0_25px
-   temp2 = ( framecounter & %110 ) / 4
+   temp2 = ( framecounter & %1110 ) / 8
    goto _move_msp_pf_synced
 _move_0_125px
-   temp2 = ( framecounter & %1110 ) / 8
+   temp2 = ( framecounter & %11110 ) / 16
 
 _move_msp_pf_synced
    temp3 = NewSpriteY[temp1]
@@ -1137,7 +1146,7 @@ dock_sidefighter
    goto _skip_game_action
 
 set_game_state_attack_start
-   map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_high : PF2pointerhi = _PF2_Pacific_high
+   map_section = _Map_Pacific : _Bit3_mute_bg_music{3} = 0 : PF1pointerhi = _PF1_Pacific_b_high : PF2pointerhi = _PF2_Pacific_b_high : pfheight = 1
    goto _next_playfield_variation
 
 
@@ -1837,13 +1846,21 @@ swap_a_b_hits
    return thisbank
 
 set_game_state_powerup
-   temp2 = r_stage_bonus_counter
-   COLUP5 = _bonus_list[temp2] : NewCOLUP1[temp1] = _bonus_list[temp2] : NewNUSIZ[temp1] = 0
+   COLUP5 = _bonus_list[r_stage_bonus_counter] : NewCOLUP1[temp1] = _bonus_list[r_stage_bonus_counter]
+   NewNUSIZ[temp1] = 0
    playerpointerlo[temp1] = _Power_Up_low
    playerpointerhi[temp1] = _Power_Up_high
-   player1height[temp1] = _Power_Up_height
-   player1fullheight[temp1] = _Power_Up_height
-   playertype[temp1] = typePowerUp
+   player1height[temp1] = _Power_Up_height : player1fullheight[temp1] = _Power_Up_height
+   ; Workaround set all (none typeMissile ) msps to typePowerUp, 
+   ; so if collision detection fails (somehow?) the PowerUp won't be lethal!
+   ; player1type = typePowerUp : player2type = typePowerUp : player3type = typePowerUp : player4type = typePowerUp : player5type = typePowerUp
+   player1type = ( player1type & %10000000 ) | typePowerUp
+   player2type = ( player2type & %10000000 ) | typePowerUp
+   player3type = ( player3type & %10000000 ) | typePowerUp
+   player4type = ( player4type & %10000000 ) | typePowerUp
+   player5type = ( player5type & %10000000 ) | typePowerUp
+
+
    goto _determine_collision_score
 
 power_up_bonus
@@ -1864,12 +1881,8 @@ _end_power_up_bonus_no_sound
 
 switch_on_invincible_mode
    _Ch0_Duration = 1 : _Ch0_Counter = 0 : _Ch0_Sound = _Sfx_Respawn_Bass
-   asm
-   lda	#<_SD_Respawn_Music01_begin
-   sta	_Ch1_Read_Pos_Lo
-   lda	#>_SD_Respawn_Music01_begin
-   sta	_Ch1_Read_Pos_Lo+1
-end
+   _Ch1_Read_Pos_Lo = _SD_Respawn_Music01_begin_low
+   _Ch1_Read_Pos_Hi = _SD_Respawn_Music01_begin_high
    goto _end_power_up_bonus_no_sound
 
 switch_on_side_fighters 
@@ -3112,8 +3125,11 @@ EndEndscreenKernel
   sty TIM64T
 end
 
-   if joy0right && RESETR then goto restart_bB bank8
-   if !joy0right then RESETR = 1
+   if !RESETR then _check_resetr_Endscreen
+   if joy0right || joy0fire then goto restart_bB bank8
+
+_check_resetr_Endscreen
+   if !joy0right && !joy0fire then RESETR = 1
 
    asm
   ; Finish Overscan
@@ -3262,8 +3278,11 @@ EndGameOverKernel
   sty TIM64T
 end
 
-   if joy0right && RESETR then goto restart_bB bank8
-   if !joy0right then RESETR = 1
+   if !RESETR then _check_resetr_GameOver
+   if joy0right || joy0fire then goto restart_bB bank8
+
+_check_resetr_GameOver
+   if !joy0right && !joy0fire then RESETR = 1
 
    goto _play_game_over_music bank6
 _return_from_game_over_music
@@ -3518,8 +3537,6 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
-   ........XX......  ; 
-   ......XXX.......  ; 
    ................  ; 
    ................  ; 
    ................  ; 
@@ -3550,9 +3567,19 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ...............X  ; 
    ..............XX  ; 
    ..............XX  ; 
    .............XXX  ; 
+   .............XXX  ; 
+   .............XXX  ; 
+   ..............XX  ; 
    ...............X  ; 
    ................  ; 
    ................  ; 
@@ -3573,9 +3600,38 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   .........XX.....  ; 
    .........XX.....  ; 
    ........XXXX....  ; 
+   ........XXXX....  ; 
    .........XX.....  ; 
+   .........XX.....  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
    ................  ; 
    ................  ; 
    ................  ; 
@@ -3584,7 +3640,10 @@ end
    ................  ; 
    ................  ; 
    ............XX..  ; 
+   ............XX..  ; 
    ...........XXXX.  ; 
+   ...........XXXX.  ; 
+   .............X..  ; 
    .............X..  ; 
    ................  ; 
    ................  ; 
@@ -3627,9 +3686,54 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ...............X  ; 
    ...............X  ; 
    ..............XX  ; 
    ..............XX  ; 
+   ..............XX  ; 
+   ..............XX  ; 
+   ...............X  ; 
    ...............X  ; 
    ................  ; 
    ................  ; 
@@ -3643,9 +3747,84 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 0 Start of second landscape
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 214 End landscape 1  
+   .....XX.........  ; 
    .....XX.........  ; 
    ....XXXXX.......  ; 
+   ....XXXXX.......  ; 
    ....XXXX........  ; 
+   ....XXXX........  ; 
+   .....XXX........  ; 
    .....XXX........  ; 
    ................  ; 
    ................  ; 
@@ -3692,15 +3871,52 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
    ....XX..........  ; 
+   ...XXXX.........  ; 
    ..XXXXXXXXXXXX..  ; 
+   .XXXXXXXXXXXXXX.  ; 
    XXXXXXXXXXXXXXXX  ; 
+   XXXXXXXXXXXXXXXX  ; 
+   XXXXXXXXXXXXXXX.  ; 
+   XXXXXXXXXXXXXX..  ; 
    XXXXXXXXXXXXXX..  ; 
    XXXXXXXXXXXXXX..  ; 
    XXXXXXXXXXXXXXX.  ; 
+   XXXXXXXXXXXXXXX.  ; 
    XXXXXXXXXXXXXXXX  ; 
-   ..XXXXXXX.XXXXXX  ; 
-   ............XXXX  ; 
+   .XXXXXXXXXXXXXXX  ; 
+   ..XXXXXXXXXXXXXX  ; 
+   ....XXXXX.XXXXXX  ; 
+   ...........XXXXX  ; 
+   ..............XX  ; 
    ................  ; 
    ................  ; 
    ................  ; 
@@ -3757,7 +3973,66 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
-   ................  ; 0 Start of landscape
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 
+   ................  ; 0 Start of first landscape
    ................  ; 255
    ................  ; 
    ................  ; 
