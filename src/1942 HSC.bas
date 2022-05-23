@@ -832,12 +832,12 @@ _skip_boss_moving_down
    if PF1pointer <> _Map_End then _skip_playfield_restart
 _next_playfield_variation
    PF1pointer = 0 : PF2pointer = 0
+   temp1 = stage & %00000011
+   w_COLUPF = _playfield_color_table[temp1]
    if PF1pointerhi = _PF1_Pacific_b_high then PF1pointerhi = _PF1_Pacific_a_high : PF2pointerhi = _PF2_Pacific_a_high : goto _skip_playfield_restart
    PF1pointerhi = PF1pointerhi + 1
    PF2pointerhi = PF2pointerhi + 1
    w_CTRLPF = r_CTRLPF ^ 1
-   temp1 = stage & %00000011
-   w_COLUPF = _playfield_color_table[temp1]
 
 _skip_playfield_restart
 
