@@ -964,6 +964,11 @@ _msp_moves_down
    temp2 = stage * 4
    if temp3 <> _Plane_Y_Turnpoint || temp5 > temp2 then _skip_msp_turns
 
+   playertype[temp1] = playertype[temp1] + 9
+   temp5 = playertype[temp1] / 8 : playerpointerlo[temp1] = _player_pointer_lo_bank1[temp5] + 1 - playerfullheight[temp1]
+   playerpointerhi[temp1] = _player_pointer_hi_bank1[temp5]
+
+_fire_new_missile_if_msp_free
    if active_multisprites = 31 then goto _skip_new_missile
 
    temp2 = 0
@@ -1007,9 +1012,6 @@ __set_ea
 
 _skip_new_missile
 
-   playertype[temp1] = playertype[temp1] + 9
-   temp5 = playertype[temp1] / 8 : playerpointerlo[temp1] = _player_pointer_lo_bank1[temp5] + 1 - playerfullheight[temp1]
-   playerpointerhi[temp1] = _player_pointer_hi_bank1[temp5]
    goto _check_next_multisprite
 _skip_msp_turns
    NewSpriteY[temp1] = temp3 - _Plane_Y_Speed
@@ -1023,11 +1025,13 @@ _skip_msp_turns
    goto _check_next_multisprite
 
 _msp_moves_up
-   if NewSpriteY[temp1] = temp4 then _check_next_multisprite
-   if NewSpriteY[temp1] > 100 && NewSpriteY[temp1] < 140 then goto park_multisprite
-   NewSpriteY[temp1] = NewSpriteY[temp1] + _Plane_Y_Speed 
+   temp3 = NewSpriteY[temp1]
+   if temp3 = temp4 then _check_next_multisprite
+   if temp3 > 100 && temp3 < 140 then goto park_multisprite
+   NewSpriteY[temp1] = temp3 + _Plane_Y_Speed 
    if NewSpriteY[temp1] > 1 && NewSpriteY[temp1] <= playerfullheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] - _Plane_Y_Speed : spriteheight[temp1] = NewSpriteY[temp1]
 ;   if NewSpriteY[temp1] > 84 && spriteheight[temp1] then playerpointerlo[temp1] = playerpointerlo[temp1] + spriteheight[temp1] - NewSpriteY[temp1] : spriteheight[temp1] = NewSpriteY[temp1]
+   if NewSpriteY[temp1] > _Plane_Y_Turnpoint && stage < 25 then goto _fire_new_missile_if_msp_free
 
    goto _check_next_multisprite
 
@@ -1800,8 +1804,14 @@ _end_collision_check_sf
    ; temp3 = NUSIZ copy thats been hit (0 - 2)
    ; no need for hitcounter, an enemy hit by a side fighter will always be deleted.
 
+   if !r_Bit7_Left_Plane_is_SF{7} then _only_right_side_fighter
+
    if player0x + 24 < temp5 then temp5 = %11110000 : goto _remove_a_side_fighter
-   if player0x + 16 > temp4 && r_Bit7_Left_Plane_is_SF{7} then player0x = player0x + 16 : temp5 = %01110000 : goto _remove_a_side_fighter
+   if player0x + 16 > temp4 then player0x = player0x + 16 : temp5 = %01110000 : goto _remove_a_side_fighter
+   goto _player0_collision
+_only_right_side_fighter
+   if player0x + 8 < temp5 then temp5 = %01110000 : goto _remove_a_side_fighter
+
 
 _player0_collision
    _Ch0_Sound = _Sfx_Player_Explosion : _Ch0_Duration = 1
