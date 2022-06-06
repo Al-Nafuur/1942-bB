@@ -20,6 +20,25 @@
 ;--        time to draw the player plane.
 
 
+;------- Some variables:
+
+;---- allow multicolor player0 --> loaded right before the kernel executes
+player0colorP = $F7
+player0colorPlo = $F7
+player0colorPhi = $F8
+
+
+;---- superchip RAM area that appears to not be used: $1001..$1005
+
+;--- cache sorted list of new sprite Y values so that
+;---   we don't waste time in the kernel doing the sort lookup
+wCacheNewSpriteY = $1001
+rCacheNewSpriteY = wCacheNewSpriteY + $80
+
+
+;----------------------------------------------------------------
+
+
 FineAdjustTableBegin
     .byte %01100000                ;left 6
     .byte %01010000
@@ -74,6 +93,10 @@ SetCopyHeight
     sta PF1pointer
     rts
 
+;--------------------------------------------------------------------------------
+;--- player color table needs to be here to avoid causing page crossing issues
+plyColorTable:
+    .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28,$24,$24
 
 ;=====================================================================
 ;---------------------------------------------------------------------
@@ -125,6 +148,7 @@ WaitForOverscanEnd
     sta temp7
 
 
+    ;------------------------ setup player0 positioning
     dec player0y
     lda player0pointer ; player0: must be run every frame!
     sec
@@ -132,6 +156,21 @@ WaitForOverscanEnd
     clc
     adc player0height
     sta player0pointer
+
+    ;----- setup color pointer
+    lda #<plyColorTable
+    sec
+    sbc player0y
+    clc
+    adc player0height
+    sta player0colorPlo
+
+    lda #>plyColorTable
+    clc
+    adc #0
+    sta player0colorPhi
+
+
 
     lda player0y
     sta P0Top
@@ -223,8 +262,7 @@ PrePositionAllObjects
     rts
 
 
-;-------------------------------------------------------------------------
-
+;------------------------------------------------------------------------------------------------
 
 KernelSetupSubroutine
 
@@ -253,7 +291,19 @@ AdjustYValuesUpLoop
     stx SpriteIndex
 
 
+    ;------------------------------------------------------------------------
+    ;-- preprocess sprite Y coords into proper order and store in a cache
+    ;--  to elimatinate need to do that in the main kernel
 
+CacheYcoordsLoop
+    lda SpriteGfxIndex-1,x
+    tay
+    lda NewSpriteY,y
+    sta wCacheNewSpriteY,x
+    dex
+    bpl CacheYcoordsLoop
+
+    ;------------------- initialize other kernel variables
     lda #255
     sta P1Bottom
 
@@ -407,18 +457,20 @@ cyclebalance
     cpy RepoLine                ;3  [15]
     beq RepoKernel              ;2  [17]        -- If we hit a reposition line, jump to that kernel
 
-    cpy.w temp7                 ;4  [21]
-    bpl SkipSwitchColorP0K1     ;2* [23]
-    lda Player0SwitchColor      ;3  [26]      --- restore player color (was different color for missiles)
-    sta COLUP0                  ;3  [29]
-
+    cpy temp7                   ;3  [20]
+    bpl SkipSwitchColorP0K1     ;2* [22]        --- not drawing player yet, so preserve the missile color
+    
+    lda (player0colorP),y       ;5  [27]    -- load in player color
+    sta COLUP0                  ;3  [30]
 
 
 newrepo         ; since we have time here, prep for next repoline and store in a temp var
-    ldx SpriteIndex             ;3  [32]
-    lda SpriteGfxIndex-1,x      ;4  [36]
-    tax                         ;2  [38]
-    lda NewSpriteY,x            ;4  [42]
+    ldx.w SpriteIndex           ;4  [34]
+    bmi SkipNewSpriteY          ;2  [36]
+
+    nop                         ;2  [38]
+    
+    lda rCacheNewSpriteY,X      ;4  [42]
     sta temp6                   ;3  [45]
 
 BackFromRepoKernel              ;--- enter at 45
@@ -434,9 +486,14 @@ donewkernel
 pagewraphandler
     jmp cyclebalance
 
-SkipSwitchColorP0K1
-    sleep 2
-    jmp newrepo                    ;+3
+SkipSwitchColorP0K1         ;---- enter at 23
+    sleep 4                     ;3  [27]
+    jmp newrepo                 ;3  [30]
+
+SkipNewSpriteY:             ;---- enter at 37
+    lda #0                      ;2  [39]
+    sta temp6                   ;3  [42]
+    jmp BackFromRepoKernel      ;3  [45]
 
 
 ;-------------------------------------------------------------------------
@@ -542,20 +599,19 @@ DivideBy15LoopK                 ;--- first entered at 6        (carry set above)
 
     ;----- determine which cached playfield data to use  (15 cycles + potential page crossing branch)
     ;--- *13* cycles to determine whether if on last scanline of playfield row
-    ;---  2 more cycles currently need to be wasted
 
-    tya
-    and pfheight
-    cmp #1      ;--- sets carry if masked pfheight >= 1
-    lda #0
-    adc #0
-    tax
-    sleep 2     ;-- need to waste some spare cycles 
 
+    tya                         ;2  [27]
+    and pfheight                ;3  [30]
+    cmp #1                      ;2  [32] --- sets carry if masked pfheight >= 1
+    lda #0                      ;2  [34]
+    adc #0                      ;2  [36]
+    tax                         ;2  [38]
+    nop                         ;2  [40]
 
     ;----------------------- Early PERP for DRAWING Line 1 -> P0, P1, PF
 
-goback                      ;----- enter at 40
+
     dey                         ;2  [42]
     cpy P0Top                   ;3  [45]
     beq SwitchDrawP0KV          ;2  [47]
@@ -710,6 +766,7 @@ BottomOfKernelLoop
     ;sleep 2
     jmp beginscore
 
+ align 256
 
 loop2
     lda  (scorepointers),y     ;+5  68  204
