@@ -383,7 +383,7 @@ asdhj
 
     ;---- Actual display kernel starts here
 
-;--- KernelLoopA is hit every '4' scanlines
+;--- KernelLoopA is hit 3 out of 4 scanlines
 
 KernelLoopA                 ;----- enter at 53
     ;SLEEP 7                     ;7  [60]
@@ -393,7 +393,7 @@ KernelLoopA                 ;----- enter at 53
     and     #$97
     sta     COLUBK
 
-;--- KernelLoopB is hit 3 out of 4 scanlines
+;--- KernelLoopB is only hit 1 out of 4 scanlines
 ;-
 ;--         -- DRAWING line 1 -> player0, player1, playfield
 
