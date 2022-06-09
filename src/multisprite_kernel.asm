@@ -415,7 +415,7 @@ BackFromSwitchDrawP0K1      ;-- enter at cycle 75
     sta.w GRP1                  ;4  [13]
 
 BackFromSkipDrawP1          ;-- enter at cycle 13
-       
+
     sty temp1                   ;3  [16]    -- save sprite Y counter
     
     ldy pfpixelheight           ;3  [19]    -- restore playfield row counter
@@ -440,31 +440,39 @@ cyclebalance
     ;            --                         calc next repo, handle scanline / row counters
 
     ldy temp1                   ;3  [64]
-    ldx #ENABL                  ;2  [66]
+
+    ;--- need to shut off ball temporarily until kernel is re-jostled
+    ;ldx #ENABL                  ;2  [66]
+    ;txs                         ;2  [68]
+    ;cpy bally                   ;3  [71]
+    ;php                         ;3  [74]        VDEL ball
+
+    ldx #ENAM1                  ;2  [66]
     txs                         ;2  [68]
-    cpy bally                   ;3  [71]
-    php                         ;3  [74]        VDEL ball
 
+    cpy missile1y               ;3  [71]
+    php                         ;3  [74]
 
-    cpy missile1y               ;3  [1]
+    cpy missile0y               ;3  [1]
     php                         ;3  [4]
 
-    cpy missile0y               ;3  [7]
-    php                         ;3  [10]
+    dey                         ;2  [6]
+
+    cpy RepoLine                ;3  [9]
+    beq RepoKernel              ;2  [11]        -- If we hit a reposition line, jump to that kernel
+
+    ;------------ multi-color
+    cpy temp7                   ;3  [14]
+    bpl SkipSwitchColorP0K1     ;2* [16]        --- not drawing player yet, so preserve the missile color
     
-    dey                         ;2  [12]
+    lda (player0colorP),y       ;5  [21]    -- load in player color
+    sta COLUP0                  ;3  [24]
+DoneWithColorP0K1:
 
-    cpy RepoLine                ;3  [15]
-    beq RepoKernel              ;2  [17]        -- If we hit a reposition line, jump to that kernel
-
-    cpy temp7                   ;3  [20]
-    bpl SkipSwitchColorP0K1     ;2* [22]        --- not drawing player yet, so preserve the missile color
-    
-    lda (player0colorP),y       ;5  [27]    -- load in player color
-    sta COLUP0                  ;3  [30]
+    sleep 6                     ;6  [30]
 
 
-newrepo         ; since we have time here, prep for next repoline and store in a temp var
+    ;--- since we have time here, prep for next repoline and store in a temp var
     ldx.w SpriteIndex           ;4  [34]
     bmi SkipNewSpriteY          ;2  [36]
 
@@ -488,7 +496,7 @@ pagewraphandler
 
 SkipSwitchColorP0K1         ;---- enter at 23
     sleep 4                     ;3  [27]
-    jmp newrepo                 ;3  [30]
+    jmp DoneWithColorP0K1       ;3  [30]
 
 SkipNewSpriteY:             ;---- enter at 37
     lda #0                      ;2  [39]
@@ -514,10 +522,9 @@ WaitDrawP0KR                    ;--- entered at cycle 41
     SLEEP 4                         ;4  [45]
     jmp BackFromSwitchDrawP0KR      ;3  [48]
 
-noUpdateXKR                     ;--- entered at cycle 27
-    ldx #1                          ;2  [29]
-    cpy.w P0Top                     ;4  [33]
-    JMP retXKR                      ;3  [36]
+noUpdateXKR                     ;--- entered at cycle 20
+    SLEEP 3                         ;3  [23]
+    JMP retXKR                      ;3  [26]
 
 
     ;--------------------------------------------------------------------------
@@ -536,34 +543,38 @@ noUpdateXKR                     ;--- entered at cycle 27
     ;  This repositioning kernel is entered after the graphics updates for
     ;   DRAWING line 2 have occured
     ;--------------------------------------------------------------------------
+RepoKernel                  ;--- enter at 12
 
-RepoKernel                  ;--- enter at 19      -- crosses page boundary
-    tya                         ;2  [21]
-    and pfheight                ;3  [24]
-    bne noUpdateXKR             ;2  [26]
-    tax                         ;2  [28]    -- this will always be zero here
-    dec pfpixelheight           ;5  [33]
-    cpy P0Top                   ;3  [36]
+    ;---- check if we need to move to next PF row...
+    ;--    ... since we left the Main kernel before that check was done
+    tya                         ;2  [14]
+    and pfheight                ;3  [17]
+    bne noUpdateXKR             ;2  [19]
+    nop                         ;2  [21]  -- spare cycles
+    dec pfpixelheight           ;5  [26]
+retXKR                      ;--- enter at 26
 
-retXKR                      ;--- enter at 36
-    beq SwitchDrawP0KR          ;2  [38]
-    bpl WaitDrawP0KR            ;2  [40]
-    lda (player0pointer),Y      ;5  [45]
-    sta GRP0                    ;3  [48]    -- VDEL used to hold update until GRP1 updated on DRAWING line 1
+    cpy P0Top                   ;3  [29]
+    beq SwitchDrawP0KR          ;2  [31]
+    bpl WaitDrawP0KR            ;2  [33]
+    lda (player0pointer),Y      ;5  [38]
+    sta GRP0                    ;3  [41]    -- VDEL used to hold update until GRP1 updated on DRAWING line 1
+BackFromSwitchDrawP0KR      ;--- enter at 41
 
-BackFromSwitchDrawP0KR      ;--- enter at 48
-    sec                         ;2  [50]
+    ldy pfpixelheight           ;3  [44]    -- restore playfield row counter
+    lda (PF1pointer),y          ;5  [49]    -- load in playfield data
+    tax                         ;2  [51]
+    lda (PF2pointer),y          ;5  [56]
 
-    lda PF2temp1,X              ;4  [54]    -- X is always 0 or 1.
-    ldy PF1temp1,X              ;4  [58]
+    sec                         ;2  [58]
 
     ;------------------------- DRAWING Line 1 -> use GRP1 to trigger GRP0.... then reposition!
 
-    ldx SpriteIndex             ;3  [61]
+    ldy SpriteIndex             ;3  [61]
     sta PF2                     ;3  [64]
 
-    lda SpriteGfxIndex,x        ;4  [68]
-    sty PF1                     ;3  [71]        too early?
+    lda SpriteGfxIndex,y        ;4  [68]
+    stx PF1                     ;3  [71]        too early?
 
     tax                         ;2  [73]
     lda #0                      ;2  [75]
@@ -585,79 +596,87 @@ DivideBy15LoopK                 ;--- first entered at 6        (carry set above)
     sta WSYNC                   ;+3         0        begin line 2
     ;sta HMOVE                   ;+3         3
 
-    ldx #ENABL                  ;2  [2]
+    ;ldx #ENABL                  ;2  [2]
+
+    ldx #ENAM1                  ;2  [2]
     txs                         ;2  [4]
     ldy RepoLine                ;3  [7]      restore y
-    cpy bally                   ;3  [10]
-    php                         ;3  [13]        VDEL ball
 
-    cpy missile1y               ;3  [16]
+;    cpy bally                   ;3  [10]
+;    php                         ;3  [13]        VDEL ball
+
+    cpy missile1y               ;3  [10]
+    php                         ;3  [13]
+
+    cpy missile0y               ;3  [16]
     php                         ;3  [19]
-
-    cpy missile0y               ;3  [22]
-    php                         ;3  [25]
 
     ;----- determine which cached playfield data to use  (15 cycles + potential page crossing branch)
     ;--- *13* cycles to determine whether if on last scanline of playfield row
 
-
-    tya                         ;2  [27]
-    and pfheight                ;3  [30]
-    cmp #1                      ;2  [32] --- sets carry if masked pfheight >= 1
-    lda #0                      ;2  [34]
-    adc #0                      ;2  [36]
-    tax                         ;2  [38]
-    nop                         ;2  [40]
-
     ;----------------------- Early PERP for DRAWING Line 1 -> P0, P1, PF
+    dey                         ;2  [21]
+    cpy P0Top                   ;3  [24]
+    beq SwitchDrawP0KV          ;2  [26]
+    bpl WaitDrawP0KV            ;2  [28]
 
-
-    dey                         ;2  [42]
-    cpy P0Top                   ;3  [45]
-    beq SwitchDrawP0KV          ;2  [47]
-    bpl WaitDrawP0KV            ;2  [49]
-
-    lda (player0pointer),Y      ;5  [54]
-    sta GRP0                    ;3  [57]        VDEL
-
+    lda (player0pointer),Y      ;5  [33]
+    sta GRP0                    ;3  [36]        VDEL
 BackFromSwitchDrawP0KV      ;---- enter at 57
-    lda PF2temp1,X              ;4  [61]
-    sta PF2                     ;3  [64]
-    lda PF1temp1,X              ;4  [68]
-    sta PF1                     ;3  [71]
-    sta HMOVE                   ;3  *74*  --- EARLY HMOVE
+    sty temp1                   ;3  [39]
 
-    lda #0                      ;2  [0]
-    sta GRP1                    ;3  [3]  --        to display GRP0
+    ;sleep 6     ;-- time gained from BL object being skipped
 
-    ldx #ENABL                  ;2  [5]
-    txs                         ;2  [7]
+    ;--- need to check if it's time to move to the next PF row
+    tya                         ;2  [41]
+    ldy pfpixelheight           ;3  [44]    -- restore playfield row counter
+    and pfheight                ;3  [47]
+    bne noUpdateXKR1            ;2  [49]
+    dey                         ;2  [51]
+    nop                         ;2  [53]  -- spare cycles
+retXKR1                      ;--- enter at 53
+    
+    lda (PF1pointer),y          ;5  [58]    -- load in playfield data
+    tax                         ;2  [60]
+    lda (PF2pointer),y          ;5  [65]
+    sta PF2                     ;3  [68]
+    stx PF1                     ;3  [71]
+    sta HMOVE                   ;3  *74*  --- EARLY HMOVE    
+
+    lda #0                      ;2  [3]
+    sta GRP1                    ;3  [6]  --        to display GRP0
+
+    ldx #ENABL                  ;2  [8]
+    txs                         ;2  [10]
+
+    sleep 3
 
     ;---------------------------------------------------------------------------
     ;--   now, set all new variables and return to main kernel loop
 
-    ldx SpriteIndex             ;3  [10] --  restore index into new sprite vars
-    lda SpriteGfxIndex,X        ;4  [14]
-    tax                         ;2  [16]
+    ldx SpriteIndex             ;3  [13] --  restore index into new sprite vars
+    lda SpriteGfxIndex,X        ;4  [17]
+    tax                         ;2  [19]
 
-    lda NewNUSIZ,X              ;4  [20]    -- load in size and color for new sprite
-    sta NUSIZ1                  ;3  [23]
-    sta REFP1                   ;3  [26]
-    lda NewCOLUP1,X             ;4  [30]
-    sta COLUP1                  ;3  [33]
+    lda NewNUSIZ,X              ;4  [23]    -- load in size and color for new sprite
+    sta NUSIZ1                  ;3  [26]
+    sta REFP1                   ;3  [29]
+    lda NewCOLUP1,X             ;4  [33]
+    sta COLUP1                  ;3  [36]
 
-    lda NewSpriteY,X            ;4  [37]    -- load in bottom of new sprite
-    sec                         ;2  [39]
-    sbc spriteheight,X          ;4  [43]
-    sta P1Bottom                ;3  [46]
+    lda NewSpriteY,X            ;4  [40]    -- load in bottom of new sprite
+    sec                         ;2  [42]
+    sbc spriteheight,X          ;4  [46]
+    sta P1Bottom                ;3  [49]
 
-    sleep 6                     ;6  [52]    --- wasting time... hmmmm....
+    lda player1pointerlo,X      ;4  [53]
+    sbc P1Bottom                ;3  [56]    carry should still be set
+    sta P1display               ;3  [59]
+    lda player1pointerhi,X      ;4  [63]
+    sta P1display+1             ;3  [66]
 
-    lda player1pointerlo,X      ;4  [56]
-    sbc P1Bottom                ;3  [59]    carry should still be set
-    sta P1display               ;3  [62]
-    lda player1pointerhi,X      ;4  [66]
-    sta P1display+1             ;3  [69]
+    ;--- restore kernel scanline counter
+    ldy temp1                   ;3  [69]
 
     ;---------------------------- DRAWING Line 2 -> M0, M1, BL
 
@@ -670,12 +689,12 @@ BackFromSwitchDrawP0KV      ;---- enter at 57
     cpy missile0y               ;3  [8]
     php                         ;3  [11]
 
+;-- move to next sprite 
     dec SpriteIndex             ;5  [16]
 
-
-; 10 cycles below...
+;-- check if all sprites drawn.
     bpl SetNextLine             ;2  [18]
-    lda #255                    ;2  [20]
+    lda #255                    ;2  [20] -- mark repositioning as done
     jmp SetLastLine             ;3  [23]
 
 SetNextLine
@@ -684,18 +703,18 @@ SetNextLine
 SetLastLine             ;---- enter at cycle 23
     sta RepoLine                ;3  [26]
 
-    tya                         ;2  [28]
-    and pfheight                ;3  [31]
-    bne nodec                   ;2  [33]
-    dec pfpixelheight           ;5  [38]
-    dey                         ;2  [40]
+    sleep 2                     ;2  [28]
 
-    sleep 2                     ;2  [42]
+    tya                         ;2  [30]
+    dey                         ;2  [32]
+
+    and pfheight                ;3  [35]
+    bne nodec                   ;2  [37]
+    dec pfpixelheight           ;5  [42]
     jmp BackFromRepoKernel      ;3  [45]        -->>>  RETURN to main kernel
 
-nodec                       ;-- enter at cycle 34
-    sleep 6                     ;6  [40]
-    dey                         ;2  [42]
+nodec                       ;-- enter at cycle 38
+    sleep 4                     ;4  [42]
     jmp BackFromRepoKernel      ;3  [45]        -->>>  RETURN to main kernel
 
 
@@ -707,6 +726,11 @@ SwitchDrawP0KV              ;-- enter at cycle 48
 WaitDrawP0KV                ;----- enter at cycle 50
     SLEEP 4                     ;4  [54]
     jmp BackFromSwitchDrawP0KV  ;3  [57]
+
+;--------------
+
+noUpdateXKR1                ;----- enter at cycle 50
+    JMP retXKR1                     ;3  [53]
 
 
 END_OF_KERNEL_ROUTINES:
