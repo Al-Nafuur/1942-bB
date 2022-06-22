@@ -444,9 +444,9 @@ BackFromSkipDrawP1          ;-- enter at cycle 13
     lda temp1                   ;3  [38]
     sbc P1Bottom                ;3  [41]
     and #$7                     ;2  [43]
-    tay                         ;2  [45]
-    lda enenyColorTable,y       ;4  [49]
     ora curCOLP1                ;3  [52]
+    tay                         ;2  [45]
+    lda colorTables,y           ;4  [49]
     
     ;//------ DRAWING line 2 -> ball + 2 missiles,  call repo?, switch player color,
     ;      --                         calc next repo, handle scanline / row counters
@@ -1195,3 +1195,21 @@ scorebcd1
     .byte $14, $14, $15, $16, $16, $17, $17, $18, $19, $19, $20
     .byte $21, $21, $22, $23, $23, $24, $24, $25, $26, $26
   endif
+
+;==================================================
+    align 128
+    echo "Color tables at ", *
+
+colorTables:
+
+ct_shipCarrierTower:    .byte $02,$02,$02,$02, $02,$02,$02,$02
+ct_shipCarrierDetails:  .byte $08,$0C,$0C,$0A, $0C,$08,$0A,$08
+
+;--- should cover all planes
+ct_smallEnemyPlane:     .byte $D6,$DA,$D8,$D6, $DA,$D6,$DC,$DA
+ct_smallEnemyPlaneUp:   .byte $D8,$DC,$D6,$DA, $D6,$D8,$DA,$D6
+
+ct_redPlanes:           .byte $48,$4C,$42,$4A, $46,$48,$4A,$46
+ct_redPlanesUp:         .byte $48,$4C,$42,$4A, $46,$48,$4A,$46
+
+ct_AyakoMissle:         .byte $46,$44,$42,$46
