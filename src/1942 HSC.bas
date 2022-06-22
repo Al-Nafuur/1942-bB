@@ -515,6 +515,19 @@ end
    const _SD_Respawn_Music01_begin_high = >_SD_Respawn_Music01_begin
    const _SD_Respawn_Music01_begin_low  = <_SD_Respawn_Music01_begin
 
+   ;-----------------------------
+   ;-- color table indexes
+
+   const _Carrier_Tower_ColorIdx = $00 ;_02
+   const _Carrier_88_ColorIdx    = $08 ;_0A
+   
+   const _Green_Plane_CI         = $10
+   const _Dk_Grn_Plane_CI        = $10
+   const _Red_Plane_CI           = $20
+
+   const _Ayako_Missile_ColorIdx = $30 ;_44
+   
+
 ;#endregion
 
 ;#region "Zeropage Variables"
@@ -735,8 +748,8 @@ main
    animation_state = animation_state + 1
    if animation_state > 5 then _player0_explosion_animation_end
    w_COLUP0 = _player0_explosion_color_table[animation_state]
-   player0pointerlo = _player0_explosion_pointerlo_table[animation_state]
-   player0pointerhi = _player0_explosion_pointerhi_table[animation_state]
+   player0pointerlo = _player0_explosion_ptrl_table[animation_state]
+   player0pointerhi = _player0_explosion_ptrh_table[animation_state]
    player0height = _player0_explosion_height_table[animation_state]
    goto _skip_player0_collision
 
@@ -964,6 +977,7 @@ _msp_moves_down
    temp2 = stage * 4
    if temp3 <> _Plane_Y_Turnpoint || temp5 > temp2 then _skip_msp_turns
 
+   NewCOLUP1[temp1] = NewCOLUP1 | %1000
    playertype[temp1] = playertype[temp1] + 9
    temp5 = playertype[temp1] / 8 : playerpointerlo[temp1] = _player_pointer_lo_bank1[temp5] + 1 - playerfullheight[temp1]
    playerpointerhi[temp1] = _player_pointer_hi_bank1[temp5]
@@ -984,7 +998,7 @@ _free_multisprite_found
 
    NewSpriteY[temp2] = _Plane_Y_Shootpoint : NewSpriteX[temp2] = NewSpriteX[temp1]
    NewNUSIZ[temp2] = 0
-   NewCOLUP1[temp2] = _44
+   NewCOLUP1[temp2] = _Ayako_Missile_ColorIdx
    playertype[temp2] = typeMissile
    playerpointerlo[temp2]  = _Ayako_Missile_low
    playerpointerhi[temp2]  = _Ayako_Missile_high
@@ -1086,8 +1100,8 @@ _msp_pf_synced
    if ( framecounter & %1110 ) then _check_next_multisprite
    temp2 = r_msp_animation_state[temp1]
    NewCOLUP1[temp1] = _player0_explosion_color_table[temp2]
-   player1pointerhi[temp1] = _player0_explosion_pointerhi_table[temp2]
-   player1pointerlo[temp1] = _player0_explosion_pointerlo_table[temp2]
+   player1pointerhi[temp1] = _player0_explosion_ptrh_table[temp2]
+   player1pointerlo[temp1] = _player0_explosion_ptrl_table[temp2]
    if temp2 > 5 then goto park_multisprite
    w_msp_animation_state[temp1] = temp2 + 1
 _skip_explosion_animation
@@ -1216,11 +1230,11 @@ end
    _Player5_Parking_Point
 end
 
-   data _player0_explosion_pointerhi_table
+   data _player0_explosion_ptrh_table
    >_Player0_Explosion_0, >_Player0_Explosion_1, >_Player0_Explosion_2, >_Player0_Explosion_3, >_Player0_Explosion_4
 end
 
-   data _player0_explosion_pointerlo_table
+   data _player0_explosion_ptrl_table
    <_Player0_Explosion_0, <_Player0_Explosion_1, <_Player0_Explosion_2, <_Player0_Explosion_3, <_Player0_Explosion_4
 end
 
@@ -1271,7 +1285,8 @@ stage_intro
    player1y = 50 : player2y = 50
    _NUSIZ1 = 0 : NUSIZ2 = 0 
    player1height = 9 : player2height = 9
-   COLUP2 = _0E : _COLUP1 = _0E
+   ;COLUP2 = _0E : _COLUP1 = _0E
+   COLUP2 = 0 : _COLUP1 = 0
    player1pointerhi = _Score_Table_High : player2pointerhi = _Score_Table_High
    temp4 = hex_to_bcd[stage]
    temp5 = (temp4 & $0f ) * 8
@@ -1387,7 +1402,9 @@ set_game_state_boss
    goto __Boss_Entry_Music_Setup bank6
 
 carrier_superstructures_init
-   _COLUP1 = _0A : COLUP2 = _0A : COLUP3 = _02 : COLUP4 = _0A : map_section = _Map_Takeoff
+   COLUP2 = _0A : COLUP4 = _0A : map_section = _Map_Takeoff
+   _COLUP1 = _Carrier_88_ColorIdx
+   COLUP3 = _Carrier_Tower_ColorIdx
    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : player1fullheight = _Carrier_88_height     : _NUSIZ1 = 7 : player1x =  69 : player1y = 130
    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : player2fullheight = _Carrier_Runway_height :  NUSIZ2 = 7 : player2x =  71 : player2y = 100
    player3pointerlo = _Carrier_Tower_low  : player3pointerhi = _Carrier_Tower_high  : player3height = 62 : player3fullheight = _Carrier_Tower_height  :  NUSIZ3 = 5 : player3x = 105 : player3y =  88
@@ -1498,65 +1515,65 @@ end
 
  rem playertype, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
    data _attack_position_data
-   planeSmallD + movesDown, 40, 88, OnePlane, _D6
-   planeSmallD + movesDown, 110, 98, OnePlane, _D6
-   planeSmallD + movesDown, 110, 108, OnePlane, _D6
-   planeSmallD + movesDown, 20, 118, OnePlane, _D6
-   planeSmallD + movesDown, 50, 128, OnePlane, _D6
+   planeSmallD + movesDown,  40,  88, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown, 110,  98, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown, 110, 108, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown,  20, 118, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown,  50, 128, OnePlane, _Green_Plane_CI
 
-   planeMiddleD + movesDown, 40, 88, OnePlane, _D4
-   planeSmallD + movesDown, 30, 98, OnePlane, _D6
-   planeSmallD + movesDown, 110, 108, OnePlane, _D6
-   planeSmallD + movesDown, 20, 118, OnePlane, _D6
-   planeSmallD + movesDown, 50, 128, OnePlane, _D6
+   planeMiddleD + movesDown, 40,  88, OnePlane, _Dk_Grn_Plane_CI
+   planeSmallD + movesDown,  30,  98, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown, 110, 108, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown,  20, 118, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown,  50, 128, OnePlane, _Green_Plane_CI
 
-   planeSmallLR + movesRight, 0, 84, TwoPlanesClose + mirroredR, _D6
-   planeSmallLR + movesRight, 0, 74, TwoPlanesClose + mirroredR, _D6
-   planeSmallLR + movesLeft, 158, 64, TwoPlanesClose, _D6
-   planeSmallLR + movesLeft, 158, 54, TwoPlanesClose, _D6
-   planeMiddleU + movesUp, 30, 1, OnePlane, _D4
+   planeSmallLR + movesRight, 0,  84, TwoPlanesClose + mirroredR, _Green_Plane_CI
+   planeSmallLR + movesRight, 0,  74, TwoPlanesClose + mirroredR, _Green_Plane_CI
+   planeSmallLR + movesLeft, 158, 64, TwoPlanesClose, _Green_Plane_CI
+   planeSmallLR + movesLeft, 158, 54, TwoPlanesClose, _Green_Plane_CI
+   planeMiddleU + movesUp,    30,  1, OnePlane, _Dk_Grn_Plane_CI
 
-   planeSmallD + movesDown, 20, 88, TwoPlanesClose, _D4
-   planeSmallD + movesDown, 110, 98, TwoPlanesClose, _D6
-   planeSmallD + movesDown, 20, 108, TwoPlanesClose, _D6
-   planeBigU + movesUp, 125, 247, QuadPlane, _D4
-   planeBigU + movesUp, 75, 1, QuadPlane, _D4
+   planeSmallD + movesDown, 20, 88, TwoPlanesClose, _Dk_Grn_Plane_CI
+   planeSmallD + movesDown, 110, 98, TwoPlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown, 20, 108, TwoPlanesClose, _Green_Plane_CI
+   planeBigU + movesUp, 125, 247, QuadPlane, _Dk_Grn_Plane_CI
+   planeBigU + movesUp, 75, 1, QuadPlane, _Dk_Grn_Plane_CI
 
-   planeSmallD + movesDown, 75, 88, ThreePlanesClose, _D4
-   planeSmallD + movesDown, 20, 98, ThreePlanesClose, _D6
-   planeSmallD + movesDown, 110, 108, OnePlane, _D6
-   planeSmallD + movesDown, 90, 118, OnePlane, _D6
-   planeBigU + movesUp, 30, 1, QuadPlane, _D4
+   planeSmallD + movesDown, 75, 88, ThreePlanesClose, _Dk_Grn_Plane_CI
+   planeSmallD + movesDown, 20, 98, ThreePlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown, 110, 108, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown, 90, 118, OnePlane, _Green_Plane_CI
+   planeBigU + movesUp, 30, 1, QuadPlane, _Dk_Grn_Plane_CI
 
-   planeSmallD + movesDown, 40, 88, ThreePlanesMedium, _D6
-   planeSmallD + movesDown, 72, 98, ThreePlanesMedium, _D6
-   planeSmallD + movesDown, 40, 108, ThreePlanesMedium, _D6
-   planeSmallD + movesDown, 72, 118, ThreePlanesMedium, _D6
-   planeSmallD + movesDown, 40, 128, ThreePlanesMedium, _D6
+   planeSmallD + movesDown, 40, 88, ThreePlanesMedium, _Green_Plane_CI
+   planeSmallD + movesDown, 72, 98, ThreePlanesMedium, _Green_Plane_CI
+   planeSmallD + movesDown, 40, 108, ThreePlanesMedium, _Green_Plane_CI
+   planeSmallD + movesDown, 72, 118, ThreePlanesMedium, _Green_Plane_CI
+   planeSmallD + movesDown, 40, 128, ThreePlanesMedium, _Green_Plane_CI
 
-   planeSmallD + movesDown, 20, 88, ThreePlanesClose, _D6
-   planeSmallD + movesDown, 40, 98, ThreePlanesClose, _D6
-   planeSmallD + movesDown, 60, 108, ThreePlanesClose, _D6
-   planeSmallD + movesDown, 80, 118, ThreePlanesClose, _D6
-   planeSmallD + movesDown, 100, 128, ThreePlanesClose, _D6
+   planeSmallD + movesDown, 20, 88, ThreePlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown, 40, 98, ThreePlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown, 60, 108, ThreePlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown, 80, 118, ThreePlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown, 100, 128, ThreePlanesClose, _Green_Plane_CI
 
-   planeBigU + movesUp, 8, 1, QuadPlane, _D4
-   planeBigU + movesUp, 40, 244, QuadPlane, _D4
-   planeBigU + movesUp, 72, 231, QuadPlane, _D4
-   planeBigU + movesUp, 104, 218, QuadPlane, _D4
-   planeBigU + movesUp, 136, 205, QuadPlane, _D4
+   planeBigU + movesUp, 8, 1, QuadPlane, _Dk_Grn_Plane_CI
+   planeBigU + movesUp, 40, 244, QuadPlane, _Dk_Grn_Plane_CI
+   planeBigU + movesUp, 72, 231, QuadPlane, _Dk_Grn_Plane_CI
+   planeBigU + movesUp, 104, 218, QuadPlane, _Dk_Grn_Plane_CI
+   planeBigU + movesUp, 136, 205, QuadPlane, _Dk_Grn_Plane_CI
 
-   planeSmallD + movesDown, 40, 88, OnePlane, _42
-   planeSmallD + movesDown, 50, 98, OnePlane, _42
-   planeSmallD + movesDown, 60, 108, OnePlane, _42
-   planeSmallD + movesDown, 70, 118, OnePlane, _42
-   planeSmallD + movesDown, 80, 128, OnePlane, _42
+   planeSmallD + movesDown, 40, 88, OnePlane, _Red_Plane_CI
+   planeSmallD + movesDown, 50, 98, OnePlane, _Red_Plane_CI
+   planeSmallD + movesDown, 60, 108, OnePlane, _Red_Plane_CI
+   planeSmallD + movesDown, 70, 118, OnePlane, _Red_Plane_CI
+   planeSmallD + movesDown, 80, 128, OnePlane, _Red_Plane_CI
 
-   planeSmallU + movesUp, 60, 1, OnePlane, _42
-   planeSmallU + movesUp, 70, 246, OnePlane, _42
-   planeSmallU + movesUp, 80, 236, OnePlane, _42
-   planeSmallU + movesUp, 90, 226, OnePlane, _42
-   planeSmallU + movesUp, 100, 216, OnePlane, _42
+   planeSmallU + movesUp, 60, 1, OnePlane, _Red_Plane_CI
+   planeSmallU + movesUp, 70, 246, OnePlane, _Red_Plane_CI
+   planeSmallU + movesUp, 80, 236, OnePlane, _Red_Plane_CI
+   planeSmallU + movesUp, 90, 226, OnePlane, _Red_Plane_CI
+   planeSmallU + movesUp, 100, 216, OnePlane, _Red_Plane_CI
 end
 ;#endregion
 
