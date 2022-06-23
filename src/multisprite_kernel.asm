@@ -103,10 +103,7 @@ SetCopyHeight
 plyColorTable:
 ;    .byte $1A,$1F,$14,$1C, $18,$1A,$1C,$18  ;-- yellow color set
     .byte $2A,$2F,$24,$2C, $28,$2A,$2C,$28  ;-- orange color set
-
-enenyColorTable:
-;    .byte $DA,$DF,$D4,$DC, $D8,$DA,$DC,$D8, $D4,$D4
-    .byte $08,$0C,$02,$0A, $06,$08,$0A,$06, $02,$02
+    .byte $08,$0C
 
 ;=====================================================================
 ;---------------------------------------------------------------------
@@ -396,18 +393,12 @@ asdhj
 
     ;---- Actual display kernel starts here
 
-;--- KernelLoopA is hit 3 out of 4 scanlines
+;--- KernelLoopA is hit most of the time
 
 KernelLoopA                 ;----- enter at 53
     SLEEP 7                     ;7  [60]
-    
-    ;---- this is just some temp code to show where KernelA is hit.
-    ;--eor     #$9F
-    ;and     #$97
-    ;ora     #$94
-    ;sta     COLUBK
 
-;--- KernelLoopB is only hit 1 out of 4 scanlines
+;--- KernelLoopB is only hit when playfield row is changed
 ;-
 ;--         -- DRAWING line 1 -> player0, player1, playfield
 
@@ -448,7 +439,8 @@ BackFromSkipDrawP1          ;-- enter at cycle 13
     tay                         ;2  [48]
     lda colorTables,y           ;4  [52]
     
-    ;//------ DRAWING line 2 -> ball + 2 missiles,  call repo?, switch player color,
+    ;//------ DRAWING line 2 -> ball + 2 missiles,  store color for P1, 
+    ;                             call repo if time to do that, switch P0 color,
     ;      --                         calc next repo, handle scanline / row counters
 
     ldy temp1                   ;3  [55]
@@ -1201,24 +1193,35 @@ scorebcd1
 ;
 ;-- These tables are accessed using the COLUx variable from each sprite as an index
 
-    align 128
+    ;align 128
+    
     echo "Color tables at ", *
 
 colorTables:
 
 ;-- B&W palettes (dark and light) used by the ship carrier detail sprites
-ct_shipCarrierTower:    .byte $02,$02,$02,$02, $02,$02,$02,$02
-ct_shipCarrierDetails:  .byte $08,$0C,$0C,$0A, $0C,$08,$0A,$08
+ct_shipCarrierTower:    .byte $02,$02,$02,$02,$02,$02,$02,$02
+ct_dkGrey:              .byte $06,$06,$06,$06,$06,$06,$06,$06
+ct_shipCarrierDetails:  .byte $0A,$0C,$0C,$0A,$0C,$0A,$0A,$0A
+ct_white:               .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
 
 ;-- Small planes
 ct_smallEnemyPlane:     .byte $D6,$DA,$D8,$D6,$DA,  $D6,$D6,$D6 ;-- last 3 values are not used
-ct_smallEnemyPlaneUp:   .byte $DA,$D6,$D8,$DA,$D6,  $D6,$D6,$D6
+ct_smallEnemyPlaneUp:   .byte $DA,$D6,$D8,$DA,$D6,  $D4,$D6,$D6
+
+;-- Small Red planes (carrying power-up)
 ct_redPlanes:           .byte $44,$48,$46,$44,$48,  $46,$46,$46
 ct_redPlanesUp:         .byte $48,$44,$46,$48,$44,  $46,$46,$46
 
 ;-- Medium-sized planes
-ct_medEnemyPlane:       .byte $D6,$DA,$D8,$D6,$DA,$D6,$DC,$DA
-ct_medEnemyPlaneUp:     .byte $D8,$DC,$D6,$DA,$D6,$D8,$DA,$D6
+ct_medEnemyPlane:       .byte $C4,$C8,$C6,$C4,$C8,$C4,$CA,$C8
+ct_medEnemyPlaneUp:     .byte $C6,$CA,$C4,$C8,$C4,$C6,$C8,$C4
 
+;-- Big planes (slightly different than the medium-sized ones)
+ct_bigEnemyPlane:       .byte $D4,$D8,$D6,$D4,$D8,$D4,$DA,$D8
+ct_bigEnemyPlaneUp:     .byte $D6,$DA,$D4,$D8,$D4,$D6,$D8,$D6
 
-ct_AyakoMissle:         .byte $46,$44,$42,$46, 0,0,0,0
+ct_explosion:           .byte $18,$1F,$1C,$1F,$1A,$1A,$1C,$1C
+                        .byte $28,$2A,$2F,$28,$2F,$2A,$2A,$2C
+                        .byte $36,$3A,$3C,$38,$2F,$38,$34,$32
+ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42

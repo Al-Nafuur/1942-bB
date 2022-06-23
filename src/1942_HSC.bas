@@ -394,13 +394,14 @@ end
    const _Color_Sand_Island   = _EE
    const _Color_Jungle_Island = _C6
 
-   const _Power_Up_Dark_Gray_Quad_Gun       = _06
-   const _Power_Up_White_Enemy_Crash        = _0E
-   const _Power_Up_Light_Gray_Side_Fighters = _0A
-   const _Power_Up_Black_Extra_Life         = _00
-   const _Power_Up_Orange_No_Enemy_Bullets  = _FA
-   const _Power_Up_Yellow_Extra_Loop        = _1E
-   const _Power_Up_Red_1000_Points          = _42
+    ;--- NOTE: these are indexes into the kernel's color table.
+   const _Power_Up_Dark_Gray_Quad_Gun       = $08 ;orig color = _06
+   const _Power_Up_White_Enemy_Crash        = $18 ;orig color = _0E
+   const _Power_Up_Light_Gray_Side_Fighters = $10 ;orig color = _0A
+   const _Power_Up_Black_Extra_Life         = $00 ;orig color = _00
+   const _Power_Up_Orange_No_Enemy_Bullets  = $68 ;orig color = _FA
+   const _Power_Up_Yellow_Extra_Loop        = $60 ;orig color = _1E
+   const _Power_Up_Red_1000_Points          = $70 ;orig color = _42
 
    const _Player1_Parking_Point = 200
    const _Player2_Parking_Point = 200
@@ -515,19 +516,33 @@ end
    const _SD_Respawn_Music01_begin_high = >_SD_Respawn_Music01_begin
    const _SD_Respawn_Music01_begin_low  = <_SD_Respawn_Music01_begin
 
-   ;-----------------------------
-   ;-- color table indexes
+   ;-----------------------------------------------------------------------------
+   ;-- color table indexes into the color table stored in the kernel code area
 
    const _Carrier_Tower_ColorIdx = $00 ;orig color = _02
-   const _Carrier_88_ColorIdx    = $08 ;orig color = _0A
-   
-   const _Green_Plane_CI         = $10
-   const _Dk_Grn_Plane_CI        = $10
-   const _CI_RedPlane           = $20
-   const _CI_MedGreenPlane       = $30
+   const _Carrier_88_ColorIdx    = $10 ;orig color = _0A
 
-   const _Ayako_Missile_ColorIdx = $40 ;orig color = _44
+   const _CI_Black               = $00
+   const _CI_DkGrey              = $08
+   const _CI_LtGrey              = $10
+   const _CI_White               = $18
    
+   const _CI_GreenPlane          = $20
+   const _CI_DkGreenPlane        = $20
+   const _CI_RedPlane            = $30
+   const _CI_MedGreenPlane       = $40
+   const _CI_BigGreenPlane       = $50
+
+   const _CI_Explosion1          = $60
+   const _CI_Explosion2          = $68
+   const _CI_Explosion3          = $70
+   const _CI_Explosion4          = $78
+
+   const _Ayako_Missile_ColorIdx = $78 ;orig color = _44
+   
+    ;--- Player's plane uses a separate color table, so this is needed for 
+    ;---  the scoreboard area to define the color of the "lives" indicator
+   const _Player_Plane_Base_Color = _2A; orig color = _EA
 
 ;#endregion
 
@@ -760,7 +775,7 @@ _player0_explosion_animation_end
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
-   if COLUP5 = _42 then w_stage_bonus_counter = r_stage_bonus_counter - 1
+   if COLUP5 = _CI_Explosion4 && r_stage_bonus_counter > 0 then w_stage_bonus_counter = r_stage_bonus_counter - 1
 ;     ^^^^^^^^^^^^ this only works as long msp 5 hasn't been reused as missile !
    active_multisprites = 0
    if _Bit6_map_PF_collision{6} then goto _Play_In_Game_Music
@@ -952,7 +967,7 @@ _msp_moves_right
    if temp3 > 158 then goto park_multisprite
    NewSpriteX[temp1] = temp3 + _Plane_X2_Speed
 
-   if temp3 > player0x && temp5 < 128 then playertype[temp1] = ( playertype[temp1] - 16 ) ^ %00000011 : temp3 = playertype[temp1] / 8 : playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3] : playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3] : goto _check_next_multisprite
+   if temp3 > player0x && temp5 < 128 then goto _msp_switch_to_down
 
    if NewSpriteX[temp1] < 121 then goto _check_next_multisprite
    if NewNUSIZ[temp1] = %00001011 && NewSpriteX[temp1] > 120 then NewNUSIZ[temp1] = %00001001
@@ -965,11 +980,22 @@ _msp_moves_left
    if !NewNUSIZ[temp1] && temp3 < 9 then goto park_multisprite
    NewSpriteX[temp1] = temp3 - _Plane_X2_Speed
    
-   if temp3 < player0x && temp5 < 128 then playertype[temp1] = ( playertype[temp1] - 16 ) ^ %00000010 : temp3 = playertype[temp1] / 8 : playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3] : playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3] : goto _check_next_multisprite
+   if temp3 < player0x && temp5 < 128 then goto _msp_switch_to_down
 
    if temp3 < 11 && NewNUSIZ[temp1] then NewNUSIZ[temp1] = NewNUSIZ[temp1] / 2 : NewSpriteX[temp1] = temp3 + 16
 
    goto _check_next_multisprite
+
+    rem -- handle when side-to-side flying planes switch to the down-facing direction
+_msp_switch_to_down
+    playertype[temp1] = (( playertype[temp1] - 16 ) & %11111000) | movesDown
+    temp3 = playertype[temp1] / 8
+    playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3]
+    playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3]
+
+    ;--- need to switch palettes since graphics has changed
+    NewCOLUP1[temp] = _CI_GreenPlane
+    goto _check_next_multisprite
 
 _msp_moves_down
    temp3 = NewSpriteY[temp1]
@@ -1242,7 +1268,8 @@ end
 end
 
    data _player0_explosion_color_table
-   _4E, _48, _46, _42, _42
+   ; _4E, _48, _46, _42, _42 -- old colors
+   _CI_Explosion1,   _CI_Explosion2,   _CI_Explosion3,   _CI_Explosion4,   _CI_Explosion4
 end
 
    data _player0_explosion_height_table
@@ -1289,7 +1316,8 @@ stage_intro
    _NUSIZ1 = 0 : NUSIZ2 = 0 
    player1height = 9 : player2height = 9
    ;COLUP2 = _0E : _COLUP1 = _0E
-   COLUP2 = 0 : _COLUP1 = 0
+   ;COLUP2 = 0 : _COLUP1 = 0
+   COLUP2 = _CI_LtGrey : _COLUP1 = _CI_LtGrey
    player1pointerhi = _Score_Table_High : player2pointerhi = _Score_Table_High
    temp4 = hex_to_bcd[stage]
    temp5 = (temp4 & $0f ) * 8
@@ -1346,7 +1374,7 @@ _read_attack_data
       w_playerhits_a[temp1] = temp5 : w_playerhits_b[temp1] = temp5 : w_playerhits_c[temp1] = temp5
    next
 
-   if NewCOLUP1 = _42 then w_stage_bonus_counter = r_stage_bonus_counter + 1
+   if NewCOLUP1 = _CI_Explosion4 then w_stage_bonus_counter = r_stage_bonus_counter + 1
 
 _bank_2_code_end
    goto _Play_In_Game_Music bank6
@@ -1405,9 +1433,9 @@ set_game_state_boss
    goto __Boss_Entry_Music_Setup bank6
 
 carrier_superstructures_init
-   COLUP2 = _0A : COLUP4 = _0A : map_section = _Map_Takeoff
-   _COLUP1 = _Carrier_88_ColorIdx
+   _COLUP1 = _Carrier_88_ColorIdx : COLUP2 = _Carrier_88_ColorIdx : COLUP4 = _Carrier_88_ColorIdx
    COLUP3 = _Carrier_Tower_ColorIdx
+   map_section = _Map_Takeoff
    player1pointerlo = _Carrier_88_low     : player1pointerhi = _Carrier_88_high     : player1height =  0 : player1fullheight = _Carrier_88_height     : _NUSIZ1 = 7 : player1x =  69 : player1y = 130
    player2pointerlo = _Carrier_Runway_low : player2pointerhi = _Carrier_Runway_high : player2height =  0 : player2fullheight = _Carrier_Runway_height :  NUSIZ2 = 7 : player2x =  71 : player2y = 100
    player3pointerlo = _Carrier_Tower_low  : player3pointerhi = _Carrier_Tower_high  : player3height = 62 : player3fullheight = _Carrier_Tower_height  :  NUSIZ3 = 5 : player3x = 105 : player3y =  88
@@ -1518,17 +1546,17 @@ end
 
  rem playertype, NewSpriteX, NewSpriteY, NewNUSIZ, NewCOLUP
    data _attack_position_data
-   planeSmallD + movesDown,  40,  88, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown, 110,  98, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown, 110, 108, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown,  20, 118, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown,  50, 128, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown,  40,  88, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown, 110,  98, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown, 110, 108, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown,  20, 118, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown,  50, 128, OnePlane, _CI_GreenPlane
 
    planeMiddleD + movesDown, 40,  88, OnePlane, _CI_MedGreenPlane
-   planeSmallD + movesDown,  30,  98, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown, 110, 108, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown,  20, 118, OnePlane, _Green_Plane_CI
-   planeSmallD + movesDown,  50, 128, OnePlane, _Green_Plane_CI
+   planeSmallD + movesDown,  30,  98, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown, 110, 108, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown,  20, 118, OnePlane, _CI_GreenPlane
+   planeSmallD + movesDown,  50, 128, OnePlane, _CI_GreenPlane
 
    planeSmallLR + movesRight, 0,  84, TwoPlanesClose + mirroredR, _CI_MedGreenPlane
    planeSmallLR + movesRight, 0,  74, TwoPlanesClose + mirroredR, _CI_MedGreenPlane
@@ -1536,35 +1564,35 @@ end
    planeSmallLR + movesLeft, 158, 54, TwoPlanesClose,             _CI_MedGreenPlane
    planeMiddleU + movesUp,    30,  1, OnePlane,                   _CI_MedGreenPlane
 
-   planeSmallD + movesDown,  20,  88, TwoPlanesClose, _Dk_Grn_Plane_CI
-   planeSmallD + movesDown, 110,  98, TwoPlanesClose, _Green_Plane_CI
-   planeSmallD + movesDown,  20, 108, TwoPlanesClose, _Green_Plane_CI
-   planeBigU + movesUp,     125, 247, QuadPlane,      _Dk_Grn_Plane_CI
-   planeBigU + movesUp,      75,   1, QuadPlane,      _Dk_Grn_Plane_CI
+   planeSmallD + movesDown,  20,  88, TwoPlanesClose, _CI_DkGreenPlane
+   planeSmallD + movesDown, 110,  98, TwoPlanesClose, _CI_GreenPlane
+   planeSmallD + movesDown,  20, 108, TwoPlanesClose, _CI_GreenPlane
+   planeBigU + movesUp,     125, 247, QuadPlane,      _CI_BigGreenPlane
+   planeBigU + movesUp,      75,   1, QuadPlane,      _CI_BigGreenPlane
 
-   planeSmallD + movesDown,  75,  88, ThreePlanesClose, _Dk_Grn_Plane_CI
-   planeSmallD + movesDown,  20,  98, ThreePlanesClose, _Green_Plane_CI
-   planeSmallD + movesDown, 110, 108, OnePlane,         _Green_Plane_CI
-   planeSmallD + movesDown,  90, 118, OnePlane,         _Green_Plane_CI
-   planeBigU + movesUp,      30,   1, QuadPlane,        _Dk_Grn_Plane_CI
+   planeSmallD + movesDown,  75,  88, ThreePlanesClose, _CI_DkGreenPlane
+   planeSmallD + movesDown,  20,  98, ThreePlanesClose, _CI_GreenPlane
+   planeSmallD + movesDown, 110, 108, OnePlane,         _CI_GreenPlane
+   planeSmallD + movesDown,  90, 118, OnePlane,         _CI_GreenPlane
+   planeBigU + movesUp,      30,   1, QuadPlane,        _CI_BigGreenPlane
 
-   planeSmallD + movesDown, 40,  88, ThreePlanesMedium, _Green_Plane_CI
-   planeSmallD + movesDown, 72,  98, ThreePlanesMedium, _Green_Plane_CI
-   planeSmallD + movesDown, 40, 108, ThreePlanesMedium, _Green_Plane_CI
-   planeSmallD + movesDown, 72, 118, ThreePlanesMedium, _Green_Plane_CI
-   planeSmallD + movesDown, 40, 128, ThreePlanesMedium, _Green_Plane_CI
+   planeSmallD + movesDown, 40,  88, ThreePlanesMedium, _CI_GreenPlane
+   planeSmallD + movesDown, 72,  98, ThreePlanesMedium, _CI_GreenPlane
+   planeSmallD + movesDown, 40, 108, ThreePlanesMedium, _CI_GreenPlane
+   planeSmallD + movesDown, 72, 118, ThreePlanesMedium, _CI_GreenPlane
+   planeSmallD + movesDown, 40, 128, ThreePlanesMedium, _CI_GreenPlane
 
-   planeSmallD + movesDown,  20,  88, ThreePlanesClose, _Green_Plane_CI
-   planeSmallD + movesDown,  40,  98, ThreePlanesClose, _Green_Plane_CI
-   planeSmallD + movesDown,  60, 108, ThreePlanesClose, _Green_Plane_CI
-   planeSmallD + movesDown,  80, 118, ThreePlanesClose, _Green_Plane_CI
-   planeSmallD + movesDown, 100, 128, ThreePlanesClose, _Green_Plane_CI
+   planeSmallD + movesDown,  20,  88, ThreePlanesClose, _CI_GreenPlane
+   planeSmallD + movesDown,  40,  98, ThreePlanesClose, _CI_GreenPlane
+   planeSmallD + movesDown,  60, 108, ThreePlanesClose, _CI_GreenPlane
+   planeSmallD + movesDown,  80, 118, ThreePlanesClose, _CI_GreenPlane
+   planeSmallD + movesDown, 100, 128, ThreePlanesClose, _CI_GreenPlane
 
-   planeBigU + movesUp,   8,   1, QuadPlane, _Dk_Grn_Plane_CI
-   planeBigU + movesUp,  40, 244, QuadPlane, _Dk_Grn_Plane_CI
-   planeBigU + movesUp,  72, 231, QuadPlane, _Dk_Grn_Plane_CI
-   planeBigU + movesUp, 104, 218, QuadPlane, _Dk_Grn_Plane_CI
-   planeBigU + movesUp, 136, 205, QuadPlane, _Dk_Grn_Plane_CI
+   planeBigU + movesUp,   8,   1, QuadPlane, _CI_BigGreenPlane
+   planeBigU + movesUp,  40, 244, QuadPlane, _CI_BigGreenPlane
+   planeBigU + movesUp,  72, 231, QuadPlane, _CI_BigGreenPlane
+   planeBigU + movesUp, 104, 218, QuadPlane, _CI_BigGreenPlane
+   planeBigU + movesUp, 136, 205, QuadPlane, _CI_BigGreenPlane
 
    planeSmallD + movesDown, 40,  88, OnePlane, _CI_RedPlane
    planeSmallD + movesDown, 50,  98, OnePlane, _CI_RedPlane
@@ -1679,7 +1707,7 @@ _enemy_explosion
    callmacro _Set_SFX_By_Prio _Sfx_Enemy_Down
    enemies_shoot_down = enemies_shoot_down + 1
    if _Bit6_map_PF_collision{6} then temp6 = _Bonus_Points_10000 : gosub add_scores : goto set_game_state_boss_explosion
-   if enemies_shoot_down = 5 && NewCOLUP1[temp1] = _42 then goto set_game_state_powerup
+   if enemies_shoot_down = 5 && NewCOLUP1[temp1] = _CI_RedPlane then goto set_game_state_powerup
 
    temp6 = NewNUSIZ[temp1] & %00001000
 
@@ -1876,6 +1904,10 @@ swap_a_b_hits
    return thisbank
 
 set_game_state_powerup
+    ;-- handle the fact that the stage_bonus_counter might be out of range
+    ;--   (this should force in-bounds wraparound)
+    if r_stage_bonus_counter > 31 then w_stage_bonus_counter = 0
+
    COLUP5 = _bonus_list[r_stage_bonus_counter] : NewCOLUP1[temp1] = _bonus_list[r_stage_bonus_counter]
    NewNUSIZ[temp1] = 0
    playerpointerlo[temp1] = _Power_Up_low
@@ -6028,7 +6060,7 @@ end
 end
 
    vblank
-   lifecolor = _EA : COLUPF = r_COLUPF
+   lifecolor = _Player_Plane_Base_Color : COLUPF = r_COLUPF
    if _Bit6_p0_explosion{6} then bally = 100 else bally = player0y - 4
    if framecounter{0} then ballx = player0x + 4 else ballx = player0x + 2
    if _Bit7_hide_sidefighter{7} then _landing_takeoff
