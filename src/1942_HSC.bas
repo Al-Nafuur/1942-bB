@@ -389,6 +389,7 @@ end
    const _Map_Boss_End_up            = 100
    const _Map_Boss_End_dw            = 130 
 
+   const _Color_Ocean         = _96
    const _Color_Carrier       = _04
    const _Color_Gras_Island   = _C8
    const _Color_Sand_Island   = _EE
@@ -749,7 +750,7 @@ main
    if switchreset then goto titlescreen_start bank7
 
    framecounter = framecounter + 1
-   COLUBK = _96
+   COLUBK = _Color_Ocean
    COLUP0 = _40
    Player0SwitchColor = r_COLUP0
    
@@ -775,7 +776,9 @@ _player0_explosion_animation_end
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
-   if COLUP5 = _CI_Explosion4 && r_stage_bonus_counter > 0 then w_stage_bonus_counter = r_stage_bonus_counter - 1
+
+   rem  if player explodes, he can no longer collect a bonus this stage
+   if COLUP5 = _CI_Explosion4 && r_stage_bonus_counter < 128 then w_stage_bonus_counter = r_stage_bonus_counter | %10000000
 ;     ^^^^^^^^^^^^ this only works as long msp 5 hasn't been reused as missile !
    active_multisprites = 0
    if _Bit6_map_PF_collision{6} then goto _Play_In_Game_Music
@@ -986,14 +989,14 @@ _msp_moves_left
 
    goto _check_next_multisprite
 
-    rem -- handle when side-to-side flying planes switch to the down-facing direction
+    rem handle when side-to-side flying planes switch to the down-facing direction
 _msp_switch_to_down
     playertype[temp1] = (( playertype[temp1] - 16 ) & %11111000) | movesDown
     temp3 = playertype[temp1] / 8
     playerpointerlo[temp1]  = _player_pointer_lo_bank1[temp3]
     playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3]
 
-    ;--- need to switch palettes since graphics has changed
+    rem need to switch palettes since graphics has changed
     NewCOLUP1[temp] = _CI_GreenPlane
     goto _check_next_multisprite
 
@@ -1374,7 +1377,8 @@ _read_attack_data
       w_playerhits_a[temp1] = temp5 : w_playerhits_b[temp1] = temp5 : w_playerhits_c[temp1] = temp5
    next
 
-   if NewCOLUP1 = _CI_Explosion4 then w_stage_bonus_counter = r_stage_bonus_counter + 1
+   rem --- set bonus if red plane group
+   if NewCOLUP1 = _CI_RedPlane then w_stage_bonus_counter = ( 32 - stage ) * 2
 
 _bank_2_code_end
    goto _Play_In_Game_Music bank6
@@ -1904,10 +1908,10 @@ swap_a_b_hits
    return thisbank
 
 set_game_state_powerup
-    ;-- handle the fact that the stage_bonus_counter might be out of range
-    ;--   (this should force in-bounds wraparound)
-    if r_stage_bonus_counter > 31 then w_stage_bonus_counter = 0
-
+    ;--- handle if the bonus is currently disabled (skip this)
+    ;---   (also handles if out-of-bounds)
+    if r_stage_bonus_counter > 63 then goto _determine_collision_score
+    
    COLUP5 = _bonus_list[r_stage_bonus_counter] : NewCOLUP1[temp1] = _bonus_list[r_stage_bonus_counter]
    NewNUSIZ[temp1] = 0
    playerpointerlo[temp1] = _Power_Up_low
@@ -3250,7 +3254,7 @@ _bB_Game_Over_entry_bank4
 
    asm
   lda #_0E   ; text color first row
-  ldx #_96   ; background color
+  ldx #_Color_Ocean   ; background color
   jsr _Prepare_Text_Screen
 
 MainGameOverLoop

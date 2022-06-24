@@ -103,7 +103,7 @@ SetCopyHeight
 plyColorTable:
 ;    .byte $1A,$1F,$14,$1C, $18,$1A,$1C,$18  ;-- yellow color set
     .byte $2A,$2F,$24,$2C, $28,$2A,$2C,$28  ;-- orange color set
-    .byte $08,$0C
+    .byte $08,$0C,$08,$0C, $08,$0C
 
 ;=====================================================================
 ;---------------------------------------------------------------------
@@ -1205,8 +1205,15 @@ ct_dkGrey:              .byte $06,$06,$06,$06,$06,$06,$06,$06
 ct_shipCarrierDetails:  .byte $0A,$0C,$0C,$0A,$0C,$0A,$0A,$0A
 ct_white:               .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
 
+
+    ifnconst IS_NTSC
+IS_NTSC = 1
+    endif
+
+    if IS_NTSC = 1
+
 ;-- Small planes
-ct_smallEnemyPlane:     .byte $D6,$DA,$D8,$D6,$DA,  $D6,$D6,$D6 ;-- last 3 values are not used
+ct_smallEnemyPlane:     .byte $D6,$DA,$D8,$D6,$DA,  $D6,$D6,$D6 ;-- last 3 values are typically not used
 ct_smallEnemyPlaneUp:   .byte $DA,$D6,$D8,$DA,$D6,  $D4,$D6,$D6
 
 ;-- Small Red planes (carrying power-up)
@@ -1225,3 +1232,28 @@ ct_explosion:           .byte $18,$1F,$1C,$1F,$1A,$1A,$1C,$1C
                         .byte $28,$2A,$2F,$28,$2F,$2A,$2A,$2C
                         .byte $36,$3A,$3C,$38,$2F,$38,$34,$32
 ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
+
+    else
+
+;-- Small planes
+ct_smallEnemyPlane:     .byte $56,$5A,$58,$56,$5A,  $56,$56,$56 ;-- last 3 values are typically not used
+ct_smallEnemyPlaneUp:   .byte $5A,$56,$58,$5A,$56,  $54,$56,$56
+
+;-- Small Red planes (carrying power-up)
+ct_redPlanes:           .byte $64,$68,$66,$64,$68,  $66,$66,$66
+ct_redPlanesUp:         .byte $68,$64,$66,$68,$64,  $66,$66,$66
+
+;-- Medium-sized planes
+ct_medEnemyPlane:       .byte $54,$58,$56,$54,$58,$54,$5A,$58
+ct_medEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$54
+
+;-- Big planes (slightly different than the medium-sized ones)
+ct_bigEnemyPlane:       .byte $54,$58,$56,$54,$58,$54,$5A,$58
+ct_bigEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$56
+
+ct_explosion:           .byte $18,$1F,$1C,$1F,$1A,$1A,$1C,$1C
+                        .byte $28,$2A,$2F,$28,$2F,$2A,$2A,$2C
+                        .byte $36,$3A,$3C,$38,$2F,$38,$34,$32
+ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
+
+    endif
