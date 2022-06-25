@@ -5,6 +5,10 @@
 ; Provided under the CC0 license. See the included LICENSE.txt for details.
 ;----------------------------------------------------------------------------
 
+    ifnconst IS_NTSC
+IS_NTSC = 1
+    endif
+
 ;---------------------------------------------
 ;--- Some assumptions:
 ;---
@@ -98,7 +102,7 @@ SetCopyHeight
 
 ;--------------------------------------------------------------------------------
 ;--- player color table needs to be here to avoid causing page crossing issues
-
+;--     NOTE: $2x hue selection works for both PAL and NTSC
 
 plyColorTable:
 ;    .byte $1A,$1F,$14,$1C, $18,$1A,$1C,$18  ;-- yellow color set
@@ -1206,10 +1210,6 @@ ct_shipCarrierDetails:  .byte $0A,$0C,$0C,$0A,$0C,$0A,$0A,$0A
 ct_white:               .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
 
 
-    ifnconst IS_NTSC
-IS_NTSC = 1
-    endif
-
     if IS_NTSC = 1
 
 ;-- Small planes
@@ -1228,10 +1228,15 @@ ct_medEnemyPlaneUp:     .byte $C6,$CA,$C4,$C8,$C4,$C6,$C8,$C4
 ct_bigEnemyPlane:       .byte $D4,$D8,$D6,$D4,$D8,$D4,$DA,$D8
 ct_bigEnemyPlaneUp:     .byte $D6,$DA,$D4,$D8,$D4,$D6,$D8,$D6
 
-ct_explosion:           .byte $18,$1F,$1C,$1F,$1A,$1A,$1C,$1C
-                        .byte $28,$2A,$2F,$28,$2F,$2A,$2A,$2C
-                        .byte $36,$3A,$3C,$38,$2F,$38,$34,$32
+ct_bonus:               .byte $18,$1F,$1C,$18,$1A,$1C,$1E,$18
+                        .byte $28,$2A,$2F,$28,$2A,$2C,$2E,$28
+                        .byte $46,$4A,$4C,$48,$4A,$4C,$4E,$48
 ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
+
+;-- Side fighter uses Multi-sprite for fly-in... 
+;---   SO data needs to be duplicated to support both up and down movement
+ct_SideFighter:         .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
+                        .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
 
     else
 
@@ -1251,9 +1256,14 @@ ct_medEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$54
 ct_bigEnemyPlane:       .byte $54,$58,$56,$54,$58,$54,$5A,$58
 ct_bigEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$56
 
-ct_explosion:           .byte $18,$1F,$1C,$1F,$1A,$1A,$1C,$1C
-                        .byte $28,$2A,$2F,$28,$2F,$2A,$2A,$2C
-                        .byte $36,$3A,$3C,$38,$2F,$38,$34,$32
-ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
+ct_bonus:               .byte $28,$2F,$2C,$2F,$2A,$2A,$2C,$2C
+                        .byte $48,$4A,$4F,$48,$4F,$4A,$4A,$4C
+                        .byte $66,$6A,$6C,$68,$6F,$68,$64,$62
+ct_AyakoMissle:         .byte $66,$64,$62,$66,$64,$62,$64,$62
+
+;-- Side fighter uses Multi-sprite for fly-in... 
+;---   SO data needs to be duplicated to support both up and down movement
+ct_SideFighter:         .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
+                        .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
 
     endif

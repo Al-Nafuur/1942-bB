@@ -180,14 +180,16 @@ end
    const _EA = $EA
    const _EC = $EC
    const _EE = $EE
-   const _F0 = $F0
-   const _F2 = $F2
-   const _F4 = $F4
-   const _F6 = $F6
-   const _F8 = $F8
-   const _FA = $FA
-   const _FC = $FC
-   const _FE = $FE
+
+   ;unused, so removing these to get around bBasic's apparent 'limited number of constant defintion' issue
+   ;const _F0 = $F0
+   ;const _F2 = $F2
+   ;const _F4 = $F4
+   ;const _F6 = $F6
+   ;const _F8 = $F8
+   ;const _FA = $FA
+   ;const _FC = $FC
+   ;const _FE = $FE
 ;#endregion
 /*
 ;#region "PAL Constants and Colors"
@@ -312,14 +314,14 @@ end
    const _EA = $2A
    const _EC = $2C
    const _EE = $2E
-   const _F0 = $20
-   const _F2 = $22
-   const _F4 = $24
-   const _F6 = $26
-   const _F8 = $28
-   const _FA = $2A
-   const _FC = $2C
-   const _FE = $2E
+   ;const _F0 = $20
+   ;const _F2 = $22
+   ;const _F4 = $24
+   ;const _F6 = $26
+   ;const _F8 = $28
+   ;const _FA = $2A
+   ;const _FC = $2C
+   ;const _FE = $2E
 ;#endregion
 */
    ; Kernel and Minikernel constants
@@ -395,7 +397,7 @@ end
    const _Color_Sand_Island   = _EE
    const _Color_Jungle_Island = _C6
 
-    ;--- NOTE: these are indexes into the kernel's color table.
+   rem -- NOTE: these are indexes into the kernel's color table.
    const _Power_Up_Dark_Gray_Quad_Gun       = $08 ;orig color = _06
    const _Power_Up_White_Enemy_Crash        = $18 ;orig color = _0E
    const _Power_Up_Light_Gray_Side_Fighters = $10 ;orig color = _0A
@@ -540,10 +542,13 @@ end
    const _CI_Explosion4          = $78
 
    const _Ayako_Missile_ColorIdx = $78 ;orig color = _44
+
+   const _CI_SideFighter         = $80
    
     ;--- Player's plane uses a separate color table, so this is needed for 
     ;---  the scoreboard area to define the color of the "lives" indicator
-   const _Player_Plane_Base_Color = _2A; orig color = _EA
+   const _Player_Plane_Base_Color = $2A; orig color = _EA
+   
 
 ;#endregion
 
@@ -725,7 +730,7 @@ start
    PF1pointer = _Map_Takeoff_Point_1 : PF2pointer = _Map_Takeoff_Point_1
 
    w_COLUPF = _Color_Carrier
-   w_COLUP0 = _EA
+   w_COLUP0 = _Player_Plane_Base_Color
    w_CTRLPF = %00100001
    w_NUSIZ0 = 0
 
@@ -777,9 +782,10 @@ _player0_explosion_animation_end
    statusbarlength = %10101000 : w_COLUP0 = _EA
    attack_position = attack_position - 1
 
-   rem  if player explodes, he can no longer collect a bonus this stage
-   if COLUP5 = _CI_Explosion4 && r_stage_bonus_counter < 128 then w_stage_bonus_counter = r_stage_bonus_counter | %10000000
+;   rem  if player explodes, reset and turn off bonus for this wave
+   if COLUP5 = _CI_Explosion4 then w_stage_bonus_counter = ( r_stage_bonus_counter & %11111110 ) | %10000000
 ;     ^^^^^^^^^^^^ this only works as long msp 5 hasn't been reused as missile !
+
    active_multisprites = 0
    if _Bit6_map_PF_collision{6} then goto _Play_In_Game_Music
    goto __Respawn_Music_Setup bank6
@@ -1213,7 +1219,7 @@ set_game_state_sidefighter_takoff
    NUSIZ5 = r_NUSIZ0 - 1
    player5y = 255
    player5type = movesUp
-   COLUP5 = _EA
+   COLUP5 = _CI_SideFighter
    player5pointerlo = _Player5_Sfighter_up_low : player5pointerhi = _Player0_Plane_up_high
    player5height = 0 : player5fullheight = _Player5_Sfighter_height
    if r_Bit7_Left_Plane_is_SF{7} then player5x = 68 else player5x = 100
@@ -1314,12 +1320,13 @@ end
 ;#region "Intro with stage nr"
 stage_intro
    if framecounter > 60 then _Bit0_stage_intro{0} = 0 : goto carrier_superstructures_init
+
+   ;-- calculate stage_bonus_counter based on stage number
+   w_stage_bonus_counter = ( 32 - stage ) * 2
    player1x = 80 : player2x = 88
    player1y = 50 : player2y = 50
    _NUSIZ1 = 0 : NUSIZ2 = 0 
    player1height = 9 : player2height = 9
-   ;COLUP2 = _0E : _COLUP1 = _0E
-   ;COLUP2 = 0 : _COLUP1 = 0
    COLUP2 = _CI_LtGrey : _COLUP1 = _CI_LtGrey
    player1pointerhi = _Score_Table_High : player2pointerhi = _Score_Table_High
    temp4 = hex_to_bcd[stage]
@@ -1378,7 +1385,7 @@ _read_attack_data
    next
 
    rem --- set bonus if red plane group
-   if NewCOLUP1 = _CI_RedPlane then w_stage_bonus_counter = ( 32 - stage ) * 2
+   if NewCOLUP1 = _CI_RedPlane then w_stage_bonus_counter = r_stage_bonus_counter & %01111111
 
 _bank_2_code_end
    goto _Play_In_Game_Music bank6
@@ -1404,7 +1411,7 @@ set_game_state_landing
    NUSIZ5 = r_NUSIZ0 - 1
    player5y = player0y - 8
    player5type = movesDown
-   COLUP5 = _EA
+   COLUP5 = _CI_SideFighter
    player5pointerlo = _Player0_Plane_up_low : player5pointerhi = _Player0_Plane_up_high
    player5height = _Player5_Sfighter_height : player5fullheight = _Player5_Sfighter_height
 
@@ -1926,6 +1933,8 @@ set_game_state_powerup
    player4type = ( player4type & %10000000 ) | typePowerUp
    player5type = ( player5type & %10000000 ) | typePowerUp
 
+   ; switch to secondary bonus
+   w_stage_bonus_counter = r_stage_bonus_counter | 1
 
    goto _determine_collision_score
 
