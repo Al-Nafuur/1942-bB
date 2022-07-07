@@ -75,14 +75,7 @@ multisprite_setup
     sta pfheight
 
     ldx #4
-;    stx temp3
 SetCopyHeight
-;    lda #76
-;    sta NewSpriteX,X
-;    lda CopyColorData,X
-;    sta NewCOLUP1,X
-    ;lda SpriteHeightTable,X
-;    sta spriteheight,x
     txa
     sta SpriteGfxIndex,X
     sta spritesort,X
@@ -100,14 +93,6 @@ SetCopyHeight
     sta PF1pointer
     rts
 
-;--------------------------------------------------------------------------------
-;--- player color table needs to be here to avoid causing page crossing issues
-;--     NOTE: $2x hue selection works for both PAL and NTSC
-
-plyColorTable:
-;    .byte $1A,$1F,$14,$1C, $18,$1A,$1C,$18  ;-- yellow color set
-    .byte $2A,$2F,$24,$2C, $28,$2A,$2C,$28  ;-- orange color set
-    .byte $08,$0C,$08,$0C, $08,$0C
 
 ;=====================================================================
 ;---------------------------------------------------------------------
@@ -168,6 +153,24 @@ WaitForOverscanEnd
     adc player0height
     sta player0pointer
 
+    ;-------------------------------------------------------------------------
+    ;--- figure out player color table offset for doing explosion color
+
+    lda #0                  ;-- 0 offset for no explosion
+    sta temp1
+
+    lda r_COLUP0
+    and #$E0
+    cmp #$60                ;-- $60..$7F = P1 color index for explosions
+    bne .noPlayerExplosion
+
+    lda r_COLUP0
+    sbc #$62
+    sta temp1
+
+.noPlayerExplosion:
+
+
     ;----- setup color pointer
     ;-- This sets up the pointer to the color table necessary to read colors
     ;-- for the player sprite
@@ -177,6 +180,7 @@ WaitForOverscanEnd
     sbc player0y
     clc
     adc player0height
+    adc temp1
     sta player0colorPlo
 
     lda #>plyColorTable
@@ -335,11 +339,6 @@ nottoohigh
     rts
 
 ;-------------------------------------------------------------------------
-
-
-
-
-
 
 
 ;-------------------------------------------------------------------------
@@ -1236,7 +1235,11 @@ ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
 ;-- Side fighter uses Multi-sprite for fly-in... 
 ;---   SO data needs to be duplicated to support both up and down movement
 ct_SideFighter:         .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
-                        .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
+plyColorTable:          .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
+
+ct_plyExplosion:        .byte $38,$2A,$2C,$38,$2A,$2C,$2E,$38
+                        .byte $36,$38,$2A,$26,$28,$2A,$38,$36
+                        .byte $34,$36,$44,$46,$48,$36,$46,$34
 
     else
 
@@ -1264,6 +1267,12 @@ ct_AyakoMissle:         .byte $66,$64,$62,$66,$64,$62,$64,$62
 ;-- Side fighter uses Multi-sprite for fly-in... 
 ;---   SO data needs to be duplicated to support both up and down movement
 ct_SideFighter:         .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
-                        .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
+plyColorTable:          .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
+
+ct_plyExplosion:        .byte $28,$2F,$2C,$28,$2A,$2C,$2E,$28
+                        .byte $48,$4A,$4F,$48,$4A,$4C,$4E,$48
+                        .byte $66,$6A,$6C,$68,$6A,$6C,$6E,$68
 
     endif
+
+    echo "Multi-sprite kernel for 1942 ends at ", *

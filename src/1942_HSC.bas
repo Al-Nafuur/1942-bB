@@ -59,6 +59,8 @@ end
    ; Color constants
 
 ;#region "NTSC Constants and Colors"
+
+   const IS_NTSC = 1
    ; colors
    const _00 = $00
    const _02 = $02
@@ -181,18 +183,18 @@ end
    const _EC = $EC
    const _EE = $EE
 
-   ;unused, so removing these to get around bBasic's apparent 'limited number of constant defintion' issue
-   ;const _F0 = $F0
-   ;const _F2 = $F2
-   ;const _F4 = $F4
-   ;const _F6 = $F6
-   ;const _F8 = $F8
-   ;const _FA = $FA
-   ;const _FC = $FC
-   ;const _FE = $FE
+   const _Color_Ocean         = $96
+   const _Color_Carrier       = $04
+   const _Color_Gras_Island   = $C8
+   const _Color_Sand_Island   = $EE
+   const _Color_Jungle_Island = $C6
+
 ;#endregion
 /*
 ;#region "PAL Constants and Colors"
+
+   const IS_NTSC = 0
+
    ; colors
    const _00 = $00
    const _02 = $02
@@ -314,14 +316,13 @@ end
    const _EA = $2A
    const _EC = $2C
    const _EE = $2E
-   ;const _F0 = $20
-   ;const _F2 = $22
-   ;const _F4 = $24
-   ;const _F6 = $26
-   ;const _F8 = $28
-   ;const _FA = $2A
-   ;const _FC = $2C
-   ;const _FE = $2E
+   
+   const _Color_Ocean         = $B6
+   const _Color_Carrier       = $04
+   const _Color_Gras_Island   = $58
+   const _Color_Sand_Island   = $2E
+   const _Color_Jungle_Island = $56
+
 ;#endregion
 */
    ; Kernel and Minikernel constants
@@ -390,12 +391,6 @@ end
    const _Map_Boss_Start_dw          = _Map_Carrier_End + 1  ; boss scrolls down
    const _Map_Boss_End_up            = 100
    const _Map_Boss_End_dw            = 130 
-
-   const _Color_Ocean         = _96
-   const _Color_Carrier       = _04
-   const _Color_Gras_Island   = _C8
-   const _Color_Sand_Island   = _EE
-   const _Color_Jungle_Island = _C6
 
    rem -- NOTE: these are indexes into the kernel's color table.
    const _Power_Up_Dark_Gray_Quad_Gun       = $08 ;orig color = _06
@@ -779,7 +774,7 @@ _player0_explosion_animation_end
    player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0 : w_NUSIZ0 = 0
    if lives < 32 then WriteToBuffer = 0 : WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto __Game_Over_Music_Setup_01 bank6
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
-   statusbarlength = %10101000 : w_COLUP0 = _EA
+   statusbarlength = %10101000 : w_COLUP0 = _Player_Plane_Base_Color
    attack_position = attack_position - 1
 
 ;   rem  if player explodes, reset and turn off bonus for this wave
