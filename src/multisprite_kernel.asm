@@ -1229,7 +1229,7 @@ ct_bigEnemyPlaneUp:     .byte $D6,$DA,$D4,$D8,$D4,$D6,$D8,$D6
 
 ct_bonus:               .byte $18,$1F,$1C,$18,$1A,$1C,$1E,$18
                         .byte $28,$2A,$2F,$28,$2A,$2C,$2E,$28
-                        .byte $46,$4A,$4C,$48,$4A,$4C,$4E,$48
+                        .byte $44,$46,$48,$46,$48,$48,$4A,$48
 ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
 
 ;-- Side fighter uses Multi-sprite for fly-in... 
@@ -1261,7 +1261,7 @@ ct_bigEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$56
 
 ct_bonus:               .byte $28,$2F,$2C,$2F,$2A,$2A,$2C,$2C
                         .byte $48,$4A,$4F,$48,$4F,$4A,$4A,$4C
-                        .byte $66,$6A,$6C,$68,$6F,$68,$64,$62
+                        .byte $64,$66,$68,$66,$68,$68,$6A,$68
 ct_AyakoMissle:         .byte $66,$64,$62,$66,$64,$62,$64,$62
 
 ;-- Side fighter uses Multi-sprite for fly-in... 

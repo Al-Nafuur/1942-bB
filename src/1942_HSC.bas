@@ -324,7 +324,7 @@ end
    const _Color_Jungle_Island = $56
 
 ;#endregion
-*/
+/**/
    ; Kernel and Minikernel constants
    const lives_compact  = 1
    const pfscore = 2
