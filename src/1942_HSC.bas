@@ -536,7 +536,7 @@ end
    const _CI_Explosion3          = $70
    const _CI_Explosion4          = $78
 
-   const _Ayako_Missile_ColorIdx = $78 ;orig color = _44
+   const _CI_Ayako_Missile       = $78 ;orig color = _44
 
    const _CI_SideFighter         = $80
    
@@ -1030,7 +1030,7 @@ _free_multisprite_found
 
    NewSpriteY[temp2] = _Plane_Y_Shootpoint : NewSpriteX[temp2] = NewSpriteX[temp1]
    NewNUSIZ[temp2] = 0
-   NewCOLUP1[temp2] = _Ayako_Missile_ColorIdx
+   NewCOLUP1[temp2] = _CI_Ayako_Missile
    playertype[temp2] = typeMissile
    playerpointerlo[temp2]  = _Ayako_Missile_low
    playerpointerhi[temp2]  = _Ayako_Missile_high
@@ -1428,7 +1428,7 @@ set_game_state_boss
    for temp1 = 0 to 4
       NewSpriteY[temp1] = _multisprite_parking_point[temp1]
       NewNUSIZ[temp1]   = temp3
-      NewCOLUP1[temp1]  = _36
+      NewCOLUP1[temp1]  = _CI_Ayako_Missile
       playertype[temp1] = typeAyMissile
 
       playerpointerlo[temp1]  = _Ayako_Missile_low
@@ -5715,6 +5715,7 @@ end
    %01111110
    %00011000
    %00111100
+   0
 end
 
    asm
@@ -5726,6 +5727,7 @@ end
    %01111110
    %01111110
    %00011000
+   0
 end
 
    asm
