@@ -1212,8 +1212,8 @@ ct_white:               .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
     if IS_NTSC = 1
 
 ;-- Small planes
-ct_smallEnemyPlane:     .byte $D6,$DA,$D8,$D6,$DA,  $D6,$D6,$D6 ;-- last 3 values are typically not used
-ct_smallEnemyPlaneUp:   .byte $DA,$D6,$D8,$DA,$D6,  $D4,$D6,$D6
+ct_smallEnemyPlane:     .byte $DA,$DA,$D8,$D6,$D6,  $D6,$D6,$D6 ;-- last 3 values are typically not used
+ct_smallEnemyPlaneUp:   .byte $DA,$DA,$D8,$D6,$D6,  $D6,$D6,$D6 ;-- last 3 values are typically not used
 
 ;-- Small Red planes (carrying power-up)
 ct_redPlanes:           .byte $44,$48,$46,$44,$48,  $46,$46,$46
@@ -1244,8 +1244,8 @@ ct_plyExplosion:        .byte $38,$2A,$2C,$38,$2A,$2C,$2E,$38
     else
 
 ;-- Small planes
-ct_smallEnemyPlane:     .byte $56,$5A,$58,$56,$5A,  $56,$56,$56 ;-- last 3 values are typically not used
-ct_smallEnemyPlaneUp:   .byte $5A,$56,$58,$5A,$56,  $54,$56,$56
+ct_smallEnemyPlane:     .byte $5A,$5A,$58,$56,$56,  $56,$56,$56 ;-- last 3 values are typically not used
+ct_smallEnemyPlaneUp:   .byte $5A,$5A,$58,$56,$56,  $56,$56,$56
 
 ;-- Small Red planes (carrying power-up)
 ct_redPlanes:           .byte $64,$68,$66,$64,$68,  $66,$66,$66
