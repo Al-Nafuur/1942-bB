@@ -449,21 +449,13 @@ end
 
    rem Playfield pointers
    const _PF1_Carrier_Boss_high    = >PF1_data0
-   const _PF1_Carrier_Boss_low     = <PF1_data0
    const _PF2_Carrier_Boss_high    = >PF2_data0
-   const _PF2_Carrier_Boss_low     = <PF2_data0
 
-   const _PF1_Pacific_low          = <PF1_data0
-   const _PF2_Pacific_low          = <PF2_data0
    const _PF1_Pacific_a_high       = _PF1_Carrier_Boss_high + 1
    const _PF2_Pacific_a_high       = _PF2_Carrier_Boss_high + 1
 
    const _PF1_Pacific_b_high       = _PF1_Carrier_Boss_high + 2
    const _PF2_Pacific_b_high       = _PF2_Carrier_Boss_high + 2
-
-   asm
-; this asm section is to prevent a strange bB compiler error!
-end
 
    rem Sprite pointer and height
    const _Score_Table_High         = >scoretable
@@ -777,8 +769,8 @@ _player0_explosion_animation_end
    statusbarlength = %10101000 : w_COLUP0 = _Player_Plane_Base_Color
    attack_position = attack_position - 1
 
-;   rem  if player explodes, reset and turn off bonus for this wave
-   if COLUP5 = _CI_Explosion4 then w_stage_bonus_counter = ( r_stage_bonus_counter & %11111110 ) | %10000000
+;   rem  if player explodes, reset bonus for this wave
+   if COLUP5 = _CI_Explosion4 then w_stage_bonus_counter = r_stage_bonus_counter - 1
 ;     ^^^^^^^^^^^^ this only works as long msp 5 hasn't been reused as missile !
 
    active_multisprites = 0
@@ -1315,9 +1307,6 @@ end
 ;#region "Intro with stage nr"
 stage_intro
    if framecounter > 60 then _Bit0_stage_intro{0} = 0 : goto carrier_superstructures_init
-
-   ;-- calculate stage_bonus_counter based on stage number
-   w_stage_bonus_counter = ( 32 - stage ) * 2
    player1x = 80 : player2x = 88
    player1y = 50 : player2y = 50
    _NUSIZ1 = 0 : NUSIZ2 = 0 
@@ -1380,7 +1369,7 @@ _read_attack_data
    next
 
    rem --- set bonus if red plane group
-   if NewCOLUP1 = _CI_RedPlane then w_stage_bonus_counter = r_stage_bonus_counter & %01111111
+   if NewCOLUP1 = _CI_RedPlane then w_stage_bonus_counter = r_stage_bonus_counter + 1
 
 _bank_2_code_end
    goto _Play_In_Game_Music bank6
@@ -1910,10 +1899,6 @@ swap_a_b_hits
    return thisbank
 
 set_game_state_powerup
-    ;--- handle if the bonus is currently disabled (skip this)
-    ;---   (also handles if out-of-bounds)
-    if r_stage_bonus_counter > 63 then goto _determine_collision_score
-    
    COLUP5 = _bonus_list[r_stage_bonus_counter] : NewCOLUP1[temp1] = _bonus_list[r_stage_bonus_counter]
    NewNUSIZ[temp1] = 0
    playerpointerlo[temp1] = _Power_Up_low
@@ -1928,8 +1913,6 @@ set_game_state_powerup
    player4type = ( player4type & %10000000 ) | typePowerUp
    player5type = ( player5type & %10000000 ) | typePowerUp
 
-   ; switch to secondary bonus
-   w_stage_bonus_counter = r_stage_bonus_counter | 1
 
    goto _determine_collision_score
 
@@ -4430,7 +4413,7 @@ _Sfx_to_Next_Sfx
    DC.B _Sfx_Mute              ; _Sfx_Landing
    DC.B _Sfx_Mute              ; _Sfx_Game_Over_Bass
    DC.B _Sfx_Victory_Bass_1    ; _Sfx_Victory_Bass
-   DC.B _Sfx_Mute              ; _Sfx_Victory_Bass_1
+   DC.B _Sfx_Landing           ; _Sfx_Victory_Bass_1
    DC.B _Sfx_Boss_Entry_Bass_1 ; _Sfx_Boss_Entry_Bass
    DC.B _Sfx_Boss_Entry_Bass_2 ; _Sfx_Boss_Entry_Bass_1
    DC.B _Sfx_Boss_Entry_Bass_3 ; _Sfx_Boss_Entry_Bass_2
@@ -4519,7 +4502,7 @@ __Skip_Ch_0
    ;  is set to A.
    ;
    if _Bit3_mute_bg_music{3} then goto __Mute_Ch_1
-   if !switchleftb && _Ch0_Sound <> _Sfx_Respawn_Bass && _Ch0_Sound <> _Sfx_Game_Over_Bass then goto __Mute_Ch_1
+   if !switchleftb && _Ch0_Sound < _Sfx_Respawn_Bass then goto __Mute_Ch_1
 
    ;```````````````````````````````````````````````````````````````
    ;  Decreases the channel 1 duration counter.
