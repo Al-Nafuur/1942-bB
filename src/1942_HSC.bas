@@ -56,275 +56,25 @@ end
    ; PlusROM HSC Id (https://highscore.firmaplus.de/index.php?game_id=49)
    const HighScoreDB_ID = 49
 
-   ; Color constants
-
-;#region "NTSC Constants and Colors"
-
+   ; TV mode. IS_NTSC = 0 for PAL colors
    const IS_NTSC = 1
-   ; colors
-   const _00 = $00
-   const _02 = $02
-   const _04 = $04
-   const _06 = $06
-   const _08 = $08
-   const _0A = $0A
-   const _0C = $0C
-   const _0E = $0E
-   const _10 = $10
-   const _12 = $12
-   const _14 = $14
-   const _16 = $16
-   const _18 = $18
-   const _1A = $1A
-   const _1C = $1C
-   const _1E = $1E
-   const _20 = $20
-   const _22 = $22
-   const _24 = $24
-   const _26 = $26
-   const _28 = $28
-   const _2A = $2A
-   const _2C = $2C
-   const _2E = $2E
-   const _30 = $30
-   const _32 = $32
-   const _34 = $34
-   const _36 = $36
-   const _38 = $38
-   const _3A = $3A
-   const _3C = $3C
-   const _3E = $3E
-   const _40 = $40
-   const _42 = $42
-   const _44 = $44
-   const _46 = $46
-   const _48 = $48
-   const _4A = $4A
-   const _4C = $4C
-   const _4E = $4E
-   const _50 = $50
-   const _52 = $52
-   const _54 = $54
-   const _56 = $56
-   const _58 = $58
-   const _5A = $5A
-   const _5C = $5C
-   const _5E = $5E
-   const _60 = $60
-   const _62 = $62
-   const _64 = $64
-   const _66 = $66
-   const _68 = $68
-   const _6A = $6A
-   const _6C = $6C
-   const _6E = $6E
-   const _70 = $70
-   const _72 = $72
-   const _74 = $74
-   const _76 = $76
-   const _78 = $78
-   const _7A = $7A
-   const _7C = $7C
-   const _7E = $7E
-   const _80 = $80
-   const _82 = $82
-   const _84 = $84
-   const _86 = $86
-   const _88 = $88
-   const _8A = $8A
-   const _8C = $8C
-   const _8E = $8E
-   const _90 = $90
-   const _92 = $92
-   const _94 = $94
-   const _96 = $96
-   const _98 = $98
-   const _9A = $9A
-   const _9C = $9C
-   const _9E = $9E
-   const _A0 = $A0
-   const _A2 = $A2
-   const _A4 = $A4
-   const _A6 = $A6
-   const _A8 = $A8
-   const _AA = $AA
-   const _AC = $AC
-   const _AE = $AE
-   const _B0 = $B0
-   const _B2 = $B2
-   const _B4 = $B4
-   const _B6 = $B6
-   const _B8 = $B8
-   const _BA = $BA
-   const _BC = $BC
-   const _BE = $BE
-   const _C0 = $C0
-   const _C2 = $C2
-   const _C4 = $C4
-   const _C6 = $C6
-   const _C8 = $C8
-   const _CA = $CA
-   const _CC = $CC
-   const _CE = $CE
-   const _D0 = $D0
-   const _D2 = $D2
-   const _D4 = $D4
-   const _D6 = $D6
-   const _D8 = $D8
-   const _DA = $DA
-   const _DC = $DC
-   const _DE = $DE
-   const _E0 = $E0
-   const _E2 = $E2
-   const _E4 = $E4
-   const _E6 = $E6
-   const _E8 = $E8
-   const _EA = $EA
-   const _EC = $EC
-   const _EE = $EE
 
-   const _Color_Ocean         = $96
-   const _Color_Carrier       = $04
-   const _Color_Gras_Island   = $C8
-   const _Color_Sand_Island   = $EE
-   const _Color_Jungle_Island = $C6
+   ; Color constants are defined in external ASM file
+   inline NTSC_PAL_colors.asm
 
-;#endregion
-/*
-;#region "PAL Constants and Colors"
+   ; To use the ASM defined colors in bB assignments they have to be redefined,
+   ; otherwise bB is using the ZP memory instead!
+   const _Color_Ocean               = _96
+   const _Color_Carrier             = _04
+   const _Color_Gras_Island         = _C8
+   const _Color_Sand_Island         = _EE
+   const _Color_Jungle_Island       = _C6
+   const _Color_Titlescreen_BG      = _00
+   const _Color_Player_Plane_Base   = _2A
+   const _Color_Player_Plane_Bottom = _26
+   const _Color_Score               = _0E
+   const _Color_Player_Bullet       = _40
 
-   const IS_NTSC = 0
-
-   ; colors
-   const _00 = $00
-   const _02 = $02
-   const _04 = $04
-   const _06 = $06
-   const _08 = $08
-   const _0A = $0A
-   const _0C = $0C
-   const _0E = $0E
-   const _10 = $20
-   const _12 = $22
-   const _14 = $24
-   const _16 = $26
-   const _18 = $28
-   const _1A = $2A
-   const _1C = $2C
-   const _1E = $2E
-   const _20 = $40
-   const _22 = $42
-   const _24 = $44
-   const _26 = $46
-   const _28 = $48
-   const _2A = $4A
-   const _2C = $4C
-   const _2E = $4E
-   const _30 = $40
-   const _32 = $42
-   const _34 = $44
-   const _36 = $46
-   const _38 = $48
-   const _3A = $4A
-   const _3C = $4C
-   const _3E = $4E
-   const _40 = $60
-   const _42 = $62
-   const _44 = $64
-   const _46 = $66
-   const _48 = $68
-   const _4A = $6A
-   const _4C = $6C
-   const _4E = $6E
-   const _50 = $80
-   const _52 = $82
-   const _54 = $84
-   const _56 = $86
-   const _58 = $88
-   const _5A = $8A
-   const _5C = $8C
-   const _5E = $8E
-   const _60 = $A0
-   const _62 = $A2
-   const _64 = $A4
-   const _66 = $A6
-   const _68 = $A8
-   const _6A = $AA
-   const _6C = $AC
-   const _6E = $AE
-   const _70 = $C0
-   const _72 = $C2
-   const _74 = $C4
-   const _76 = $C6
-   const _78 = $C8
-   const _7A = $CA
-   const _7C = $CC
-   const _7E = $CE
-   const _80 = $D0
-   const _82 = $D2
-   const _84 = $D4
-   const _86 = $D6
-   const _88 = $D8
-   const _8A = $DA
-   const _8C = $DC
-   const _8E = $DE
-   const _90 = $B0
-   const _92 = $B2
-   const _94 = $B4
-   const _96 = $B6
-   const _98 = $B8
-   const _9A = $BA
-   const _9C = $BC
-   const _9E = $BE
-   const _A0 = $90
-   const _A2 = $92
-   const _A4 = $94
-   const _A6 = $96
-   const _A8 = $98
-   const _AA = $9A
-   const _AC = $9C
-   const _AE = $9E
-   const _B0 = $70
-   const _B2 = $72
-   const _B4 = $74
-   const _B6 = $76
-   const _B8 = $78
-   const _BA = $7A
-   const _BC = $7C
-   const _BE = $7E
-   const _C0 = $50
-   const _C2 = $52
-   const _C4 = $54
-   const _C6 = $56
-   const _C8 = $58
-   const _CA = $5A
-   const _CC = $5C
-   const _CE = $5E
-   const _D0 = $30
-   const _D2 = $32
-   const _D4 = $34
-   const _D6 = $36
-   const _D8 = $38
-   const _DA = $3A
-   const _DC = $3C
-   const _DE = $3E
-   const _E0 = $20
-   const _E2 = $22
-   const _E4 = $24
-   const _E6 = $26
-   const _E8 = $28
-   const _EA = $2A
-   const _EC = $2C
-   const _EE = $2E
-   
-   const _Color_Ocean         = $B6
-   const _Color_Carrier       = $04
-   const _Color_Gras_Island   = $58
-   const _Color_Sand_Island   = $2E
-   const _Color_Jungle_Island = $56
-
-;#endregion
-/**/
    ; Kernel and Minikernel constants
    const lives_compact  = 1
    const pfscore = 2
@@ -391,15 +141,6 @@ end
    const _Map_Boss_Start_dw          = _Map_Carrier_End + 1  ; boss scrolls down
    const _Map_Boss_End_up            = 100
    const _Map_Boss_End_dw            = 130 
-
-   rem -- NOTE: these are indexes into the kernel's color table.
-   const _Power_Up_Dark_Gray_Quad_Gun       = $08 ;orig color = _06
-   const _Power_Up_White_Enemy_Crash        = $18 ;orig color = _0E
-   const _Power_Up_Light_Gray_Side_Fighters = $10 ;orig color = _0A
-   const _Power_Up_Black_Extra_Life         = $00 ;orig color = _00
-   const _Power_Up_Orange_No_Enemy_Bullets  = $68 ;orig color = _FA
-   const _Power_Up_Yellow_Extra_Loop        = $60 ;orig color = _1E
-   const _Power_Up_Red_1000_Points          = $70 ;orig color = _42
 
    const _Player1_Parking_Point = 200
    const _Player2_Parking_Point = 200
@@ -509,33 +250,37 @@ end
    ;-----------------------------------------------------------------------------
    ;-- color table indexes into the color table stored in the kernel code area
 
-   const _Carrier_Tower_ColorIdx = $00 ;orig color = _02
-   const _Carrier_88_ColorIdx    = $10 ;orig color = _0A
+   const _Power_Up_Dark_Gray_Quad_Gun       = <ct_dkGrey       - <colorTables ; $08 ;orig color = _06
+   const _Power_Up_White_Enemy_Crash        = <ct_white        - <colorTables ; $18 ;orig color = _0E
+   const _Power_Up_Light_Gray_Side_Fighters = <ct_lgGrey       - <colorTables ; $10 ;orig color = _0A
+   const _Power_Up_Black_Extra_Life         = <ct_black        - <colorTables ; $00 ;orig color = _00
+   const _Power_Up_Orange_No_Enemy_Bullets  = <ct_bonus_orange - <colorTables ; $68 ;orig color = _FA
+   const _Power_Up_Yellow_Extra_Loop        = <ct_bonus_yellow - <colorTables ; $60 ;orig color = _1E
+   const _Power_Up_Red_1000_Points          = <ct_bonus_red    - <colorTables ; $70 ;orig color = _42
 
-   const _CI_Black               = $00
-   const _CI_DkGrey              = $08
-   const _CI_LtGrey              = $10
-   const _CI_White               = $18
+   const _Carrier_Tower_ColorIdx = <ct_shipCarrierTower - <colorTables ; $00 ;orig color = _02
+   const _Carrier_88_ColorIdx    = <ct_white            - <colorTables ; $10 ;orig color = _0A
+
+   const _CI_Black               = <ct_black            - <colorTables ; $00
+   const _CI_DkGrey              = <ct_dkGrey           - <colorTables ; $08
+   const _CI_LtGrey              = <ct_lgGrey           - <colorTables ; $10
+   const _CI_White               = <ct_white            - <colorTables ; $18
    
-   const _CI_GreenPlane          = $20
-   const _CI_DkGreenPlane        = $20
-   const _CI_RedPlane            = $30
-   const _CI_MedGreenPlane       = $40
-   const _CI_BigGreenPlane       = $50
+   const _CI_GreenPlaneHr        = <ct_smallEnemyPlaneHr- <colorTables ; $20
+   const _CI_GreenPlane          = <ct_smallEnemyPlane  - <colorTables ; $20
+   const _CI_DkGreenPlane        = <ct_smallEnemyPlane  - <colorTables ; $20
+   const _CI_RedPlane            = <ct_redPlanes        - <colorTables ; $30
+   const _CI_MedGreenPlane       = <ct_medEnemyPlane    - <colorTables ; $40
+   const _CI_BigGreenPlane       = <ct_bigEnemyPlane    - <colorTables ; $50
 
-   const _CI_Explosion1          = $60
-   const _CI_Explosion2          = $68
-   const _CI_Explosion3          = $70
-   const _CI_Explosion4          = $78
+   const _CI_Explosion1          = <ct_bonus_yellow     - <colorTables ; $60
+   const _CI_Explosion2          = <ct_bonus_orange     - <colorTables ; $68
+   const _CI_Explosion3          = <ct_bonus_red        - <colorTables ; $70
+   const _CI_Explosion4          = <ct_AyakoMissle      - <colorTables ; $78
 
-   const _CI_Ayako_Missile       = $78 ;orig color = _44
+   const _CI_Ayako_Missile       = <ct_AyakoMissle      - <colorTables ; $78 ;orig color = _44
 
-   const _CI_SideFighter         = $80
-   
-    ;--- Player's plane uses a separate color table, so this is needed for 
-    ;---  the scoreboard area to define the color of the "lives" indicator
-   const _Player_Plane_Base_Color = $2A; orig color = _EA
-   
+   const _CI_SideFighter         = <ct_SideFighter      - <colorTables ; $80
 
 ;#endregion
 
@@ -688,7 +433,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;#region "Bank 1 Game Logic"
 
-   scorecolor = _0E
+   scorecolor = _Color_Score
 
    game_flags = 0
    if INPT1{7} then _Bit4_genesispad{4} = 1
@@ -717,7 +462,7 @@ start
    PF1pointer = _Map_Takeoff_Point_1 : PF2pointer = _Map_Takeoff_Point_1
 
    w_COLUPF = _Color_Carrier
-   w_COLUP0 = _Player_Plane_Base_Color
+   w_COLUP0 = _Color_Player_Plane_Base
    w_CTRLPF = %00100001
    w_NUSIZ0 = 0
 
@@ -743,7 +488,7 @@ main
 
    framecounter = framecounter + 1
    COLUBK = _Color_Ocean
-   COLUP0 = _40
+   COLUP0 = _Color_Player_Bullet
    Player0SwitchColor = r_COLUP0
    
    if _Bit0_stage_intro{0} then goto stage_intro bank2
@@ -766,7 +511,7 @@ _player0_explosion_animation_end
    player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : _Bit6_p0_explosion{6} = 0 : w_NUSIZ0 = 0
    if lives < 32 then WriteToBuffer = 0 : WriteToBuffer = _sc1 : WriteToBuffer = _sc2 : WriteToBuffer = _sc3 : WriteToBuffer = stage : WriteSendBuffer = HighScoreDB_ID : AUDV0 = 0 : AUDV1 = 0 : goto __Game_Over_Music_Setup_01 bank6
    lives = lives - 32 : player0x = _Player0_X_Start : player0y = _Player0_Y_Start
-   statusbarlength = %10101000 : w_COLUP0 = _Player_Plane_Base_Color
+   statusbarlength = %10101000 : w_COLUP0 = _Color_Player_Plane_Base
    attack_position = attack_position - 1
 
 ;   rem  if player explodes, reset bonus for this wave
@@ -896,7 +641,7 @@ _player_movement
    if animation_state < 10 && player0y < _Player0_Y_Max then player0y = player0y + 1 : goto _player_horizontal_movement
    if animation_state = 10 then player0pointerlo = _Player0_Plane_down_low : player0pointerhi = _Player0_Plane_down_high : player0height = _Player0_Plane_down_height : goto _player_horizontal_movement
    if animation_state = 25 then player0pointerlo = _Player0_Looping_2_low : player0pointerhi = _Player0_Looping_2_high : player0height = _Player0_Looping_2_height
-   if animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _E6 : goto _player_horizontal_movement
+   if animation_state < 30 && player0y > _Player0_Y_Min then player0y = player0y - 1 : COLUP0 = _Color_Player_Plane_Bottom : goto _player_horizontal_movement
    if animation_state = 30 then player0pointerlo = _Player0_Plane_up_low : player0pointerhi = _Player0_Plane_up_high : player0height = _Player0_Plane_up_height : goto _player_horizontal_movement
    if animation_state < 40 then player0y = player0y + 1 : goto _player_horizontal_movement
    if animation_state = 40 then _Bit2_looping{2} = 0
@@ -990,7 +735,7 @@ _msp_switch_to_down
     playerpointerhi[temp1]  = _player_pointer_hi_bank1[temp3]
 
     rem need to switch palettes since graphics has changed
-    NewCOLUP1[temp] = _CI_GreenPlane
+    NewCOLUP1[temp1] = _CI_GreenPlane
     goto _check_next_multisprite
 
 _msp_moves_down
@@ -1001,7 +746,7 @@ _msp_moves_down
    if temp3 <> _Plane_Y_Turnpoint || temp5 > temp2 then _skip_msp_turns
 
     rem mask off color
-   NewCOLUP1[temp1] = NewCOLUP1[temp1] & %11110111
+;   NewCOLUP1[temp1] = NewCOLUP1[temp1] & %11110111
    playertype[temp1] = playertype[temp1] + 9
    temp5 = playertype[temp1] / 8 : playerpointerlo[temp1] = _player_pointer_lo_bank1[temp5] + 1 - playerfullheight[temp1]
    playerpointerhi[temp1] = _player_pointer_hi_bank1[temp5]
@@ -1311,7 +1056,7 @@ stage_intro
    player1y = 50 : player2y = 50
    _NUSIZ1 = 0 : NUSIZ2 = 0 
    player1height = 9 : player2height = 9
-   COLUP2 = _CI_LtGrey : _COLUP1 = _CI_LtGrey
+   COLUP2 = _CI_White : _COLUP1 = _CI_White
    player1pointerhi = _Score_Table_High : player2pointerhi = _Score_Table_High
    temp4 = hex_to_bcd[stage]
    temp5 = (temp4 & $0f ) * 8
@@ -1553,10 +1298,10 @@ end
    planeSmallD + movesDown,  20, 118, OnePlane, _CI_GreenPlane
    planeSmallD + movesDown,  50, 128, OnePlane, _CI_GreenPlane
 
-   planeSmallLR + movesRight, 0,  84, TwoPlanesClose + mirroredR, _CI_MedGreenPlane
-   planeSmallLR + movesRight, 0,  74, TwoPlanesClose + mirroredR, _CI_MedGreenPlane
-   planeSmallLR + movesLeft, 158, 64, TwoPlanesClose,             _CI_MedGreenPlane
-   planeSmallLR + movesLeft, 158, 54, TwoPlanesClose,             _CI_MedGreenPlane
+   planeSmallLR + movesRight, 0,  84, TwoPlanesClose + mirroredR, _CI_GreenPlaneHr
+   planeSmallLR + movesRight, 0,  74, TwoPlanesClose + mirroredR, _CI_GreenPlaneHr
+   planeSmallLR + movesLeft, 158, 64, TwoPlanesClose,             _CI_GreenPlaneHr
+   planeSmallLR + movesLeft, 158, 54, TwoPlanesClose,             _CI_GreenPlaneHr
    planeMiddleU + movesUp,    30,  1, OnePlane,                   _CI_MedGreenPlane
 
    planeSmallD + movesDown,  20,  88, TwoPlanesClose, _CI_DkGreenPlane
@@ -3672,12 +3417,12 @@ end
    ................  ; 
    ................  ; 
    ................  ; 
-   .........XX.....  ; 
+   ................  ; 
    .........XX.....  ; 
    ........XXXX....  ; 
-   ........XXXX....  ; 
-   .........XX.....  ; 
-   .........XX.....  ; 
+   .......XXXXX....  ; 
+   .........XXX....  ; 
+   ..........X.....  ; 
    ................  ; 
    ................  ; 
    ................  ; 
@@ -3693,11 +3438,11 @@ end
    ................  ; 
    ................  ; 
    ............XX..  ; 
+   ...........XXX..  ; 
+   ...........XXXX.  ; 
+   ...........XXXX.  ; 
    ............XX..  ; 
-   ...........XXXX.  ; 
-   ...........XXXX.  ; 
-   .............X..  ; 
-   .............X..  ; 
+   .............XX.  ; 
    ................  ; 
    ................  ; 
    ................  ; 
@@ -3781,12 +3526,12 @@ end
    ................  ; 
    ................  ; 
    ...............X  ; 
-   ...............X  ; 
+   ..............XX  ; 
+   .............XXX  ; 
+   .............XXX  ; 
+   .............XXX  ; 
    ..............XX  ; 
    ..............XX  ; 
-   ..............XX  ; 
-   ..............XX  ; 
-   ...............X  ; 
    ...............X  ; 
    ................  ; 
    ................  ; 
@@ -3872,13 +3617,13 @@ end
    ................  ; 
    ................  ; 214 End landscape 1  
    .....XX.........  ; 
-   .....XX.........  ; 
-   ....XXXXX.......  ; 
+   .....XXX........  ; 
+   .....XXXX.......  ; 
+   ....XXXXXX......  ; 
    ....XXXXX.......  ; 
    ....XXXX........  ; 
-   ....XXXX........  ; 
    .....XXX........  ; 
-   .....XXX........  ; 
+   ......XX........  ; 
    ................  ; 
    ................  ; 
    ................  ; 
@@ -5638,7 +5383,7 @@ end
    inline songplay.h
 
 titlescreen_start
-   COLUBK = _00
+   COLUBK =_Color_Titlescreen_BG
    beat = 0 : tempoCount = 0 : measure = 0 : _Bit1_reset_restrainer{1} = 1
 
 titlescreen            
@@ -5676,6 +5421,56 @@ end
 ;#region "Bank 8 bB drawscreen and sprites"
 
    asm
+;====================================================================================
+;--  Color tables used for the shared P1 sprite
+;
+;-- These tables are accessed using the COLUx variable from each sprite as an index
+
+   align 128
+    
+   echo "Color tables start at ", *
+
+colorTables:
+
+;-- B&W palettes (dark and light) used by the ship carrier detail sprites
+ct_black:               .byte _00,_00,_00,_00,_00,_00,_00,_00
+ct_shipCarrierTower:    .byte _02,_02,_02,_02,_02,_02,_02,_02
+ct_dkGrey:              .byte _06,_06,_06,_06,_06,_06,_06,_06
+ct_lgGrey:              .byte _0A,_0A,_0A,_0A,_0A,_0A,_0A,_0A
+ct_white:               .byte _0E,_0E,_0E,_0E,_0E,_0E,_0E,_0E
+
+;-- Small planes
+ct_smallEnemyPlaneHr:   .byte _DA,_DA,_D6,_D4,_DA,_DA,  _DA,_D6 ;-- last 2 values are typically not used
+ct_smallEnemyPlane:     .byte _DA,_DA,_D8,_D6,_D6,  _D6,_D6,_D6 ;-- last 3 values are typically not used
+ct_smallEnemyPlaneUp:   .byte _DA,_DA,_D8,_D6,_D6,  _D6,_D6,_D6 ;-- last 3 values are typically not used
+
+;-- Small Red planes (carrying power-up)
+ct_redPlanes:           .byte _4A,_4A,_48,_46,_46,  _46,_46,_46
+ct_redPlanesUp:         .byte _4A,_4A,_48,_46,_46,  _46,_46,_46
+
+;-- Medium-sized planes
+ct_medEnemyPlane:       .byte _C6,_C6,_CA,_C6,_C6,_C6,_C4,_C2
+ct_medEnemyPlaneUp:     .byte _C6,_C8,_C6,_C6,_C6,_CA,_C4,_C4
+
+;-- Big planes (slightly different than the medium-sized ones)
+ct_bigEnemyPlane:       .byte _D4,_D4,_D6,_D6,_D6,_DA,_D8,_D8
+ct_bigEnemyPlaneUp:     .byte _D8,_D8,_D6,_D6,_D6,_DA,_D4,_D2
+
+ct_bonus_yellow:        .byte _14,_16,_18,_1A,_1E,_1E,_1E,_1E
+ct_bonus_orange:        .byte _2A,_28,_26,_24,_22,_22,_22,_22
+ct_bonus_red:           .byte _4A,_48,_46,_44,_42,_42,_42,_42
+ct_AyakoMissle:         .byte _46,_44,_42,_46,_44,_42,_44,_42
+
+;-- Side fighter uses Multi-sprite for fly-in and out... 
+;---   SO data needs to be duplicated to support both up and down movement
+ct_SideFighter:         .byte _26,_26,_26,_28,_28,_2C,_2A,_2A
+plyColorTable:          .byte _26,_26,_26,_28,_28,_2C,_2A,_2A
+ct_plyExplosion:        .byte _38,_2A,_2C,_38,_2A,_2C,_2E,_38
+                        .byte _36,_38,_2A,_26,_28,_2A,_38,_36
+                        .byte _34,_36,_44,_46,_48,_36,_46,_34
+
+   echo "Color tables end at ", *
+
    MAC PAD_BB_SPRITE_DATA
 .SPRITE_HEIGHT  SET {1}
       if	(<*) > (<(*+.SPRITE_HEIGHT))
@@ -5772,7 +5567,7 @@ end
    %01011010
    %11111111
    %11111111
-   %11111111
+   %01111110
    %00011000
    %00011000
    %00111100
@@ -5787,7 +5582,7 @@ end
    %00111100
    %00011000
    %00011000
-   %11111111
+   %01111110
    %11111111
    %11111111
    %01011010
@@ -6053,7 +5848,7 @@ end
 end
 
    vblank
-   lifecolor = _Player_Plane_Base_Color : COLUPF = r_COLUPF
+   lifecolor = _Color_Player_Plane_Base : COLUPF = r_COLUPF
    if _Bit6_p0_explosion{6} then bally = 100 else bally = player0y - 4
    if framecounter{0} then ballx = player0x + 4 else ballx = player0x + 2
    if _Bit7_hide_sidefighter{7} then _landing_takeoff
