@@ -4,11 +4,7 @@
 ;----------------------------------------------------------------------------
 ; Provided under the CC0 license. See the included LICENSE.txt for details.
 ;----------------------------------------------------------------------------
-
-    ifnconst IS_NTSC
-IS_NTSC = 1
-    endif
-
+;
 ;---------------------------------------------
 ;--- Some assumptions:
 ;---
@@ -1191,88 +1187,5 @@ scorebcd1
     .byte $21, $21, $22, $23, $23, $24, $24, $25, $26, $26
   endif
 
-;====================================================================================
-;--  Color tables used for the shared P1 sprite
-;
-;-- These tables are accessed using the COLUx variable from each sprite as an index
 
-    ;align 128
-    
-    echo "Color tables at ", *
-
-colorTables:
-
-;-- B&W palettes (dark and light) used by the ship carrier detail sprites
-ct_shipCarrierTower:    .byte $02,$02,$02,$02,$02,$02,$02,$02
-ct_dkGrey:              .byte $06,$06,$06,$06,$06,$06,$06,$06
-ct_shipCarrierDetails:  .byte $0A,$0C,$0C,$0A,$0C,$0A,$0A,$0A
-ct_white:               .byte $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
-
-
-    if IS_NTSC = 1
-
-;-- Small planes
-ct_smallEnemyPlane:     .byte $DA,$DA,$D8,$D6,$D6,  $D6,$D6,$D6 ;-- last 3 values are typically not used
-ct_smallEnemyPlaneUp:   .byte $DA,$DA,$D8,$D6,$D6,  $D6,$D6,$D6 ;-- last 3 values are typically not used
-
-;-- Small Red planes (carrying power-up)
-ct_redPlanes:           .byte $44,$48,$46,$44,$48,  $46,$46,$46
-ct_redPlanesUp:         .byte $48,$44,$46,$48,$44,  $46,$46,$46
-
-;-- Medium-sized planes
-ct_medEnemyPlane:       .byte $C4,$C8,$C6,$C4,$C8,$C4,$CA,$C8
-ct_medEnemyPlaneUp:     .byte $C6,$CA,$C4,$C8,$C4,$C6,$C8,$C4
-
-;-- Big planes (slightly different than the medium-sized ones)
-ct_bigEnemyPlane:       .byte $D4,$D8,$D6,$D4,$D8,$D4,$DA,$D8
-ct_bigEnemyPlaneUp:     .byte $D6,$DA,$D4,$D8,$D4,$D6,$D8,$D6
-
-ct_bonus:               .byte $18,$1A,$1C,$18,$1A,$1C,$1A,$18
-                        .byte $28,$2A,$2C,$28,$2A,$2C,$2A,$28
-                        .byte $44,$46,$48,$46,$48,$4A,$48,$48
-ct_AyakoMissle:         .byte $46,$44,$42,$46,$44,$42,$44,$42
-
-;-- Side fighter uses Multi-sprite for fly-in... 
-;---   SO data needs to be duplicated to support both up and down movement
-ct_SideFighter:         .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
-plyColorTable:          .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
-
-ct_plyExplosion:        .byte $38,$2A,$2C,$38,$2A,$2C,$2E,$38
-                        .byte $36,$38,$2A,$26,$28,$2A,$38,$36
-                        .byte $34,$36,$44,$46,$48,$36,$46,$34
-
-    else
-
-;-- Small planes
-ct_smallEnemyPlane:     .byte $5A,$5A,$58,$56,$56,  $56,$56,$56 ;-- last 3 values are typically not used
-ct_smallEnemyPlaneUp:   .byte $5A,$5A,$58,$56,$56,  $56,$56,$56
-
-;-- Small Red planes (carrying power-up)
-ct_redPlanes:           .byte $64,$68,$66,$64,$68,  $66,$66,$66
-ct_redPlanesUp:         .byte $68,$64,$66,$68,$64,  $66,$66,$66
-
-;-- Medium-sized planes
-ct_medEnemyPlane:       .byte $54,$58,$56,$54,$58,$54,$5A,$58
-ct_medEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$54
-
-;-- Big planes (slightly different than the medium-sized ones)
-ct_bigEnemyPlane:       .byte $54,$58,$56,$54,$58,$54,$5A,$58
-ct_bigEnemyPlaneUp:     .byte $56,$5A,$54,$58,$54,$56,$58,$56
-
-ct_bonus:               .byte $28,$2A,$2C,$28,$2A,$2C,$2A,$28
-                        .byte $48,$4A,$4C,$48,$4A,$4C,$4A,$48
-                        .byte $64,$66,$68,$66,$68,$6A,$68,$68
-ct_AyakoMissle:         .byte $66,$64,$62,$66,$64,$62,$64,$62
-
-;-- Side fighter uses Multi-sprite for fly-in... 
-;---   SO data needs to be duplicated to support both up and down movement
-ct_SideFighter:         .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
-plyColorTable:          .byte $2A,$2F,$24,$2C,$28,$2A,$2C,$28
-
-ct_plyExplosion:        .byte $28,$2F,$2C,$28,$2A,$2C,$2E,$28
-                        .byte $48,$4A,$4F,$48,$4A,$4C,$4E,$48
-                        .byte $66,$6A,$6C,$68,$6A,$6C,$6E,$68
-
-    endif
-
-    echo "Multi-sprite kernel for 1942 ends at ", *
+    echo "Multi-sprite kernel ends at ", *
