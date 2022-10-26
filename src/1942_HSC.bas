@@ -1374,13 +1374,13 @@ _collision_detection
 	STA temp3
 end
 
-   if temp3{0} then temp1 = player1y + 1 : temp2 = player1y - player1height : if missile0y > temp2 && missile0y < temp1 then temp1 = 0 : goto multi_collision_check
+   if temp3{0} then temp1 = player1y + 1 : temp2 = temp1 - player1height : if missile0y >= temp2 && missile0y <= temp1 then temp1 = 0 : goto multi_collision_check
    
-   if temp3{1} then temp1 = player2y + 1 : temp2 = player2y - player2height : if missile0y > temp2 && missile0y < temp1 then temp1 = 1 : goto multi_collision_check
+   if temp3{1} then temp1 = player2y + 1 : temp2 = temp1 - player2height : if missile0y >= temp2 && missile0y <= temp1 then temp1 = 1 : goto multi_collision_check
    
-   if temp3{2} then temp1 = player3y + 1 : temp2 = player3y - player3height : if missile0y > temp2 && missile0y < temp1 then temp1 = 2 : goto multi_collision_check
+   if temp3{2} then temp1 = player3y + 1 : temp2 = temp1 - player3height : if missile0y >= temp2 && missile0y <= temp1 then temp1 = 2 : goto multi_collision_check
 
-   if temp3{3} then temp1 = player4y + 1 : temp2 = player4y - player4height : if missile0y > temp2 && missile0y < temp1 then temp1 = 3 : goto multi_collision_check
+   if temp3{3} then temp1 = player4y + 1 : temp2 = temp1 - player4height : if missile0y >= temp2 && missile0y <= temp1 then temp1 = 3 : goto multi_collision_check
  
    temp1 = 4
 
@@ -1390,43 +1390,38 @@ multi_collision_check
 
    temp2 = NewNUSIZ[temp1] & %00000111
    temp4 = NewSpriteX[temp1]
-   temp5 = temp4 - 8
+   temp5 = (r_NUSIZ0 * 16) + missile0x + 8: if r_NUSIZ0{5} then temp5 = temp5 + 4
    temp3 = 0
    on temp2 goto _end_collision_check _two_copies_close _two_copies_medium _three_copies_close _two_copies_wide _end_collision_check _three_copies_medium _end_collision_check
 
 _two_copies_close
    rem X.X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 16 : temp5 = temp5 + 16
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp3 = temp3 + 1
    goto _end_collision_check
 _two_copies_medium
    rem X...X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp3 = temp3 + 1
    goto _end_collision_check
 _three_copies_close
    rem X.X.X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp4 = temp4 + 16 : temp3 = temp3 + 1
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp3 = temp3 + 1
    goto _end_collision_check
 _two_copies_wide
    rem X.......X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 64 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp3 = temp3 + 1
    goto _end_collision_check
 _three_copies_medium
    rem X...X...X
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 0 : goto _end_collision_check 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 1 : goto _end_collision_check 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if missile0x <= temp4 && missile0x >= temp5 then temp3 = 2
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp4 = temp4 + 32 : temp3 = temp3 + 1
+   if temp4 >= missile0x && temp4 <= temp5 then _end_collision_check 
+   temp3 = temp3 + 1
 
 _end_collision_check
    temp4 = ( temp3 * 5 ) + temp1
@@ -1490,8 +1485,10 @@ _swap_b_c_hits
    w_playerhits_b[temp1] = r_playerhits_c[temp1]
 
 _determine_collision_score
-   if playertype[temp1] < planeMiddleD then temp6 = _Bonus_Points_50 : goto _add_collision_score
-   if playertype[temp1] < planeBigD then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
+   temp6 = playertype[temp1]
+   if temp6 > %111111 then _end_collision
+   if temp6 < planeMiddleD then temp6 = _Bonus_Points_50 : goto _add_collision_score
+   if temp6 < planeBigD then temp6 = _Bonus_Points_500 else temp6 = _Bonus_Points_1500
 _add_collision_score
    gosub add_scores
 
@@ -1522,13 +1519,13 @@ check_sidefighter_collision
 	STA temp3
 end
 
-   if temp3{0} then temp1 = player1y + 1 : temp2 = player1y - player1height : if player0y > temp2 && player0y < temp1 then temp1 = 0 : goto multi_collision_check_sf
+   if temp3{0} then temp1 = player1y + 11 : temp2 = player1y - player1height : if player0y > temp2 && player0y <= temp1 then temp1 = 0 : goto multi_collision_check_sf
    
-   if temp3{1} then temp1 = player2y + 1 : temp2 = player2y - player2height : if player0y > temp2 && player0y < temp1 then temp1 = 1 : goto multi_collision_check_sf
+   if temp3{1} then temp1 = player2y + 11 : temp2 = player2y - player2height : if player0y > temp2 && player0y <= temp1 then temp1 = 1 : goto multi_collision_check_sf
    
-   if temp3{2} then temp1 = player3y + 1 : temp2 = player3y - player3height : if player0y > temp2 && player0y < temp1 then temp1 = 2 : goto multi_collision_check_sf
+   if temp3{2} then temp1 = player3y + 11 : temp2 = player3y - player3height : if player0y > temp2 && player0y <= temp1 then temp1 = 2 : goto multi_collision_check_sf
 
-   if temp3{3} then temp1 = player4y + 1 : temp2 = player4y - player4height : if player0y > temp2 && player0y < temp1 then temp1 = 3 : goto multi_collision_check_sf
+   if temp3{3} then temp1 = player4y + 11 : temp2 = player4y - player4height : if player0y > temp2 && player0y <= temp1 then temp1 = 3 : goto multi_collision_check_sf
  
    temp1 = 4
 
@@ -1538,67 +1535,64 @@ multi_collision_check_sf
 
    temp2 = NewNUSIZ[temp1] & %00000111
    temp4 = NewSpriteX[temp1]
-   temp5 = temp4 - 8
+   temp5 = (r_NUSIZ0 * 16) + player0x + 8
    temp3 = 0
    on temp2 goto _end_collision_check_sf _two_copies_close_sf _two_copies_medium_sf _three_copies_close_sf _two_copies_wide_sf _one_copy_double_width_sf _three_copies_medium_sf _one_copy_quad_width_sf
 
+_one_copy_double_width_sf
+   temp6 = temp4 + 8
+   goto _end_collision_check_right_set_sf
+_one_copy_quad_width_sf
+   temp6 = temp4 + 24
+   goto _end_collision_check_right_set_sf
 _two_copies_close_sf
    rem X.X
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
-   temp4 = temp4 + 16 : temp5 = temp5 + 16
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 1
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 16 : temp3 = temp3 + 1
    goto _end_collision_check_sf
 _two_copies_medium_sf
    rem X...X
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 1
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 32 : temp3 = temp3 + 1
    goto _end_collision_check_sf
 _three_copies_close_sf
    rem X.X.X
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 1 : goto _end_collision_check_sf 
-   temp4 = temp4 + 16 : temp5 = temp4 - 8
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 2
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 16 : temp3 = temp3 + 1
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 16 : temp3 = temp3 + 1
    goto _end_collision_check_sf
 _two_copies_wide_sf
    rem X.......X
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
-   temp4 = temp4 + 64 : temp5 = temp4 - 8
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 1
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 64 : temp3 = temp3 + 1
    goto _end_collision_check_sf
 _three_copies_medium_sf
    rem X...X...X
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 0 : goto _end_collision_check_sf 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 1 : goto _end_collision_check_sf 
-   temp4 = temp4 + 32 : temp5 = temp4 - 8
-   if player0x <= temp4 && player0x >= temp5 then temp3 = 2
-   goto _end_collision_check_sf
-_one_copy_double_width_sf
-   temp5 = temp5 - 8
-   goto _end_collision_check_sf
-_one_copy_quad_width_sf
-   temp5 = temp5 - 24
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 32 : temp3 = temp3 + 1
+   if temp4 >= player0x && temp4 <= temp5 then _end_collision_check_sf 
+   temp4 = temp4 + 32 : temp3 = temp3 + 1
 
 _end_collision_check_sf
-  ; temp4 = temp1 + ( temp3 * 5 )
-  ; temp5 = r_playerhits_a[temp4] - 1
-  ; w_playerhits_a[temp4] = temp5
+   temp6 = temp4
+_end_collision_check_right_set_sf
 
    ; temp1 = id of player1 that has been hit (0 - 4)
    ; temp2 = NUSIZ of the player1
    ; temp3 = NUSIZ copy thats been hit (0 - 2)
+   ; temp4 = x pos of player1 hit (+8 to player0)
+   ; temp6 = right side of player1 hit
    ; no need for hitcounter, an enemy hit by a side fighter will always be deleted.
 
    if !r_Bit7_Left_Plane_is_SF{7} then _only_right_side_fighter
 
-   if player0x + 24 < temp5 then temp5 = %11110000 : goto _remove_a_side_fighter
-   if player0x + 16 > temp4 then player0x = player0x + 16 : temp5 = %01110000 : goto _remove_a_side_fighter
+   temp5 = player0x + 16
+   if player0x + 32 < temp4 then temp5 = %11110000 : goto _remove_a_side_fighter             ; right SF
+   if temp5 > temp6 then player0x = temp5 : temp5 = %01110000 : goto _remove_a_side_fighter  ; left SF
    goto _player0_collision
 _only_right_side_fighter
-   if player0x + 8 < temp5 then temp5 = %01110000 : goto _remove_a_side_fighter
+   if temp5 < temp4 then temp5 = %01110000 : goto _remove_a_side_fighter                     ; right SF
 
 
 _player0_collision
