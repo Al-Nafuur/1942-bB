@@ -62,6 +62,12 @@ end
    ; Color constants are defined in external ASM file
    inline NTSC_PAL_colors.asm
 
+   ; In game score font
+   const font                      = custom
+
+   ; Title screen score font
+   const fontstyle                 = CUSTOM
+
    ; To use the ASM defined colors in bB assignments they have to be redefined,
    ; otherwise bB is using the ZP memory instead!
    const _Color_Ocean               = _96
@@ -72,7 +78,7 @@ end
    const _Color_Titlescreen_BG      = _00
    const _Color_Player_Plane_Base   = _2A
    const _Color_Player_Plane_Bottom = _26
-   const _Color_Score               = _0E
+   const _Color_Score               = _9E
    const _Color_Player_Bullet       = _40
 
    ; Kernel and Minikernel constants
@@ -2051,7 +2057,7 @@ FontColorsEndscreen
 OffsetGameOver
   DC.B  176, 176, 176, 200, 176, 176, 48, 24, 176, 176
 FontColorsGameOver
-  DC.B  _0E, _0E, _0E, _44, _0E, _0E, _0E, _0E, _0E, _0E, _0E
+  DC.B  _Color_Score, _0E, _0E, _44, _0E, _0E, _0E, _0E, _0E, _0E, _0E
 
 
   ALIGN 256
