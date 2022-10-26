@@ -47,6 +47,9 @@ SNAKE = 11	;_FONTNAME
  ifnconst PLOK
 PLOK = 13	;_FONTNAME
  endif
+ ifnconst CUSTOM
+CUSTOM = 14	;_FONTNAME
+ endif
 
  ifnconst SYMBOLS
 SYMBOLS = 0 	;_FONTNAME 
@@ -64,6 +67,10 @@ fontstyle = STOCK
 
 
 miniscoretable
+
+ if fontstyle == CUSTOM
+      include "score_graphics.asm.custom"
+ endif ; CUSTOM
 
  if fontstyle == STOCK
 
