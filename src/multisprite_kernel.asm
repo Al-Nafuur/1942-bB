@@ -42,24 +42,6 @@ rCacheNewSpriteY = wCacheNewSpriteY + superchipReadOfs
 ;----------------------------------------------------------------
 
 
-FineAdjustTableBegin
-    .byte %01100000                ;left 6
-    .byte %01010000
-    .byte %01000000
-    .byte %00110000
-    .byte %00100000
-    .byte %00010000
-    .byte %00000000                ;left 0
-    .byte %11110000
-    .byte %11100000
-    .byte %11010000
-    .byte %11000000
-    .byte %10110000
-    .byte %10100000
-    .byte %10010000
-    .byte %10000000                ;right 8
-FineAdjustTableEnd        =        FineAdjustTableBegin - 241
-
 PFStart
     .byte 87,43,0,21,0,0,0,10
 blank_pf
@@ -335,6 +317,33 @@ nottoohigh
     rts
 
 ;-------------------------------------------------------------------------
+
+;------------------------------------------------------------------------
+;-- FineAdjustTable - HMove table
+;--
+;-- NOTE:  This table needs to be here to prevent interference with
+;--        the superchip due to the forced page-crossing used when
+;--        accessing this table.
+
+FineAdjustTableBegin
+    .byte %01100000                ;left 6
+    .byte %01010000
+    .byte %01000000
+    .byte %00110000
+    .byte %00100000
+    .byte %00010000
+    .byte %00000000                ;left 0
+    .byte %11110000
+    .byte %11100000
+    .byte %11010000
+    .byte %11000000
+    .byte %10110000
+    .byte %10100000
+    .byte %10010000
+    .byte %10000000                ;right 8
+
+    ;-- label used when table is accessed via forced page-crossing
+FineAdjustTableEnd        =        (FineAdjustTableBegin - 241)
 
 
 ;-------------------------------------------------------------------------
